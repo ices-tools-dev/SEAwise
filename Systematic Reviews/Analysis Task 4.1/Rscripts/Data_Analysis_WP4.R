@@ -31,13 +31,15 @@ outPath                               <- "Systematic Reviews/Analysis Task 4.1/R
 #  This section reads in and merges the data extraction files. 
 #  The most recent versions should be downloaded from the SEAwise sharepoint before starting this analysis/exercise.
 #  Some files may require manual processing to ensure correct reading, however, these should be corrected at the sharepoint.
-#  
+#  Note: I took the "editable" version of the Uhlmann_Reid file (and changed the name of the file)
+#  Note: I manually switched rows 1 and 2 in the Binch-file, otherwise the file is not read correctly.
+#  Note: I manually removed the ".xlsx" from the filename for Potier.
 #-----------------------------------------------
 
-# readers                                <- c("Altuna-Etxabe", "Anastasopoulou", "Astarloa", "Basurko", "Binch", "Bluemel", "Brown", 
-#                                             "Carbonara", "Festjens", "garcia", "Girardin", "Halouani", "Lefkaditou_Chatzispyrou", "MacMillan", "Papadopoulou", "Potier", 
-#                                             "Romagnoni", "Seghers", "Smith", "Spedicato", "Thuenen","Tsagarakis", "Uhlmann_Reid", "VanHoey", "vdReijden")
-# Missing: Dinesen and Thorpe.
+# readers                                <- c("Altuna-Etxabe", "Anastasopoulou", "Astarloa", "Basurko", "Binch", "Bluemel", "Brown",
+#                                             "Carbonara", "Festjens", "garcia", "Girardin", "Halouani", "Lefkaditou_Chatzispyrou", "MacMillan", "Papadopoulou", "Potier",
+#                                             "Romagnoni", "Seghers", "Smith", "Spedicato", "Thorpe", "Thuenen","Tsagarakis", "Uhlmann_Reid", "VanHoey", "vdReijden")
+# #Missing: Dinesen.
 
 # ## Create a table from the first reader
 # people                                 <- readers[1]
@@ -48,15 +50,16 @@ outPath                               <- "Systematic Reviews/Analysis Task 4.1/R
 # ## Add all other readers
 # for(people in readers[2:length(readers)]) {
 #   print(people)
-#   tab1                                 <- read.xlsx(file=paste0(datPath, "DataExtractionForm_WP4_", people,".xlsx"), startRow = 2, header = TRUE, sheetIndex = 1) 
+#   tab1                                 <- read.xlsx(file=paste0(datPath, "DataExtractionForm_WP4_", people,".xlsx"), startRow = 2, header = TRUE, sheetIndex = 1)
 #   tab1$Reader                          <- people
 #   tab2                                 <- tab1[,colnames(tab1) %in% colnames(tab)] # remove empty / additional columns
 #   tab2                                 <- subset(tab2, !is.na(tab2$SW.ID)==T) # remove empty rows
 #   tab                                  <- rbind(tab,tab2)
 # } # end people-loop
 # 
-# ## Save as rds-file
-# saveRDS(tab, paste0(outPath, "tab.rds"))
+## Save as rds-file
+#saveRDS(tab, paste0(outPath, "tab.rds"))
+rm(tab1, tab2, people, readers)
 
 
 ################################################
@@ -68,7 +71,7 @@ outPath                               <- "Systematic Reviews/Analysis Task 4.1/R
 #  It shows the number of papers per reviewer, and why the papers got excluded.
 #
 #  Comments:
-#  We should check paper SW4_1905, which is excluded at the moment, for an incorrect reason ("4.3")
+#  Thorpe should check the exclusion criteria used. For now, I made a work-around method.
 #
 #-----------------------------------------------
 tab                                   <- readRDS(paste0(outPath, "tab.rds"))
@@ -77,17 +80,23 @@ tab                                   <- as.data.table(tab)
 ## check if all rows have a SW.ID
 table(is.na(tab$SW.ID))
 
-## how many papers treated : 693 papers (out of XXX?)
+## Check if exclusion.criteria make sense
+table(tab$Exclusion.Criteria)
+# Thorpe has incorrect exclusion criteria: this should be fixed in the data extraction file, but will do it here as well for now.
+tab$Exclusion.Criteria                <- ifelse(tab$Reader == "Thorpe" & tab$Exclusion.Criteria %in% c("4.4", "4.3", "4.3 _ 4.4", "None"), NA, 
+                                                ifelse(tab$Exclusion.Criteria == "Evidence", "EXCLUDE on evidence", tab$Exclusion.Criteria))
+
+## how many papers treated : 721 papers (out of XXX?)
 length(unique(tab$SW.ID))
 
 ## Check who did how many papers
 contributors                          <- tab[,.(Papers_read = length(unique(SW.ID))), by="Reader"]
 
-## how many papers retained : 522 papers
+## how many papers retained : 543 papers
 retained                              <- unique(subset(tab, is.na(Exclusion.Criteria)==TRUE)$SW.ID)
 length(retained)
 
-## how many rejected : 171 papers
+## how many rejected : 178 papers
 excluded                              <- unique(subset(tab, !is.na(Exclusion.Criteria) == TRUE)$SW.ID)
 length(excluded)
 
@@ -102,16 +111,21 @@ table(tab[SW.ID %in% excluded, Exclusion.Criteria])
 #  info:
 #  This section aims to clean the data of the retained papers.
 #  It corrects for input-typos /inconsistencies and splits some double-entries over two lines.
+#  Note: I removed some papers as their data extraction was incomplete. these are stored in the "tobechecked" file.
 #-----------------------------------------------
 ## Select the retained papers
 data                                  <- tab[SW.ID %in% retained,,]
+rm(tab, contributors, retained, excluded)
 
 ## For easyness, skip the long-text columns.
 data                                  <- data[,c(1, 19:29, 32:49, 51)]
 
 ## Check the regions (all fine)
-table(is.na(data$Region)) # no NAs, so fine
-table(data$Region) 
+table(is.na(data$Region)) # 1 NA
+table(data$Region)
+
+tobechecked                           <- data[is.na(Region)==T,,]
+data                                  <- data[is.na(Region)==F,,]
 
 ## Check the spatial scale and resolution, and correct for input mistakes
 table(is.na(data$Scale...Spatial..m.)) # There are 14 NAs
@@ -133,12 +147,15 @@ table(is.na(data$Scale...Temporal)) # There are 13 NAs
 table(is.na(data$Resolution...Temporal)) # There are 44 NAs
 
 ## Check the Response variable category
-table(is.na(data$Response.variable_category)) # There are 12 NA's. 
+table(is.na(data$Response.variable_category)) # There are 15 NA's. 
 ## 3 are described as "mortality", so will classify those as mortality. 
-## 2 are described as "spatial distribution changes", so will classify to Abundance/biomass/density. The remaining NAs are classified as Other.
+## 2 are described as "spatial distribution changes", which are classified to Abundance/biomass/density.
+## 2 are described as "discards", which are classified as mortality. The remaining NAs are classified as Other.
 data$Response.variable_category       <- ifelse(data$Response.variable_paper == "Mortality" & data$SW.ID == "SW4_0402", "Mortality", # This also effects another record of the same paper, but will do for now
-                                                ifelse(data$Response.variable_paper == "spatial distribution changes" & data$SW.ID == "SW4_1094", "Abundance/biomass/density", data$Response.variable_category))
+                                                ifelse(data$Response.variable_paper == "spatial distribution changes" & data$SW.ID == "SW4_1094", "Abundance/biomass/density", 
+                                                       ifelse(data$Response.variable_paper == "discards" & data$SW.ID == "SW4_0535", "Mortality", data$Response.variable_category)))
 data$Response.variable_category[is.na(data$Response.variable_category)==TRUE] <- "Other"
+
 table(data$Response.variable_category)
 data$Response.variable_category       <- ifelse(data$Response.variable_category %in% c("abundance", "Abundance", "Abundance by taxon"), "Abundance/biomass/density",
                                                 ifelse(data$Response.variable_category %in% c("other"), "Other",
@@ -146,11 +163,15 @@ data$Response.variable_category       <- ifelse(data$Response.variable_category 
 
 
 ## Check the Pressure types (level 1)
-table(is.na(data$Pressure.type)) ## 2 NAs 
+table(is.na(data$Pressure.type)) ## 3 NAs 
 # Check SW4_1285 --> incomplete info, remove this row for now (paper has 2 more rows with complete info)
+tobechecked                           <- rbind(tobechecked, data[(SW.ID == "SW4_1285" & is.na(Pressure.type)==TRUE)])
 data                                  <- data[!(data$SW.ID == "SW4_1285" & is.na(data$Pressure.type) == TRUE),]
 # Check SW4_1478 --> set to "Discarding", as that is what is affecting the birds.
 data$Pressure.type                    <- ifelse(data$SW.ID == "SW4_1478" & is.na(data$Pressure.type) == T, "Discarding", data$Pressure.type)
+# Check SW4_0476 --> seems to be mixed up with SW4_0513. Should be corrected in the data extraction file.
+tobechecked                           <- rbind(tobechecked, data[(SW.ID == "SW4_0476" & is.na(Pressure.type)==TRUE)])
+data                                  <- data[!(SW.ID == "SW4_0476" & is.na(Pressure.type)==TRUE)]
 table(data$Pressure.type)
 
 ## Check the Pressure types (level 2)
@@ -185,7 +206,7 @@ table(data$Ecosystem.component_level1)
 
 ## Check the ecosystem component level 2
 table(is.na(subset(data, Ecosystem.component_level1 %in% c("Fish_teleost", "Benthos", "Marine_mammals", "Fish_cartilaginous",
-                                                     "Physical_habitats", "Plankton", "Plants", "Reptiles"))$Ecosystem.component_level2)==T) # 269 NA's where there should be none.
+                                                     "Physical_habitats", "Plankton", "Plants", "Reptiles"))$Ecosystem.component_level2)==T) # 276 NA's where there should be none.
 table(data$Ecosystem.component_level2)
 # 'Fix' the input of paper SW4_0746, that states both benthic epifauna and infauna
 b                                    <- subset(data, SW.ID == "SW4_0746")
@@ -197,7 +218,7 @@ data                                 <- rbindlist(list(data, a, b), use.names=TR
 
 ## Check Fishery types and Gear_level1
 table(is.na(data$Fishery.type)) # all fine
-table(is.na(data$Gear_level1))  # 170 NAs
+table(is.na(data$Gear_level1))  # 181 NAs
 table(data$Fishery.type)
 data$Fishery.type                    <- ifelse(data$Fishery.type %in% c("commercial", "Artisanal"), "Commercial", data$Fishery.type)
 table(data$Gear_level1)
@@ -207,10 +228,10 @@ data$Gear_level1                     <- ifelse(data$Gear_level1 == "Demersal_tra
 
 
 ## Check what species are commonly mentioned
-length(unique(data$Species.taxonomic.group.s.)) # 436 unique input... let's skip for now.
+length(unique(data$Species.taxonomic.group.s.)) # 453 unique input... let's skip for now.
 
 ## Check what pressure variables are commonly mentioned
-length(unique(data$Pressure_variable)) # 377 unique input... Let's skip for now.
+length(unique(data$Pressure_variable)) # 380 unique input... Let's skip for now.
 
 
 ################################################
@@ -226,7 +247,7 @@ Regions                               <- data[, .(NrPaps = length(unique(SW.ID))
                                              by = Region]
 Regions                               <- Regions[order(NrPaps),,]
 
-tiff("Regions.tiff", width=1000, height=750, res=100)
+tiff(paste0(outPath, "Regions.tiff"), width=1000, height=750, res=100)
 par(mar=c(5, 15, 4, 2))
 b                                     <- barplot(Regions$NrPaps, horiz=TRUE, axes=F, xlim=c(0,180))
 box()
@@ -243,7 +264,7 @@ ResVarCats                            <- data[, .(NrPaps = length(unique(SW.ID))
                                               by = Response.variable_category]
 ResVarCats                            <- ResVarCats[order(NrPaps),,]
 
-tiff("ResVarCats.tiff", width=1000, height=750, res=100)
+tiff(paste0(outPath, "ResVarCats.tiff"), width=1000, height=750, res=100)
 par(mar=c(5, 15, 4, 2))
 b                                     <- barplot(ResVarCats$NrPaps, horiz=TRUE, axes=F, xlim=c(0,245))
 box()
@@ -269,9 +290,9 @@ for(iRow in c(1:nrow(EcoPress))){
 }
 r                                    <- raster(EcoPressmat)
 
-rCols                                <- colorRampPalette(c("mistyrose", "darkred"))(max(EcoPressmat))
+rCols                                <- colorRampPalette(c("mistyrose", "darkred"))(max(EcoPressmat, na.rm=T))
 
-tiff("EcoPress_heatmap.tiff", width= 1000, height = 1000, res = 100)
+tiff(paste0(outPath, "EcoPress_heatmap.tiff"), width= 1000, height = 1000, res = 100)
 par(mar=c(19, 1, 5, 7))
 plot(r, axes=F,
         col=rCols, legend=F, box=F)
@@ -298,7 +319,7 @@ Gears                                <- data[,.(NrPaps = length(unique(SW.ID))),
                                              by = c("Fishery.type", "Gear_level1")]
 Gears$Gear_level1                    <- ifelse(is.na(Gears$Gear_level1)==T, "Not specified", 
                                                ifelse(Gears$Gear_level1 == "Hooks_and_lines", "Hooks and Lines", Gears$Gear_level1))
-tiff("GearsStudied.tiff", width= 2000, height = 1000, res = 100)
+tiff(paste0(outPath, "GearsStudied.tiff"), width= 2000, height = 1000, res = 100)
 par(mfrow=c(1,4))
 par(mar=c(15,8,15,1))
 for(iType in unique(Gears$Fishery.type)){
@@ -337,7 +358,7 @@ r                                    <- raster(EcoFishmat)
 rCols                                <- colorRampPalette(c("mistyrose", "darkred"))(max(EcoFishmat, na.rm=T))
 
 
-tiff("EcoFish_heatmap.tiff", width= 1000, height = 1000, res = 100)
+tiff(paste0(outPath, "EcoFish_heatmap.tiff"), width= 1000, height = 1000, res = 100)
 par(mar=c(19, 1, 5, 7))
 plot(r, axes=F,
      col=rCols, legend=F, box=F)
@@ -367,7 +388,7 @@ EcoFishGear$Gear_level1              <- ifelse(is.na(EcoFishGear$Gear_level1)==T
 rCols                                <- data.table(colcode = c(colorRampPalette(c("mistyrose", "red"))(35), "red3", "darkred"),
                                                    value = c(1:35, 100, 146))
 
-tiff("EcoGears_heatmap.tiff", width= 1500, height = 500, res = 100)
+tiff(paste0(outPath, "EcoGears_heatmap.tiff"), width= 1500, height = 500, res = 100)
 par(mfrow=c(1,6))
 par(mar=c(13, 0, 10, 0))
 plot(raster(matrix(NA, ncol=2, nrow=12)), axes=F, box=F)
