@@ -18,10 +18,12 @@ library(data.table)
 library(RColorBrewer)
 library(raster)
 library(plotrix)
+library(sf)
+library(viridis)
 
 datPath                               <- "Systematic Reviews/Analysis Task 4.1/Data_Extraction_Files/" 
 outPath                               <- "Systematic Reviews/Analysis Task 4.1/Routput/"
-
+GISpath                               <- "Systematic Reviews/Analysis Task 4.1/GIS"
 
 ################################################
 #-----------------------------------------------
@@ -58,8 +60,8 @@ outPath                               <- "Systematic Reviews/Analysis Task 4.1/R
 # } # end people-loop
 # 
 ## Save as rds-file
-#saveRDS(tab, paste0(outPath, "tab.rds"))
-rm(tab1, tab2, people, readers)
+# saveRDS(tab, paste0(outPath, "tab.rds"))
+# rm(tab1, tab2, people, readers)
 
 
 ################################################
@@ -118,7 +120,7 @@ data                                  <- tab[SW.ID %in% retained,,]
 rm(tab, contributors, retained, excluded)
 
 ## For easyness, skip the long-text columns.
-data                                  <- data[,c(1, 19:29, 32:49, 51)]
+data                                  <- data[,c(1, 5, 19:29, 32:49, 51)]
 
 ## Check the regions (all fine)
 table(is.na(data$Region)) # 1 NA
@@ -242,7 +244,10 @@ length(unique(data$Pressure_variable)) # 380 unique input... Let's skip for now.
 #  This section aims for a quick analysis of the retained papers, for the report.
 #  It summarizes the number of unique papers (SW.ID) per (combination of) ecosystem component, fishing type, gear level1, region, response variable. 
 #-----------------------------------------------
+
+#-----------------------------------------------
 ## Barplot for regions
+#-----------------------------------------------
 Regions                               <- data[, .(NrPaps = length(unique(SW.ID))), 
                                              by = Region]
 Regions                               <- Regions[order(NrPaps),,]
@@ -259,7 +264,9 @@ text(x=Regions$NrPaps + 4, y=b, Regions$NrPaps)
 axis(1, at=90, tick=F, line=2, label="Number of unique (retained) papers", cex.axis=1.3)
 dev.off()
 
+#-----------------------------------------------
 ## Barplot for Response variable categories
+#-----------------------------------------------
 ResVarCats                            <- data[, .(NrPaps = length(unique(SW.ID))),
                                               by = Response.variable_category]
 ResVarCats                            <- ResVarCats[order(NrPaps),,]
@@ -276,7 +283,9 @@ text(x=ResVarCats$NrPaps+6, y=b, ResVarCats$NrPaps)
 axis(1, at=125, tick=F, line=2, label="Number of unique (retained) papers", cex.axis=1.3)
 dev.off()
 
+#-----------------------------------------------
 ## Heatmap of ecosystem component level 1 vs pressure type level 1
+#-----------------------------------------------
 EcoPress                             <- data[, .(NrPaps = length(unique(SW.ID))),
                                              by = c("Ecosystem.component_level1", "Pressure.type")]
 EcoPressmat                          <- matrix(nrow = length(unique(data$Ecosystem.component_level1)),
@@ -290,7 +299,9 @@ for(iRow in c(1:nrow(EcoPress))){
 }
 r                                    <- raster(EcoPressmat)
 
-rCols                                <- colorRampPalette(c("mistyrose", "darkred"))(max(EcoPressmat, na.rm=T))
+#rCols                                <- colorRampPalette(c("mistyrose", "darkred"))(max(EcoPressmat, na.rm=T))
+rCols                                <- viridis(n=max(EcoPressmat, na.rm=T))   
+
 
 tiff(paste0(outPath, "EcoPress_heatmap.tiff"), width= 1000, height = 1000, res = 100)
 par(mar=c(19, 1, 5, 7))
@@ -298,10 +309,10 @@ plot(r, axes=F,
         col=rCols, legend=F, box=F)
 segments(x0=0, x1=1, y0=c(0,1), y1=c(0,1))
 abline(v=c(0,1))
-abline(v=c(1/6, 2/6, 3/6, 4/6, 5/6), lty=2, col="lightgrey", lwd=0.8)
+abline(v=c(1/7, 2/7, 3/7, 4/7, 5/7, 6/7), lty=2, col="lightgrey", lwd=0.8)
 segments(x0=0, x1=1, y0=c(1/12, 2/12, 3/12, 4/12, 5/12, 6/12, 7/12, 8/12, 9/12,10/12, 11/12), 
          y1=c(1/12, 2/12, 3/12, 4/12, 5/12, 6/12, 7/12, 8/12, 9/12,10/12, 11/12), col="lightgrey", lty=2, lwd=0.8)
-axis(1, at=seq(0.08333335, 0.9166667, length.out=6), labels= c("Catch & bycatch", "Discarding", "Electromagnetic input", "Input of litter", "Physical disturbance", "Visual disturbance"), las=3, cex.axis=1.5)
+axis(1, at=seq(1/14, 13/14, length.out=7), labels= c("Catch & bycatch", "Discarding", "Electromagnetic input", "Input of litter", "Noise", "Physical disturbance", "Visual disturbance"), las=3, cex.axis=1.5)
 axis(4, at=seq(0.04166666, 0.9583333, length.out=12), labels= rev(rownames(EcoPressmat)), las=1, pos=1, cex.axis=1.5)
 par(fig=c(0,1,0,1), new=TRUE, mar=c(0,1,5,1))
 plot(c(0,1), c(0,1), type="n", axes=F, ann=F)
@@ -314,11 +325,14 @@ text("70", x=0.97, y=0.15, font=3)
 dev.off()
 
 
+#-----------------------------------------------
 ## Barplots of fishing gears studied
+#-----------------------------------------------
 Gears                                <- data[,.(NrPaps = length(unique(SW.ID))),
                                              by = c("Fishery.type", "Gear_level1")]
 Gears$Gear_level1                    <- ifelse(is.na(Gears$Gear_level1)==T, "Not specified", 
                                                ifelse(Gears$Gear_level1 == "Hooks_and_lines", "Hooks and Lines", Gears$Gear_level1))
+
 tiff(paste0(outPath, "GearsStudied.tiff"), width= 2000, height = 1000, res = 100)
 par(mfrow=c(1,4))
 par(mar=c(15,8,15,1))
@@ -342,7 +356,9 @@ plot(c(0,1), c(0,1), type="n", axes=F, ann=F)
 title("The different fishing gears studied", line=0, cex.main=3, font.main=2)
 dev.off()
 
+#-----------------------------------------------
 ## Heatmap of ecosystem component vs fishery type
+#-----------------------------------------------
 EcoFish                              <- data[, .(NrPaps = length(unique(SW.ID))),
                                              by = c("Ecosystem.component_level1", "Fishery.type")]
 EcoFishmat                           <- matrix(nrow = length(unique(data$Ecosystem.component_level1)),
@@ -355,7 +371,8 @@ for(iRow in c(1:nrow(EcoFish))){
   EcoFishmat[subdat$Ecosystem.component_level1, subdat$Fishery.type] <- subdat$NrPaps
 }
 r                                    <- raster(EcoFishmat)
-rCols                                <- colorRampPalette(c("mistyrose", "darkred"))(max(EcoFishmat, na.rm=T))
+#rCols                                <- colorRampPalette(c("mistyrose", "darkred"))(max(EcoFishmat, na.rm=T))
+rCols                                <- viridis(n=(max(EcoFishmat, na.rm=T)))
 
 
 tiff(paste0(outPath, "EcoFish_heatmap.tiff"), width= 1000, height = 1000, res = 100)
@@ -380,13 +397,15 @@ text("95", x=0.97, y=0.15, font=3)
 dev.off()
 
 
+#-----------------------------------------------
 ## Heatmap of ecosystem component vs fishery type / gear_level 1
+#-----------------------------------------------
 EcoFishGear                          <- data[, .(NrPaps = length(unique(SW.ID))),
                                              by = c("Ecosystem.component_level1", "Fishery.type", "Gear_level1")]
 EcoFishGear$Gear_level1              <- ifelse(is.na(EcoFishGear$Gear_level1)==T, "Not specified", 
                                                ifelse(EcoFishGear$Gear_level1 == "Hooks_and_lines", "Hooks and Lines", EcoFishGear$Gear_level1)) 
-rCols                                <- data.table(colcode = c(colorRampPalette(c("mistyrose", "red"))(35), "red3", "darkred"),
-                                                   value = c(1:35, 100, 146))
+rCols                                <- data.table(colcode = viridis(max(EcoFishGear$NrPaps)),
+                                                   value = c(1:max(EcoFishGear$NrPaps)))
 
 tiff(paste0(outPath, "EcoGears_heatmap.tiff"), width= 1500, height = 500, res = 100)
 par(mfrow=c(1,6))
@@ -434,11 +453,275 @@ gradient.rect(xleft=0.9, xright=1.01, ybottom=0.05, ytop=0.15, col=rCols$colcode
 text("Number of \n papers retained", x=0.955, y=0.2, font=4, cex=1.3)
 text("1", x=0.89, y=0.1, font=3)
 text("146", x=1.02, y=0.1, font=3)
-text("100", x=1.01, y=0, font=3)
-text("35", x=1, y=0.03, font=3)
+dev.off()
+
+#-----------------------------------------------
+## Region faceted heat maps
+#-----------------------------------------------
+RegEcoPress                          <- data[, .(NrPaps= length(unique(SW.ID))),
+                                             by=c("Region", "Ecosystem.component_level1", "Pressure.type")]
+# Leave out the Norwegian Sea, as it only is 1 study.
+RegEcoPress                          <- RegEcoPress[!Region == "Norwegian Sea",,]
+rCols                                <- data.table(colcode = viridis(max(RegEcoPress$NrPaps)),
+                                                   value = c(1: max(RegEcoPress$NrPaps)))
+
+tiff(paste0(outPath, "regEcoPress_heatmaps.tiff"), width=2000, height=2000, res=100)
+par(mfrow=c(5,4))
+par(mar=c(1,1,4,1))
+
+for(iLoc in c("empty", "CS - Mediterranean", "Mediterranean - non CS", "Black Sea", 
+              "empty", "CS - North Sea", "North Sea - non CS", "Barents Sea",
+              "empty", "CS - Western Waters", "Western Waters - non CS", "NE-Atlantic", 
+              "empty", "CS - Baltic Sea", "Baltic Sea - non CS", "Global", 
+              "empty2", "empty3", "empty3", "empty3")){
+  
+  subdat                             <- RegEcoPress[Region == iLoc,,]
+  EcoPress                           <- matrix(ncol=7, nrow=12)
+  colnames(EcoPress)                 <- sort(unique(RegEcoPress$Pressure.type))
+  rownames(EcoPress)                 <- sort(unique(RegEcoPress$Ecosystem.component_level1))
+  
+  if(iLoc == "empty") {
+    plot(raster(matrix(NA, 1, 1)), axes=F, ann=F, legend=F, box=F)
+    axis(2, tick=F, at=seq(0.04166666, 0.9583333, length.out=12), 
+         labels=rev(sort(unique(RegEcoPress$Ecosystem.component_level1))), las=1, pos=1.45, cex.axis=2.3)}
+  if(iLoc == "empty2"){
+    plot(c(0,1), c(0,1), axes=F, type="n", ann=F)
+    gradient.rect(xleft=0.45, xright=0.55, ybottom=0.1, ytop=0.7, col=rev(rCols$colcode), gradient="y")
+    text(x=0.5, y=0.85, "Number of \n retained papers", font=2, cex=3)
+    text("1", x=0.59, y=0.7, font=3, cex=2)
+    text("50", x=0.59, y=0.1, font=3, cex=2)}
+  if(iLoc == "empty3"){
+    plot(raster(matrix(NA, 1, 1)), axes=F, ann=F, legend=F, box=F)
+    axis(1, tick=F, at=seq(0.07142857, 0.9285714, length.out=7), 
+         labels= c("Catch & bycatch", "Discarding", "Electromagnetic input", "Input of litter", "Noise", "Physical disturbance", "Visual disturbance"), 
+         las=3, pos=1.15, cex.axis=3)}
+  if(iLoc %in% c("CS - Mediterranean", "Mediterranean - non CS", "Black Sea",
+                 "CS - North Sea", "North Sea - non CS", "Barents Sea",
+                 "CS - Western Waters", "Western Waters - non CS", "NE-Atlantic", 
+                 "CS - Baltic Sea", "Baltic Sea - non CS", "Global")) {
+    for(iRow in c(1:nrow(subdat))){
+      subdat2                        <- subdat[iRow,]
+      EcoPress[subdat2$Ecosystem.component_level1, subdat2$Pressure.type] <- subdat2$NrPaps}
+    r                                <- raster(EcoPress)
+    
+    plot(r, axes=F, legend=F, col=subset(rCols, value %in% values(r))$colcode, box=F)
+    segments(x0=c(1/7, 2/7, 3/7, 4/7, 5/7, 6/7), x1=c(1/7, 2/7, 3/7, 4/7, 5/7, 6/7), y0=0, y1=1, lty=2, col="lightgrey", lwd=0.8)
+    segments(x0=0, x1=1, y0=c(1/12, 2/12, 3/12, 4/12, 5/12, 6/12, 7/12, 8/12, 9/12,10/12, 11/12), 
+             y1=c(1/12, 2/12, 3/12, 4/12, 5/12, 6/12, 7/12, 8/12, 9/12,10/12, 11/12), col="lightgrey", lty=2, lwd=0.8)
+    segments(x0=0, x1=1, y0=c(0,1), y1=c(0,1))
+    segments(x0=c(0,1), x1=c(0,1), y0=0, y1=1)
+    title(iLoc, font.main=2, cex.main=2, line=0.5)
+    axis(1, at=seq(0.07142857, 0.9285714, length.out=7), labels=rep("", 7), pos=0)
+    axis(2, at=seq(0.04166666, 0.9583333, length.out=12), labels=rep("", 12), pos=0)
+  } # end iLoc if loop
+} # end iLoc for loop
 dev.off()
 
 
+#-----------------------------------------------
+## Creating shapefile with Regions
+#-----------------------------------------------
+# ## Load ICES regions as downloaded from https://gis.ices.dk/sf/ and mediterranean GSA's from https://www.fao.org/gfcm/data/maps/gsas/en/
+# ICESareas                            <- st_read(dsn=GISpath, layer="ICES_Areas_20160601_cut_dense_3857")
+# ICESareas                            <- st_transform(ICESareas, crs=3035)
+# ICESEcors                            <- st_read(dsn=GISpath, layer="ICES_ecoregions_20171207_erase_ESRI")
+# ICESEcors                            <- st_transform(ICESEcors, crs=3035)
+# GSAs                                 <- st_read(dsn=GISpath, layer="GSAs_simplified")
+# GSAs                                 <- st_transform(GSAs, crs=3035)
+# 
+# 
+# ICESEcors$Region                     <- ifelse(ICESEcors$Ecoregion %in% c("Western Mediterranean Sea", "Adriatic Sea",
+#                                                                    "Ionian Sea and the Central Mediterranean Sea",
+#                                                                    "Aegean-Levantine Sea"), "Mediterranean - non CS", 
+#                                                ifelse(ICESEcors$Ecoregion == "Greater North Sea", "North Sea - non CS", 
+#                                                       ifelse(ICESEcors$Ecoregion %in% c("Black Sea", "Norwegian Sea","Barents Sea"), ICESEcors$Ecoregion,
+#                                                              ifelse(ICESEcors$Ecoregion == "Baltic Sea", "Baltic Sea - non CS", 
+#                                                                     ifelse(ICESEcors$Ecoregion %in% c("Azores", "Oceanic Northeast Atlantic", "Greenland Sea",
+#                                                                                                       "Icelandic Waters", "Faroes", "Celtic Seas"), "NE-Atlantic", NA)))))
+# 
+# ICESareas$Region                     <- ifelse(ICESareas$Area_Full %in% c("27.4.c", "27.4.b", "27.4.a", "27.7.d"), "CS - North Sea",
+#                                                ifelse(ICESareas$Area_Full %in% c("27.3.b.23", "27.3.c.22", "27.3.d.24", "27.3.d.25", "27.3.d.26","27.3.d.27","27.3.d.28.1","27.3.d.28.2","27.3.d.29"), "CS - Baltic Sea",
+#                                                       ifelse(ICESareas$Area_Full %in% c("27.7.a", "27.7.e", "27.7.f", "27.7.g", "27.7.h", "27.8.a","27.8.b","27.8.c", "27.8.d.2"), "CS - Western Waters", 
+#                                                              ifelse(ICESareas$Area_Full %in% c("27.9.a", "27.9.b.1", "27.9.b.2", "27.8.e.1", "27.8.e.2", "27.6.a", "27.7.c.2", 
+#                                                                                                "27.6.b.2", "27.7.b", "27.7.k.2", "27.7.j.2", "27.7.b", "27.7.j.1"), "NE-Atlantic", NA))))
+# GSAs$Region                          <- ifelse(GSAs$SECT_COD %in% c("GSA17", "GSA18", "GSA19", "GSA20", "GSA22"), "CS - Mediterranean", NA)
+# 
+# Regions                              <- rbind(subset(ICESEcors[,c("Region", "geometry")], is.na(Region)==F), subset(ICESareas[,c("Region", "geometry")], is.na(Region)==F))
+# Regions                              <- rbind(Regions, subset(GSAs[,c("Region", "geometry")], is.na(Region)==F))
+# 
+# Regs                                 <- subset(Regions, Region %in% c("Baltic Sea - non CS", "Barents Sea", "Black Sea", "North Sea - non CS", "Norwegian Sea"))
+# 
+# for (iReg in c("CS - Mediterranean", "CS - North Sea","CS - Western Waters", "Mediterranean - non CS", "CS - Baltic Sea", "NE-Atlantic")){
+#   subdat                             <- subset(Regions, Region == iReg)
+#   a                                  <- st_sf(st_union(subdat))
+#   b                                  <- data.frame(Region = iReg)
+#   b                                  <- st_set_geometry(b, st_geometry(a)) 
+#   Regs                               <- rbind(Regs, b)
+# } # end iReg loop
+# 
+# ## Fix some overlaps that should not be there
+# ## North Sea
+# NS                                   <- st_intersection(subset(Regs, Region == "CS - North Sea"), subset(Regs, Region == "North Sea - non CS"))
+# NS$Region.1                          <- NULL
+# 
+# ## NE-Atlantic
+# WW                                   <- st_difference(subset(Regs, Region == "NE-Atlantic"), subset(Regs, Region == "CS - Western Waters"))
+# WW$Region.1                          <- NULL
+# 
+# ## Mediterranean non CS
+# MED                                  <- st_difference(subset(Regs, Region == "Mediterranean - non CS"), subset(Regs, Region == "CS - Mediterranean"))
+# MED$Region.1                         <- NULL
+# 
+# ## Baltic non CS
+# BALT                                 <- st_difference(subset(Regs, Region == "Baltic Sea - non CS"), subset(Regs, Region == "CS - Baltic Sea"))
+# BALT$Region.1                        <- NULL
+# 
+# ## Update the fixes
+# Regs2                                <- subset(Regs, !Region %in% c("CS - North Sea", "NE-Atlantic", "Mediterranean - non CS", "Baltic Sea - non CS"))
+# Regs2                                <- rbind(Regs2, NS, WW, MED, BALT)
+# 
+# SEAwise4.1_regions                   <- Regs2
+# st_write(SEAwise4.1_regions, paste0(GISpath, "SEAwise4.1_regions.shp"))
+# save(SEAwise4.1_regions, file=paste0(GISpath, "SEAwise4.1_regions.Rdata"))
 
 
+#-----------------------------------------------
+## Creating map with Region specific info
+#-----------------------------------------------
+RegCol                               <- data.frame(colcode = viridis(max(Regions$NrPaps)),
+                                                   value = c(1:max(Regions$NrPaps)))
+Regions$Colcode                      <- RegCol$colcode [match(Regions$NrPaps, RegCol$value)]
+load(paste0(GISpath, "SEAwise4.1_regions.Rdata"))
+SEAwise4.1_regions$colcode           <- Regions$Colcode [match(SEAwise4.1_regions$Region, Regions$Region)]
+Centerpoints                         <- st_coordinates(st_centroid(SEAwise4.1_regions))
+SEAwise4.1_regions$Xloc              <- Centerpoints[,1]
+SEAwise4.1_regions$Yloc              <- Centerpoints[,2]
+SEAwise4.1_regions$NrPaps            <- Regions$NrPaps [match(SEAwise4.1_regions$Region, Regions$Region)]
+SEAwise4.1_regions$textcol           <- ifelse(SEAwise4.1_regions$NrPaps >50, "black", "white")
 
+## Change some points to a better location
+SEAwise4.1_regions$Xloc              <- ifelse(SEAwise4.1_regions$Region == "North Sea - non CS", 4280000,
+                                               ifelse(SEAwise4.1_regions$Region == "Baltic Sea - non CS", 4800000, 
+                                                      ifelse(SEAwise4.1_regions$Region == "CS - Mediterranean", 5059132, 
+                                                             ifelse(SEAwise4.1_regions$Region == "CS - Baltic Sea", 4851499, SEAwise4.1_regions$Xloc))))
+SEAwise4.1_regions$Yloc              <- ifelse(SEAwise4.1_regions$Region == "North Sea - non CS", 3885000,
+                                               ifelse(SEAwise4.1_regions$Region == "Mediterranean - non CS", 1248183, 
+                                                      ifelse(SEAwise4.1_regions$Region == "CS - Baltic Sea", 3728215, SEAwise4.1_regions$Yloc)))
+
+## Create plot
+tiff(paste0(outPath, "RegMap.tiff"), width = 1000, height = 1000, res = 100)
+par(mar=c(1,1,4,1))
+plot(st_geometry(SEAwise4.1_regions), col=SEAwise4.1_regions$colcode, border=F)
+title(main = "Retained papers per region", cex.main=2, font.main=2)
+text(SEAwise4.1_regions$NrPaps, x= SEAwise4.1_regions$Xloc, y=SEAwise4.1_regions$Yloc, col=SEAwise4.1_regions$textcol, font=2)
+text(x= 1E6, y=6E6, "Global studies:", font=3, cex=1.2)
+text(x=1e6, y=5.85e6, paste0(subset(Regions, Region == "Global")$NrPaps), font=2)
+gradient.rect(xleft=0, xright=1E6, ytop=1.5e6, ybottom=1.25E6, col=RegCol$colcode, gradient="x")
+text(x=0, y=1.18e6, "1")
+text(x=1E6, y=1.18e6, max(Regions$NrPaps))
+text(x=0.5e6, y=1.72e6, "Number of \n papers retained", font=4, cex=1.2)
+dev.off()
+
+#-----------------------------------------------
+## Time series for Ecocomp
+#-----------------------------------------------
+YearEco                              <- data[,.(NrPaps = length(unique(SW.ID))),
+                                             by = c("Year", "Ecosystem.component_level1")]
+YearEco2                             <- matrix(nrow=length(unique(data$Ecosystem.component_level1)),
+                                               ncol=(max(data$Year) - min(data$Year) + 1),
+                                               NA)
+colnames(YearEco2)                   <- as.character(seq(from=min(data$Year), to= max(data$Year), 1))                                                
+rownames(YearEco2)                   <- sort(unique(data$Ecosystem.component_level1))
+EcoCols                              <- data.frame(Eco = sort(unique(data$Ecosystem.component_level1)),
+                                                   col = turbo(12))
+
+for(iRow in c(1:nrow(YearEco))){
+  subdat                             <- YearEco[iRow,]
+  YearEco2[subdat$Ecosystem.component_level1, as.character(subdat$Year)] <- subdat$NrPaps
+}
+YearEco2[is.na(YearEco2)] <- 0
+
+tiff(paste0(outPath, "YearEco.tiff"), width = 1000, height=750, res=100)
+par(mar=c(5,5,7, 2))
+plot(x=c(min(YearEco$Year), max(YearEco$Year)), y=c(0, max(YearEco$NrPaps)), type="n", ann=F, axes=F)
+box()
+for(iRow in rownames(YearEco2)){
+  lines(x=as.numeric(colnames(YearEco2)), y=YearEco2[iRow,], type="o", pch=16, lwd=2, col=subset(EcoCols, Eco == iRow)$col)
+} # end iRow-loop
+legend("topleft", cex=1.2, fill=EcoCols$col, legend=rownames(YearEco2), bty="n", title="Ecosystem component")
+axis(1, at=seq(1965, 2025, 5), labels=seq(1965, 2025, 5), cex.axis=1.2)
+axis(2, las=1, cex.axis=1.2)
+title("Publication years of retained papers \n per Ecosystem component", font.main=2, cex.main=2)
+axis(1, at=(max(data$Year) - ((max(data$Year) - min(data$Year))/2)), tick=F, line=2, cex.axis=1.5, "Publication year")
+axis(2, at=(max(YearEco$NrPaps)/2), tick=F, line=2, cex.axis=1.5, labels="Number of retained papers")
+dev.off()
+
+#-----------------------------------------------
+## Time series for Region
+#-----------------------------------------------
+YearReg                              <- data[,.(NrPaps = length(unique(SW.ID))),
+                                             by = c("Year", "Region")]
+YearReg2                             <- matrix(nrow=length(unique(data$Region)),
+                                               ncol=(max(data$Year) - min(data$Year) + 1),
+                                               NA)
+colnames(YearReg2)                   <- as.character(seq(from=min(data$Year), to= max(data$Year), 1))                                                
+rownames(YearReg2)                   <- sort(unique(data$Region))
+RegCols                              <- data.frame(Reg = sort(unique(data$Region)),
+                                                   col = turbo(length(unique(data$Region))))
+
+for(iRow in c(1:nrow(YearReg))){
+  subdat                             <- YearReg[iRow,]
+  YearReg2[subdat$Region, as.character(subdat$Year)] <- subdat$NrPaps
+}
+YearReg2[is.na(YearReg2)] <- 0
+
+tiff(paste0(outPath, "YearReg.tiff"), width = 1000, height=750, res=100)
+par(mar=c(5,5,7, 2))
+plot(x=c(min(YearReg$Year), max(YearReg$Year)), y=c(0, max(YearReg$NrPaps)), type="n", ann=F, axes=F)
+box()
+for(iRow in rownames(YearReg2)){
+  lines(x=as.numeric(colnames(YearReg2)), y=YearReg2[iRow,], type="o", pch=16, lwd=2, col=subset(RegCols, Reg == iRow)$col)
+} # end iRow-loop
+legend("topleft", cex=1.2, fill=RegCols$col, legend=rownames(YearReg2), bty="n", title="Region")
+axis(1, at=seq(1965, 2025, 5), labels=seq(1965, 2025, 5), cex.axis=1.2)
+axis(2, las=1, cex.axis=1.2)
+title("Publication years of retained papers \n per Region", font.main=2, cex.main=2)
+axis(1, at=(max(data$Year) - ((max(data$Year) - min(data$Year))/2)), tick=F, line=2, cex.axis=1.5, "Publication year")
+axis(2, at=(max(YearReg$NrPaps)/2), tick=F, line=2, cex.axis=1.5, labels="Number of retained papers")
+dev.off()
+
+#-----------------------------------------------
+## Time series for Pressure type
+#-----------------------------------------------
+YearPres                             <- data[,.(NrPaps = length(unique(SW.ID))),
+                                             by = c("Year", "Pressure.type")]
+YearPres2                            <- matrix(nrow=length(unique(data$Pressure.type)),
+                                               ncol=(max(data$Year) - min(data$Year) + 1),
+                                               NA)
+colnames(YearPres2)                  <- as.character(seq(from=min(data$Year), to= max(data$Year), 1))                                                
+rownames(YearPres2)                  <- sort(unique(data$Pressure.type))
+PresCols                             <- data.frame(Pres = sort(unique(data$Pressure.type)),
+                                                   col = turbo(length(unique(data$Pressure.type))))
+
+for(iRow in c(1:nrow(YearPres))){
+  subdat                             <- YearPres[iRow,]
+  YearPres2[subdat$Pressure.type, as.character(subdat$Year)] <- subdat$NrPaps
+}
+YearPres2[is.na(YearPres2)] <- 0
+
+tiff(paste0(outPath, "YearPres.tiff"), width = 1000, height=750, res=100)
+par(mar=c(5,5,7, 2))
+plot(x=c(min(YearPres$Year), max(YearPres$Year)), y=c(0, max(YearPres$NrPaps)), type="n", ann=F, axes=F)
+box()
+for(iRow in rownames(YearPres2)){
+  lines(x=as.numeric(colnames(YearPres2)), y=YearPres2[iRow,], type="o", pch=16, lwd=2, col=subset(PresCols, Pres == iRow)$col)
+} # end iRow-loop
+legend("topleft", cex=1.2, fill=PresCols$col, legend=rownames(YearPres2), bty="n", title="Pressure types")
+axis(1, at=seq(1965, 2025, 5), labels=seq(1965, 2025, 5), cex.axis=1.2)
+axis(2, las=1, cex.axis=1.2)
+title("Publication years of retained papers \n per pressure type", font.main=2, cex.main=2)
+axis(1, at=(max(data$Year) - ((max(data$Year) - min(data$Year))/2)), tick=F, line=2, cex.axis=1.5, "Publication year")
+axis(2, at=(max(YearPres$NrPaps)/2), tick=F, line=2, cex.axis=1.5, labels="Number of retained papers")
+dev.off()
+
+#-----------------------------------------------
