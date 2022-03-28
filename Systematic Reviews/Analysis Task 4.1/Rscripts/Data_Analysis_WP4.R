@@ -724,4 +724,100 @@ axis(1, at=(max(data$Year) - ((max(data$Year) - min(data$Year))/2)), tick=F, lin
 axis(2, at=(max(YearPres$NrPaps)/2), tick=F, line=2, cex.axis=1.5, labels="Number of retained papers")
 dev.off()
 
+
+
+#-----------------------------------------------
+## Barplots of Spatial scale & resolution
+#-----------------------------------------------
+Scales                                <- data[,.(NrPaps = length(unique(SW.ID))),
+                                              by = c("Scale...Spatial..m.", "Resolution...Spatial..m.")]
+names(Scales)                         <- c("Scale", "Resolution", "NrPaps")
+Scales[is.na(Scales)]                 <- "Not specified"
+
+Scaleorder                            <- data.frame(Scale = c(unique(data$Scale...Spatial..m.), "10-50"),
+                                                    Sord  = c(12,8,10,9,11,7,1,5,6,2,3,4)) # 12
+Scaleorder                            <- Scaleorder[order(Scaleorder$Sord),]
+Scaleorder[is.na(Scaleorder)]         <- "Not specified"
+
+Scales2                               <- matrix(nrow=12, ncol=12, dimnames=list(Scaleorder$Scale, Scaleorder$Scale))
+
+for(iRow in c(1:nrow(Scales))){
+  subset                              <- Scales[iRow,]
+  Scales2[subset$Resolution, subset$Scale] <- subset$NrPaps
+}
+Scales2[is.na(Scales2)]               <- 0
+largeScale                            <- as.matrix(Scales2[,12])
+smallScale                            <- Scales2[,c(1:11)]
+
+## Create plot
+tiff(paste0(outPath, "Spatialscale&resolution.tiff"), width = 1000, height = 1000, res=100)
+layout(mat = (matrix(nrow=1, ncol=2, data=c(1,2))), widths = c(5,1), heights = c(1,1))
+# plot 1: small scales
+par(mar=c(10,5,5,0))
+b <- barplot(smallScale, ylim=c(0,90), axes=F, names.arg=rep("", 11), width=1, xlim=c(0,13.2), col=viridis(12))
+axis(2, at=seq(0,90,10), cex.axis=1.2, las=1, pos=0)
+axis(1, at=b, colnames(smallScale), las=3)
+axis(2, at=45, "Number of papers retained", cex.axis=1.5, tick=F, line=1.5)
+abline(v=13.6, lty=3, col="dimgrey")
+# plot 2: large scale
+par(mar=c(10,0,5,5))
+b2 <- barplot(largeScale, ylim=c(0,350), axes=F, names.arg="", width=1, xlim=c(0,1.2), col=viridis(12))
+axis(1, at=b2, Scaleorder$Scale[12], las=3)
+axis(4, at=seq(0, 350, 50), las=1, cex.axis=1.2, pos=1.4)
+par(fig=c(0,1,0,1), new=T)
+par(mar=c(5,5,5,5))
+plot(c(0,1), c(0,1), type="n", axes=F, ann=F)
+axis(1, at=0.5, tick=F, line=2, "Spatial scale", cex.axis=1.5)
+title("Spatial scale and resolution \n of retained papers", cex.main=2, font.main=2)
+legend(x=0, y=1, cex=1.2, fill=rev(viridis(12)), title="Spatial resolution", legend=rev(Scaleorder$Scale), bty="n")
+dev.off()
+
+#-----------------------------------------------
+## Barplots of Temporal scale & resolution
+#-----------------------------------------------
+TempSc                                <- data[,.(NrPaps = length(unique(SW.ID))),
+                                              by = c("Scale...Temporal", "Resolution...Temporal")]
+names(TempSc)                         <- c("Scale", "Resolution", "NrPaps")
+TempSc[is.na(TempSc)]                 <- "not specified"
+TempSc$Resolution                     <- ifelse(TempSc$Resolution == "snapshot/no repeat sampling", "snapshot", TempSc$Resolution)
+
+Tempsorder                            <- data.frame(Temp = c(unique(data$Resolution...Temporal)),
+                                                    Tord  = c(7,3,5,9,2,15,11,4,6,10,8,14,13,12,1)) # 15
+Tempsorder                            <- Tempsorder[order(Tempsorder$Tord),]
+Tempsorder[is.na(Tempsorder)]         <- "not specified"
+Tempsorder$Temp                       <- ifelse(Tempsorder$Temp == "snapshot/no repeat sampling", "snapshot", Tempsorder$Temp)
+
+TempSc2                               <- matrix(nrow=15, ncol=14, dimnames=list(Tempsorder$Temp, Tempsorder$Temp[c(1,3:15)]))
+
+for(iRow in c(1:nrow(TempSc))){
+  subset                              <- TempSc[iRow,]
+  TempSc2[subset$Resolution, subset$Scale] <- subset$NrPaps
+}
+TempSc2[is.na(TempSc2)]               <- 0
+largeTemp                             <- TempSc2[,c(10:14)]
+smallTemp                             <- TempSc2[,c(1:9)]
+
+## Create plot
+tiff(paste0(outPath, "Temporalscale&resolution.tiff"), width = 1000, height = 1000, res=100)
+layout(mat = (matrix(nrow=1, ncol=2, data=c(1,2))), widths = c(6,4), heights = c(1,1))
+# plot 1: small scales
+par(mar=c(10,5,8,0))
+b <- barplot(smallTemp, ylim=c(0,40), axes=F, names.arg=rep("", 9), width=1, xlim=c(0,11), col=viridis(15))
+axis(2, at=seq(0,40,5), cex.axis=1.2, las=1, pos=0)
+axis(1, at=b, colnames(smallTemp), las=3)
+axis(2, at=20, "Number of papers retained", cex.axis=1.5, tick=F, line=1.5)
+abline(v=11.25, lty=3, col="dimgrey")
+# plot 2: large scale
+par(mar=c(10,0,8,5))
+b2 <- barplot(largeTemp, ylim=c(0,120), axes=F, names.arg=rep("",5), width=1, xlim=c(0.2,6.2), col=viridis(15))
+axis(1, at=b2, colnames(largeTemp), las=3)
+axis(4, at=seq(0, 120, 20), las=1, cex.axis=1.2, pos=6.2)
+par(fig=c(0,1,0,1), new=T)
+par(mar=c(5,5,5,5))
+plot(c(0,1), c(0,1), type="n", axes=F, ann=F)
+axis(1, at=0.5, tick=F, line=2, "Temporal scale", cex.axis=1.5)
+title("Temporal scale and resolution \n of retained papers", cex.main=2, font.main=2)
+legend(x=0, y=1, cex=1.2, fill=rev(viridis(15)), title="Temporal resolution", ncol=2, legend=rev(Tempsorder$Temp), bty="n")
+dev.off()
+
 #-----------------------------------------------
