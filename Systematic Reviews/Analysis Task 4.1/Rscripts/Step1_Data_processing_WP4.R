@@ -85,6 +85,7 @@ GISpath                               <- "Systematic Reviews/Analysis Task 4.1/G
 #-----------------------------------------------
 tab                                   <- readRDS(paste0(outPath, "tab.rds"))
 tab                                   <- as.data.table(tab)
+write.csv(tab, paste0(outPath, "tab.csv"))
 
 ## check if all rows have a SW.ID
 table(is.na(tab$SW.ID))
@@ -264,5 +265,7 @@ length(unique(data$Pressure_variable)) # 380 unique input... Let's skip for now.
 #-----------------------------------------------
 saveRDS(data, file=paste0(outPath, "data.rds"))
 
-
+## Paste back excluded papers and save -> make sure you first uncheck dropping columns in data and removing tab and retained
+data_allScreened <- rbind(data, tab[!SW.ID %in% retained,])
+saveRDS(data_allScreened, file=paste0(outPath, "data_allScreened.rds"))
 

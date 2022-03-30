@@ -33,7 +33,7 @@ GISpath                               <- "Systematic Reviews/Analysis Task 4.1/G
 #  This section depends on the processed data file produced in step 1.
 #-----------------------------------------------
 data                                  <- readRDS(file=paste0(outPath, "data.rds"))
-
+data_allScreened                      <- readRDS(file=paste0(outPath, "data_allScreened.rds"))
 
 ################################################
 #-----------------------------------------------
@@ -920,3 +920,29 @@ dev.off()
 
 
 #-----------------------------------------------
+
+
+#-----------------------------------------------
+## Creating tables reporting on inclusion/exclusion ----
+#-----------------------------------------------
+
+# Check whether papers got assigned multiple exclusion criteria
+data_excl          <- subset(data_allScreened, !is.na(Exclusion.Criteria))
+data_excl$SearchID <- data_excl$Abstract <- NULL #bit easier to view
+
+length(unique(data_excl$SW.ID)) #180 papers excluded
+nrow(data_excl) #with 183 rows, so some have multiple
+no_excl_cri <- aggregate(Exclusion.Criteria ~ SW.ID, data_excl, function(x) length(unique(x))) 
+head(no_excl_cri[order(-no_excl_cri$Exclusion.Criteria),])#SW4_1550 has two
+
+excl_dupl <- data_excl[duplicated(data_excl$SW.ID),] #some duplicates of SW ID
+
+## It also seems people have excluded papers but have filled in some data -> make list and ask people
+data_excl_check <- subset(data_excl, !is.na(Region))
+data_excl_check <- rbind(data_excl_check,subset(data_excl, !is.na(Sampling.Method.used.for.data.collection) & is.na(Region)))
+
+write.xlsx(data_excl_check, file=paste0(outPath, "data_exclusion_check.xlsx"), row.names = FALSE)
+
+
+# Table with number and percentages of papers excluded during data extraction
+tab <- aggregate()
