@@ -23,7 +23,7 @@ library(viridis)
 
 datPath                               <- "Systematic Reviews/Analysis Task 4.1/Data_Extraction_Files/" 
 outPath                               <- "Systematic Reviews/Analysis Task 4.1/Routput/"
-GISpath                               <- "Systematic Reviews/Analysis Task 4.1/GIS"
+GISpath                               <- "Systematic Reviews/Analysis Task 4.1/GIS/"
 
 ################################################
 #-----------------------------------------------
@@ -48,11 +48,11 @@ data                                  <- readRDS(file=paste0(outPath, "data.rds"
 ## Creating shapefile with Regions
 #-----------------------------------------------
 # ## Load ICES regions as downloaded from https://gis.ices.dk/sf/ and mediterranean GSA's from https://www.fao.org/gfcm/data/maps/gsas/en/
-# ICESareas                            <- st_read(dsn=GISpath, layer="ICES_Areas_20160601_cut_dense_3857")
+# ICESareas                            <- st_read(paste0(GISpath, "ICES_Areas_20160601_cut_dense_3857.shp"))
 # ICESareas                            <- st_transform(ICESareas, crs=3035)
-# ICESEcors                            <- st_read(dsn=GISpath, layer="ICES_ecoregions_20171207_erase_ESRI")
+# ICESEcors                            <- st_read(paste0(GISpath, "ICES_ecoregions_20171207_erase_ESRI.shp"))
 # ICESEcors                            <- st_transform(ICESEcors, crs=3035)
-# GSAs                                 <- st_read(dsn=GISpath, layer="GSAs_simplified")
+# GSAs                                 <- st_read(paste0(GISpath, "GSAs_simplified.shp"))
 # GSAs                                 <- st_transform(GSAs, crs=3035)
 # 
 # 
@@ -160,12 +160,12 @@ Regions                               <- Regions[order(NrPaps),,]
 
 tiff(paste0(outPath, "Regions.tiff"), width=1000, height=750, res=100)
 par(mar=c(5, 15, 4, 2))
-b                                     <- barplot(Regions$NrPaps, horiz=TRUE, axes=F, xlim=c(0,180))
+b                                     <- barplot(Regions$NrPaps, horiz=TRUE, axes=F, xlim=c(0,183))
 box()
 axis(2, at=b, labels=Regions$Region, las=1, cex.axis=1.2)
 axis(1, at= seq(0,180, 20), labels=seq(0, 180, 20), cex.axis=1.2)
 title(main="Number of unique papers per study region", cex.main=1.5, font.main=2)
-text(x=125, y=0, paste0("Total number of papers retained: ", length(unique(data$SW.ID))))
+text(x=100, y=0, paste0("Total number of papers retained: ", length(unique(data$SW.ID))), pos=4)
 text(x=Regions$NrPaps + 4, y=b, Regions$NrPaps)
 axis(1, at=90, tick=F, line=2, label="Number of unique (retained) papers", cex.axis=1.3)
 dev.off()
@@ -179,12 +179,12 @@ ResVarCats                            <- ResVarCats[order(NrPaps),,]
 
 tiff(paste0(outPath, "ResVarCats.tiff"), width=1000, height=750, res=100)
 par(mar=c(5, 15, 4, 2))
-b                                     <- barplot(ResVarCats$NrPaps, horiz=TRUE, axes=F, xlim=c(0,245))
+b                                     <- barplot(ResVarCats$NrPaps, horiz=TRUE, axes=F, xlim=c(0,255))
 box()
 axis(2, at=b, labels=ResVarCats$Response.variable_category, las=1, cex.axis=1.2)
 axis(1, at= seq(0,250, 20), labels=seq(0, 250, 20), cex.axis=1.2)
 title(main="Number of unique papers per response variable category", cex.main=1.5, font.main=2)
-text(x=160, y=0, paste0("Total number of papers retained: ", length(unique(data$SW.ID))))
+text(x=140, y=0, paste0("Total number of papers retained: ", length(unique(data$SW.ID))), pos=4)
 text(x=ResVarCats$NrPaps+6, y=b, ResVarCats$NrPaps)
 axis(1, at=125, tick=F, line=2, label="Number of unique (retained) papers", cex.axis=1.3)
 dev.off()
@@ -228,9 +228,10 @@ b                                     <- barplot(RetTask$NrPaps, horiz=TRUE, axe
 box()
 axis(2, at=b, labels=RetTask$Task , las=1, cex.axis=1.2)
 axis(1, at= seq(0,180, 20), labels=seq(0, 180, 20), cex.axis=1.2)
+axis(2, at=max(b)/2, tick=F, line=3, "Work package 4 subquestion", cex.axis=1.5)
 title(main="Number of unique papers per work package 4 subquestion", cex.main=1.5, font.main=2)
 text(x=145, y=0.2, paste0("Total number of papers retained: ", length(unique(data$SW.ID))))
-text(x=RetTask$NrPaps+6, y=b, RetTask$NrPaps)
+text(x=RetTask$NrPaps+4, y=b, RetTask$NrPaps)
 axis(1, at=90, tick=F, line=2, label="Number of unique (retained) papers", cex.axis=1.3)
 dev.off()
 
@@ -388,10 +389,10 @@ plot(r, axes=F,
 segments(x0=0, x1=1, y0=c(0,1), y1=c(0,1))
 abline(v=c(0,1))
 abline(v=c(1/7, 2/7, 3/7, 4/7, 5/7, 6/7), lty=2, col="lightgrey", lwd=0.8)
-segments(x0=0, x1=1, y0=c(1/12, 2/12, 3/12, 4/12, 5/12, 6/12, 7/12, 8/12, 9/12,10/12, 11/12), 
-         y1=c(1/12, 2/12, 3/12, 4/12, 5/12, 6/12, 7/12, 8/12, 9/12,10/12, 11/12), col="lightgrey", lty=2, lwd=0.8)
+segments(x0=0, x1=1, y0=c(1/11, 2/11, 3/11, 4/11, 5/11, 6/11, 7/11, 8/11, 9/11,10/11), 
+         y1=c(1/11, 2/11, 3/11, 4/11, 5/11, 6/11, 7/11, 8/11, 9/11,10/11), col="lightgrey", lty=2, lwd=0.8)
 axis(1, at=seq(1/14, 13/14, length.out=7), labels= c("Catch & bycatch", "Discarding", "Electromagnetic input", "Input of litter", "Noise", "Physical disturbance", "Visual disturbance"), las=3, cex.axis=1.5)
-axis(4, at=seq(0.04166666, 0.9583333, length.out=12), labels= rev(rownames(EcoPressmat)), las=1, pos=1, cex.axis=1.5)
+axis(4, at=seq(1/22, 21/22, length.out=11), labels= rev(rownames(EcoPressmat)), las=1, pos=1, cex.axis=1.5)
 par(fig=c(0,1,0,1), new=TRUE, mar=c(0,1,5,1))
 plot(c(0,1), c(0,1), type="n", axes=F, ann=F)
 title(main="Fishing pressure effects on ecosystem components", cex.main=1.5, font.main=2)
@@ -429,10 +430,10 @@ plot(r, axes=F,
 segments(x0=0, x1=1, y0=c(0,1), y1=c(0,1))
 abline(v=c(0,1))
 abline(v=c(1/4, 2/4, 3/4), lty=2, col="lightgrey", lwd=0.8)
-segments(x0=0, x1=1, y0=c(1/12, 2/12, 3/12, 4/12, 5/12, 6/12, 7/12, 8/12, 9/12,10/12, 11/12), 
-         y1=c(1/12, 2/12, 3/12, 4/12, 5/12, 6/12, 7/12, 8/12, 9/12,10/12, 11/12), col="lightgrey", lty=2, lwd=0.8)
+segments(x0=0, x1=1, y0=c(1/11, 2/11, 3/11, 4/11, 5/11, 6/11, 7/11, 8/11, 9/11,10/11), 
+         y1=c(1/11, 2/11, 3/11, 4/11, 5/11, 6/11, 7/11, 8/11, 9/11,10/11), col="lightgrey", lty=2, lwd=0.8)
 axis(1, at=seq(0.125, 0.875, length.out=4), labels= colnames(EcoFishmat), las=3, cex.axis=1.5)
-axis(4, at=seq(0.04166666, 0.9583333, length.out=12), labels= rev(rownames(EcoFishmat)), las=1, pos=1, cex.axis=1.5)
+axis(4, at=seq(1/22, 21/22, length.out=11), labels= rev(rownames(EcoFishmat)), las=1, pos=1, cex.axis=1.5)
 par(fig=c(0,1,0,1), new=TRUE, mar=c(0,1,5,1))
 plot(c(0,1), c(0,1), type="n", axes=F, ann=F)
 title(main="Fishing type studied per ecosystem components", cex.main=1.5, font.main=2)
@@ -458,12 +459,12 @@ tiff(paste0(outPath, "EcoGears_heatmap.tiff"), width= 1500, height = 500, res = 
 par(mfrow=c(1,6))
 par(mar=c(13, 0, 10, 0))
 plot(raster(matrix(NA, ncol=2, nrow=12)), axes=F, box=F)
-axis(2, tick=F, at=seq(0.04166666, 0.9583333, length.out=12), labels=rev(rownames(EcoFishGM)), las=1, pos=1.2, cex.axis=1.5)
+axis(2, tick=F, at=seq(1/22, 21/22, length.out=11), labels=rev(sort(unique(EcoFishGear$Ecosystem.component_level1))), las=1, pos=1.2, cex.axis=1.5)
 
 for(iType in unique(EcoFishGear$Fishery.type)){
   subdat                             <- EcoFishGear[Fishery.type == iType,,]
   
-  EcoFishGM                          <- matrix(nrow = 12,
+  EcoFishGM                          <- matrix(nrow = 11,
                                                ncol = length(unique(subdat$Gear_level1)))
   colnames(EcoFishGM)                <- sort(unique(subdat$Gear_level1))  
   rownames(EcoFishGM)                <- sort(unique(EcoFishGear$Ecosystem.component_level1))
@@ -480,8 +481,8 @@ for(iType in unique(EcoFishGear$Fishery.type)){
   title(iType, font.main=2, cex.main=2, line=1.5)
   title(paste0("(n = ", sum(subdat$NrPaps), ")"), font.main=3, cex.main=1, line=0.5)
   segments(x0=seq(0, 1, length.out=ncol(EcoFishGM)+1), x1=seq(0, 1, length.out=ncol(EcoFishGM)+1), y0=0, y1=1, lty=2, col="lightgrey", lwd=0.8)
-  segments(x0=0, x1=1, y0=c(1/12, 2/12, 3/12, 4/12, 5/12, 6/12, 7/12, 8/12, 9/12,10/12, 11/12), 
-           y1=c(1/12, 2/12, 3/12, 4/12, 5/12, 6/12, 7/12, 8/12, 9/12,10/12, 11/12), col="lightgrey", lty=2, lwd=0.8)
+  segments(x0=0, x1=1, y0=c(1/11, 2/11, 3/11, 4/11, 5/11, 6/11, 7/11, 8/11, 9/11,10/11), 
+           y1=c(1/11, 2/11, 3/11, 4/11, 5/11, 6/11, 7/11, 8/11, 9/11,10/11), col="lightgrey", lty=2, lwd=0.8)
   segments(x0=0, x1=1, y0=c(0,1), y1=c(0,1))
   segments(x0=c(0,1), x1=c(0,1), y0=0, y1=1)
   axis(1, at=seq((1/ncol(EcoFishGM))/2, 1-((1/ncol(EcoFishGM))/2), length.out=ncol(EcoFishGM)), labels= colnames(EcoFishGM), las=3, cex.axis=1.5, pos=0)
@@ -491,7 +492,7 @@ for(iType in unique(EcoFishGear$Fishery.type)){
 
 par(mar=c(13, 0, 10, 0))
 plot(raster(matrix(NA, ncol=2, nrow=12)), axes=F, box=F)
-axis(4, tick=F, at=seq(0.04166666, 0.9583333, length.out=12), labels=rev(rownames(EcoFishGM)), las=1, pos=-0.1, cex.axis=1.5)
+axis(4, tick=F, at=seq(1/22, 21/22, length.out=11), labels=rev(rownames(EcoFishGM)), las=1, pos=-0.1, cex.axis=1.5)
 
 par(fig=c(0,1,0,1), new=TRUE, mar=c(0,1,5,0))
 plot(c(0,1), c(0,1), type="n", axes=F, ann=F)
@@ -523,13 +524,13 @@ for(iLoc in c("empty", "CS - Mediterranean", "Mediterranean - non CS", "Black Se
               "empty2", "empty3", "empty3", "empty3")){
   
   subdat                             <- RegEcoPress[Region == iLoc,,]
-  EcoPress                           <- matrix(ncol=7, nrow=12)
+  EcoPress                           <- matrix(ncol=7, nrow=11)
   colnames(EcoPress)                 <- sort(unique(RegEcoPress$Pressure.type))
   rownames(EcoPress)                 <- sort(unique(RegEcoPress$Ecosystem.component_level1))
   
   if(iLoc == "empty") {
     plot(raster(matrix(NA, 1, 1)), axes=F, ann=F, legend=F, box=F)
-    axis(2, tick=F, at=seq(0.04166666, 0.9583333, length.out=12), 
+    axis(2, tick=F, at=seq(1/22, 21/22, length.out=11), 
          labels=rev(sort(unique(RegEcoPress$Ecosystem.component_level1))), las=1, pos=1.45, cex.axis=2.3)}
   if(iLoc == "empty2"){
     plot(c(0,1), c(0,1), axes=F, type="n", ann=F)
@@ -553,13 +554,13 @@ for(iLoc in c("empty", "CS - Mediterranean", "Mediterranean - non CS", "Black Se
     
     plot(r, axes=F, legend=F, col=subset(rCols, value %in% values(r))$colcode, box=F)
     segments(x0=c(1/7, 2/7, 3/7, 4/7, 5/7, 6/7), x1=c(1/7, 2/7, 3/7, 4/7, 5/7, 6/7), y0=0, y1=1, lty=2, col="lightgrey", lwd=0.8)
-    segments(x0=0, x1=1, y0=c(1/12, 2/12, 3/12, 4/12, 5/12, 6/12, 7/12, 8/12, 9/12,10/12, 11/12), 
-             y1=c(1/12, 2/12, 3/12, 4/12, 5/12, 6/12, 7/12, 8/12, 9/12,10/12, 11/12), col="lightgrey", lty=2, lwd=0.8)
+    segments(x0=0, x1=1, y0=c(1/11, 2/11, 3/11, 4/11, 5/11, 6/11, 7/11, 8/11, 9/11,10/11), 
+             y1=c(1/11, 2/11, 3/11, 4/11, 5/11, 6/11, 7/11, 8/11, 9/11,10/11), col="lightgrey", lty=2, lwd=0.8)
     segments(x0=0, x1=1, y0=c(0,1), y1=c(0,1))
     segments(x0=c(0,1), x1=c(0,1), y0=0, y1=1)
     title(iLoc, font.main=2, cex.main=2, line=0.5)
     axis(1, at=seq(0.07142857, 0.9285714, length.out=7), labels=rep("", 7), pos=0)
-    axis(2, at=seq(0.04166666, 0.9583333, length.out=12), labels=rep("", 12), pos=0)
+    axis(2, at=seq(1/22, 21/22, length.out=11), labels=rep("", 11), pos=0)
   } # end iLoc if loop
 } # end iLoc for loop
 dev.off()
@@ -601,13 +602,13 @@ YearEco2                             <- matrix(nrow=length(unique(data$Ecosystem
 colnames(YearEco2)                   <- as.character(seq(from=min(data$Year), to= max(data$Year), 1))                                                
 rownames(YearEco2)                   <- sort(unique(data$Ecosystem.component_level1))
 EcoCols                              <- data.frame(Eco = sort(unique(data$Ecosystem.component_level1)),
-                                                   col = turbo(12))
+                                                   col = turbo(11))
 
 for(iRow in c(1:nrow(YearEco))){
   subdat                             <- YearEco[iRow,]
   YearEco2[subdat$Ecosystem.component_level1, as.character(subdat$Year)] <- subdat$NrPaps
 }
-YearEco2[is.na(YearEco2)] <- 0
+YearEco2[is.na(YearEco2)]            <- 0
 
 tiff(paste0(outPath, "YearEco.tiff"), width = 1000, height=750, res=100)
 par(mar=c(5,5,7, 2))
