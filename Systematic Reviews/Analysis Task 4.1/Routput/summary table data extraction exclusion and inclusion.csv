@@ -1,0 +1,17 @@
+Crit;Times;perc
+EXCLUDE on document type;3;1.7
+EXCLUDE on environment;3;1.7
+EXCLUDE on evidence;150;83.8
+EXCLUDE on language;6;3.4
+EXCLUDE on location;4;2.2
+EXCLUDE on study type;12;6.7
+EXCLUDE on target group;1;0.6
+EXCLUSION multiple;0;0
+EXCLUDE unique;179;24.9
+4.2;111;19.3
+4.3;170;29.6
+4.4;167;29
+4.5;27;4.7
+None;100;17.4
+INCLUDE multiple;35;6.1
+INCLUDE unique;540;75

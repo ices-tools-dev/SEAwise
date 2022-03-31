@@ -928,21 +928,66 @@ dev.off()
 
 # Check whether papers got assigned multiple exclusion criteria
 data_excl          <- subset(data_allScreened, !is.na(Exclusion.Criteria))
-data_excl$SearchID <- data_excl$Abstract <- NULL #bit easier to view
 
 length(unique(data_excl$SW.ID)) #180 papers excluded
+excl_ID            <- unique(data_excl$SW.ID)
 nrow(data_excl) #with 183 rows, so some have multiple
-no_excl_cri <- aggregate(Exclusion.Criteria ~ SW.ID, data_excl, function(x) length(unique(x))) 
+no_excl_cri        <- aggregate(Exclusion.Criteria ~ SW.ID, data_excl, function(x) length(unique(x))) 
 head(no_excl_cri[order(-no_excl_cri$Exclusion.Criteria),])#SW4_1550 has two
 
-excl_dupl <- data_excl[duplicated(data_excl$SW.ID),] #some duplicates of SW ID
+## Check duplicates
+excl_dupl          <- data_excl[duplicated(data_excl$SW.ID),] #some duplicates of SW ID
 
 ## It also seems people have excluded papers but have filled in some data -> make list and ask people
 data_excl_check <- subset(data_excl, !is.na(Region))
 data_excl_check <- rbind(data_excl_check,subset(data_excl, !is.na(Sampling.Method.used.for.data.collection) & is.na(Region)))
 
-write.xlsx(data_excl_check, file=paste0(outPath, "data_exclusion_check.xlsx"), row.names = FALSE)
+# write.xlsx(data_excl_check, file=paste0(outPath, "data_exclusion_check.xlsx"), row.names = FALSE)
 
+## Do some manual changes for now
+data_allScreened <- rbind(data_allScreened, data_excl[data_excl$SW.ID %in% "SW4_0703",])
+data_excl        <- subset(data_excl, !SW.ID %in% "SW4_0703")
+
+## Check duplicates again and remove any
+excl_dupl        <- data_excl[duplicated(data_excl$SW.ID),] #some duplicates of SW ID
+data_excl        <- data_excl[!duplicated(data_excl$SW.ID),]
+excl_ID2         <- unique(data_excl$SW.ID)
+length(excl_ID2) #only 179
+
+## Which SW_ID is not there anymore?
+idx              <- which(!excl_ID %in% excl_ID2)
+excl_ID[idx] #correct, SW4_0703 one has been manually included again
 
 # Table with number and percentages of papers excluded during data extraction
-tab <- aggregate()
+tab              <- aggregate(SW.ID ~ Exclusion.Criteria, data_excl, function(x) length(unique(x)))
+names(tab)       <- c("Crit","Times")
+tab$perc         <- tab$Times / sum(tab$Times) * 100
+tab              <- rbind(tab, data.frame(Crit = "EXCLUDE multiple",
+                                          Times = nrow(data_excl)-length(excl_ID2),
+                                          perc = (nrow(data_excl)-length(excl_ID2))/sum(tab$Times) * 100))
+tab              <- rbind(tab, data.frame(Crit = "EXCLUDE unique",
+                                          Times = length(unique(data_excl$SW.ID)),
+                                          perc = length(unique(data_excl$SW.ID)) / length(unique(data_allScreened$SW.ID)) *100))
+
+# To do the same for included papers, split the tasks first
+Tasks             <- tstrsplit(data$WP4.task, split=" _ ")
+Tasks2            <- data.table(SW.ID = rep(data$SW.ID, 3), Task  = c(Tasks[[1]], Tasks[[2]], Tasks[[3]])) 
+Tasks2            <- na.omit(Tasks2)
+
+# Calculate and number and percentages for inclusion
+RetTask           <- Tasks2[, .(NrPaps = length(unique(SW.ID))), by = c("Task")]
+RetTask           <- RetTask[order(Task, decreasing=F),,]
+RetTask$perc      <- RetTask$NrPaps / sum(RetTask$NrPaps) * 100
+names(RetTask)    <- names(tab)
+RetTask           <- rbind(RetTask, data.frame(Crit = "INCLUDE multiple",
+                                          Times = sum(RetTask$Times) - length(unique(data$SW.ID)),
+                                          perc = (sum(RetTask$Times) - length(unique(data$SW.ID)))/sum(RetTask$Times) * 100))
+RetTask           <- rbind(RetTask, data.frame(Crit = "INCLUDE unique",
+                                          Times = length(unique(data$SW.ID)),
+                                          perc = length(unique(data$SW.ID)) / length(unique(data_allScreened$SW.ID)) *100))
+
+# Combine the two tables and save
+tab               <- rbind(tab, RetTask)
+tab$perc          <- round(tab$perc,1)
+
+write.csv(tab, file = paste0(outPath,"summary table data extraction exclusion and inclusion.csv"), row.names = FALSE)
