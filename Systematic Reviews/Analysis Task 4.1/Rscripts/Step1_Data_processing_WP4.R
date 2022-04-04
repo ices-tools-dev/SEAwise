@@ -258,7 +258,7 @@ data$Direction.of.relationship[is.na(data$Direction.of.relationship)] <- "Not sp
 ## Check what species are commonly mentioned
 length(unique(data$Species.taxonomic.group.s.)) # 457 unique input... Let's try to group/categorize these
 
-## Change any / or \ signs within species names.
+## Change any / or other strange signs within species names.
 data[grep("/", data$Species.taxonomic.group.s.),ROWID] # 117  121  836 1322 1441 ## this does not work with backslash
 data$Species.taxonomic.group.s.      <- ifelse(data$ROWID %in% c(117, 121),"Sparus aurata _ Thunnus thynnus _ Scomber scombrus _ Coryphaena hippurus _ Dicentrarchus labrax _ 
                                                Euthynnus alletteratus _ Trachurus trachurus _ Lichia amia _ Pomatomus saltatrix _ Lithognathus mormyrus _ 
@@ -286,119 +286,6 @@ b$ROWID                              <- max(data$ROWID)+1
 data                                 <- data[!ROWID == 1513,,]
 data                                 <- rbindlist(list(data, a, b), use.names=TRUE)
 
-# Make each input a new row in data
-specs                                <- tstrsplit(data$Species.taxonomic.group.s., split="_")
-dat1                                 <- data
-dat1$Species.taxonomic.group.s.      <- specs[[1]] # 391 unique records
-length(unique(dat1$Species.taxonomic.group.s.))
-for(iL in c(2:length(specs))){
-  dat2                               <- data
-  dat2$Species.taxonomic.group.s.    <- specs[[iL]]
-  dat2                               <- dat2[is.na(Species.taxonomic.group.s.)==F,,]
-  dat1                               <- rbind(dat1, dat2)
-  rm(dat2)
-}# end iL loop. # 880 unique records.
-dat1$Species.taxonomic.group.s.      <- str_trim(dat1$Species.taxonomic.group.s., side="both") # 663 unique records
-dat1$Species.taxonomic.group.s.      <- str_to_lower(dat1$Species.taxonomic.group.s.) # 640 unique records
-dat1$Species.taxonomic.group.s.      <- ifelse(dat1$Species.taxonomic.group.s. %in% c("", "unknown"), NA, dat1$Species.taxonomic.group.s.) # 638 unique records
-
-## Prepare to run species over worms-database
-specs                                <- data.table(Spec = unique(dat1$Species.taxonomic.group.s.))
-specs                                <- specs[!is.na(Spec)==T,,]
-specs$group                          <- c(rep(c(1:25), each=25), rep(26, times=(nrow(specs)-625)))
-
-specs2                               <- wormsbynames(subset(specs, group == 1)$Spec)
-for(i in c(2:26)){ 
-  print(i)
-  specs3                             <- wormsbynames(subset(specs, group == i)$Spec)
-  specs2                             <- rbind(specs2, specs3)
-  rm(specs3)
-}
-specs$valid_name                     <- specs2$valid_name
-specs$family                         <- specs2$family
-specs$order                          <- specs2$order
-specs$class                          <- specs2$class
-specs$rank                           <- specs2$rank
-specs$valid_AphiaID                  <- specs2$valid_AphiaID
-
-## Write non-matches to excel for easy manual correction and later worms check
-nospecs                              <- data.table(Spec = unique(subset(specs, is.na(valid_name) == T)$Spec))
-#write.table(nospecs, file=paste0(outPath, "nospecs.csv"), col.names=TRUE, row.names=FALSE)
-nospecs                              <- read.table(paste0(outPath, "nospecs.csv"), header=T, sep=";")
-nospecs                              <- data.table(nospecs)
-nospecs$Taxon                        <- str_to_lower(nospecs$Taxon)
-nospecs$Taxon                        <- str_trim(nospecs$Taxon, side="both")
-
-nospecs2                             <- nospecs[!Taxon %in% c("benthos", "habitat", "fish", "unknown", "benthos_epifauna",
-                                                              "pelagic fish", "benthic fish", "community", "plankton",
-                                                              "benthic community", "benthos_infauna", "mergini",
-                                                              "gulosus aristotelis", "algae", "fulica atra", "rhodolith",
-                                                              "ichthyaetus audouinii", "larus marinus",
-                                                              "alcidae"),,]
-nospecs2$group                       <- c(rep(1:14, each=10) , rep(15, nrow(nospecs2)-140))
-nospecs3                             <- wormsbymatchnames(subset(nospecs2, group==1)$Taxon)
-for(iGr in 2:15){
-  print(iGr)
-  nospecs4                           <- wormsbymatchnames(subset(nospecs2, group==iGr)$Taxon)
-  nospecs3                           <- rbind(nospecs3, nospecs4)
-  rm(nospecs4)
-}
-nospecs2$valid_name                  <- nospecs3$valid_name
-nospecs2$family                      <- nospecs3$family
-nospecs2$order                       <- nospecs3$order
-nospecs2$class                       <- nospecs3$class
-nospecs2$rank                        <- nospecs3$rank
-nospecs2$valid_AphiaID               <- nospecs3$valid_AphiaID
-nospecs2$Taxon                       <- NULL
-
-species                              <- rbind(specs, nospecs2)
-stillnospecs                         <- nospecs[Taxon %in% c("benthos", "habitat", "fish", "unknown", "benthos_epifauna",
-                                                             "pelagic fish", "benthic fish", "community", "plankton",
-                                                             "benthic community", "benthos_infauna", "mergini",
-                                                             "gulosus aristotelis", "algae", "fulica atra", "rhodolith",
-                                                             "ichthyaetus audouinii", "larus marinus",
-                                                             "alcidae"),,]                             
-rm(nospecs2, nospecs3, specs2, specs, nospecs)
-
-## Create taxonomic data for the birds and remaining 
-specinfocreated                      <- data.table(Taxon = c("benthos", "habitat", "fish", "unknown", "benthos_epifauna",
-                                                             "pelagic fish", "benthic fish", "community", "plankton",
-                                                             "benthic community", "benthos_infauna", "mergini",
-                                                             "gulosus aristotelis", "algae", "fulica atra", "rhodolith",
-                                                             "ichthyaetus audouinii", "larus marinus", "alcidae"),
-                                                   valid_name = c("Benthos", "Habitat", "Fish", "Unknown", "Benthos_epifauna",
-                                                                  "Fish_pelagic", "Fish_benthic", "Unknown", "Plankton",
-                                                                  "Benthic community", "Benthos_infauna", "Anatidae",
-                                                                  "Gulosus aristotelis", "Algae", "Fulica atra", "Rhodoliths",
-                                                                  "Ichthyaetus audouinii", "Larus marinus", "Alcidae"),
-                                                   family = c("Benthos", "Habitat", "Fish", "Unknown", "Benthos",
-                                                              "Fish", "Fish", "Unknown", "Plankton",
-                                                              "Benthic community", "Benthos", "Anatidae",
-                                                              "Phalacrocoracidae", "Algae", "Rallidae", "Algae",
-                                                              "Laridae", "Laridae","Alcidae"),
-                                                   order = c("Benthos", "Habitat", "Fish", "Unknown", "Benthos",
-                                                             "Fish", "Fish", "Unknown", "Plankton",
-                                                             "Benthic community", "Benthos", "Anseriformes",
-                                                             "Suliformes", "Algae", "Gruiformes", "Algae",
-                                                             "Charadriiformes", "Charadriiformes", "Charadriiformes"),
-                                                   class = c("Benthos", "Habitat", "Fish", "Unknown", "Benthos",
-                                                             "Fish", "Fish", "Unknown", "Plankton",
-                                                             "Benthic community", "Benthos", "Aves", 
-                                                             "Aves", "Algae", "Aves", "Algae",
-                                                             "Aves", "Aves", "Aves"),
-                                                   rank = c(rep(NA, 11), "Subfamily", "Species", NA, "Species", NA,
-                                                            "Species", "Species", "Family"),
-                                                   valid_AphiaID = c(rep(NA, 19)))
-stillnospecs                         <- merge(stillnospecs, specinfocreated, by="Taxon", all=T)
-stillnospecs$Taxon                   <- NULL
-species$group                        <- NULL
-species                              <- rbind(species, stillnospecs)       
-species$Species.taxonomic.group.s.   <- species$Spec
-species$Spec                         <- NULL
-species$class                        <- ifelse(species$order == "Testudines", "Reptilia", species$class)
-dat1                                 <- merge(dat1, species, by="Species.taxonomic.group.s.", all=TRUE)                                                   
-dat1$class                           <- ifelse(is.na(dat1$class)==T, "not specified", dat1$class)
-
 
 ## Check what pressure variables are commonly mentioned
 length(unique(data$Pressure_variable)) # 390 unique input... Let's skip for now.
@@ -412,7 +299,6 @@ length(unique(data$Pressure_variable)) # 390 unique input... Let's skip for now.
 # Save the processed data file
 #-----------------------------------------------
 saveRDS(data, file=paste0(outPath, "data.rds"))
-saveRDS(dat1, file=paste0(outPath, "dat1.rds"))
 
 ## Paste back excluded papers and save -> make sure you first uncheck dropping columns in data and removing tab and retained
 data_allScreened                     <- rbind(data, tab[!SW.ID %in% retained,])
