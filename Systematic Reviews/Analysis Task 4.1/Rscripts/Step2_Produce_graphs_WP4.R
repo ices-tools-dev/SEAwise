@@ -208,6 +208,38 @@ text(x=EcoComp$NrPaps+6, y=b, EcoComp$NrPaps)
 axis(1, at=110, tick=F, line=2, label="Number of unique (retained) papers", cex.axis=1.3)
 dev.off()
 
+
+#-----------------------------------------------
+## Barplot for ecosystem component (level 1) by Case Study region
+#-----------------------------------------------
+
+EcoComp                               <- data[, .(NrPaps = length(unique(SW.ID))),
+                                              by = c("Region","Ecosystem.component_level1")]
+EcoComp                               <- EcoComp[order(NrPaps),,]
+
+EcoComp$CS                            <- with(EcoComp, ifelse(Region %in% c("CS - North Sea",
+                                                                            "CS - Baltic Sea",
+                                                                            "CS - Western Waters",
+                                                                            "CS - Mediterranean"),"CS","non CS"))
+EcoComp$Area                          <- with(EcoComp, ifelse(Region %in% c("CS - North Sea","North Sea - non CS"),"North Sea",
+                                                             ifelse(Region %in% c("CS - Baltic Sea","Baltic Sea - non CS"),"Baltic Sea",
+                                                                    ifelse(Region %in% c("CS - Western Waters","Western Waters - non CS"),"Western Waters",
+                                                                           ifelse(Region %in% c("CS - Mediterranean", "Mediterranean - non CS"),"Mediterranean Sea", "Other")))))
+EcoComp$Area                          <- factor(EcoComp$Area, levels = c("Mediterranean Sea","Western Waters","North Sea","Baltic Sea","Other"))
+
+p <- ggplot(EcoComp, aes(NrPaps, Ecosystem.component_level1, fill=CS)) +
+  geom_bar(stat="identity") +
+  scale_y_discrete(limits=rev) +
+  scale_fill_manual(values = viridis(3)) +
+  labs(x="Number of unique retained papers", y="Ecosystem component") +
+  theme_bw() +
+  # guides(x = guide_axis(angle = 90)) +
+  theme(legend.title = element_blank(),
+        panel.grid = element_blank()) +
+  facet_wrap(~Area, scales = "free_x")
+print(p)
+ggsave("EcoRegion.tiff", p, path=outPath)
+
 #-----------------------------------------------
 ## Barplot for WP4 task
 #-----------------------------------------------
