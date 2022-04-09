@@ -15,6 +15,7 @@ rm(list = ls())
 # Load libraries and set Paths.
 #-----------------------------------------------
 library(xlsx) 
+library(openxlsx)
 library(data.table)
 library(RColorBrewer)
 library(raster)
@@ -40,11 +41,11 @@ GISpath                               <- "Systematic Reviews/Analysis Task 4.1/G
 #  Note: I manually switched rows 1 and 2 in the Binch-file, otherwise the file is not read correctly.
 #  Note: I manually removed the ".xlsx" from the filename for Potier.
 #  Note: I manually restored some of the column-names in the file for Thorpe.
+#  Note: I manually removed the extra text in the file name for Dinesen.
 #-----------------------------------------------
 # readers                                <- c("Altuna-Etxabe", "Anastasopoulou", "Astarloa", "Basurko", "Binch", "Bluemel", "Brown",
-#                                             "Carbonara", "Festjens", "garcia", "Girardin", "Halouani", "Lefkaditou_Chatzispyrou", "MacMillan", "Papadopoulou", "Potier",
+#                                             "Carbonara", "Dinesen", "Festjens", "garcia", "Girardin", "Halouani", "Lefkaditou_Chatzispyrou", "MacMillan", "Papadopoulou", "Potier",
 #                                             "Romagnoni", "Seghers", "Smith", "Spedicato", "Thorpe", "Thuenen","Tsagarakis", "Uhlmann_Reid", "VanHoey", "vdReijden")
-# #Missing: Dinesen.
 # 
 # ## Create a table from the first reader
 # people                                 <- readers[1]
@@ -61,6 +62,32 @@ GISpath                               <- "Systematic Reviews/Analysis Task 4.1/G
 #   tab2                                 <- subset(tab2, !is.na(tab2$SW.ID)==T) # remove empty rows
 #   tab                                  <- rbind(tab,tab2)
 # } # end people-loop
+# 
+# ## In case package 'xlsx' doesn't work: same but with another package
+# if(!"xlsx" %in% .packages()){
+#   ## Create a table from the first reader
+#   people                                 <- readers[1]
+#   tab                                    <- read.xlsx(xlsxFile = paste0(datPath, "DataExtractionForm_WP4_", people,".xlsx"), startRow = 2, colNames = TRUE, sheet = 1)
+#   colnames(tab)
+#   tab$Reader                             <- people
+#   
+#   ## Add all other readers
+#   for(people in readers[2:length(readers)]) {
+#     print(people)
+#     tab1                                 <- read.xlsx(xlsxFile = paste0(datPath, "DataExtractionForm_WP4_", people,".xlsx"), startRow = 2, colNames = TRUE, sheet = 1)
+#     tab1$Reader                          <- people
+#     tab2                                 <- tab1[,colnames(tab1) %in% colnames(tab)] # remove empty / additional columns
+#     tab2                                 <- subset(tab2, !is.na(tab2$SW.ID)==T) # remove empty rows
+#     tab                                  <- rbind(tab,tab2)
+#   } # end people-loop
+#   
+#   ## Correct some column names so they are the same as if read with 'xlsx' package
+#   names(tab)
+#   names(tab)[c(20:23)]                   <- c("Scale...Spatial..m.","Scale...Temporal","Resolution...Spatial..m.","Resolution...Temporal")
+#   names(tab)[c(27:29)]                   <- c("Quality...Spatial..relative.1.3.","Quality...Temporal","Quality...Methods")
+#   names(tab)[38]                         <- "Species.taxonomic.group.s."
+#   
+# }
 # 
 # # Save as rds-file
 # saveRDS(tab, paste0(outPath, "tab.rds"))
@@ -99,17 +126,17 @@ table(tab$Exclusion.Criteria)
 tab$Exclusion.Criteria                <- ifelse(tab$Reader == "Thorpe" & tab$Exclusion.Criteria %in% c("4.4", "4.3", "4.3 _ 4.4", "None"), NA, 
                                                 ifelse(tab$Exclusion.Criteria == "Evidence", "EXCLUDE on evidence", tab$Exclusion.Criteria))
 
-## how many papers treated : 721 papers (out of XXX?)
+## how many papers treated : 731 papers (out of 731)
 length(unique(tab$SW.ID))
 
 ## Check who did how many papers
 contributors                          <- tab[,.(Papers_read = length(unique(SW.ID))), by="Reader"]
 
-## how many papers retained : 541 papers
+## how many papers retained : 550 papers
 retained                              <- unique(subset(tab, is.na(Exclusion.Criteria)==TRUE)$SW.ID)
 length(retained)
 
-## how many rejected : 180 papers
+## how many rejected : 181 papers
 excluded                              <- unique(subset(tab, !is.na(Exclusion.Criteria) == TRUE)$SW.ID)
 length(excluded)
 
@@ -145,12 +172,12 @@ tobechecked                           <- data[is.na(Region)==T,,]
 data                                  <- data[is.na(Region)==F,,]
 
 ## Check the spatial scale and resolution, and correct for input mistakes
-table(is.na(data$Scale...Spatial..m.)) # There are 14 NAs
+table(is.na(data$Scale...Spatial..m.)) # There are 16 NAs
 table(data$Scale...Spatial..m.)
 data$Scale...Spatial..m.              <- ifelse(data$Scale...Spatial..m. %in% c("50,000-100,001",  "50,000-100,002",  "50,000-100,003"), "50,000-100,000",
                                                 ifelse(data$Scale...Spatial..m. == "100-501", "100-500", 
                                                        ifelse(data$Scale...Spatial..m. == "50-101", "50-100", data$Scale...Spatial..m.)))
-table(is.na(data$Resolution...Spatial..m.)) # There are 80 NAs
+table(is.na(data$Resolution...Spatial..m.)) # There are 82 NAs
 table(data$Resolution...Spatial..m.)
 data$Resolution...Spatial..m.         <- ifelse(data$Resolution...Spatial..m. %in% c("50,000-100,001",  "50,000-100,002",  "50,000-100,003"), "50,000-100,000",
                                                 ifelse(data$Resolution...Spatial..m. == "50-101", "50-100", 
@@ -160,11 +187,11 @@ data$Resolution...Spatial..m.         <- ifelse(data$Resolution...Spatial..m. %i
 ## Check the temporal scale and resolution (all fine)
 table(data$Scale...Temporal)
 table(data$Resolution...Temporal)
-table(is.na(data$Scale...Temporal)) # There are 13 NAs
+table(is.na(data$Scale...Temporal)) # There are 15 NAs
 table(is.na(data$Resolution...Temporal)) # There are 43 NAs
 
 ## Check the Response variable category
-table(is.na(data$Response.variable_category)) # There are 9 NA's. 
+table(is.na(data$Response.variable_category)) # There are 8 NA's. 
 ## 2 are described as "spatial distribution changes", which are classified to Abundance/biomass/density. The remaining NAs are classified as Other.
 data$Response.variable_category       <- ifelse(data$Response.variable_paper == "spatial distribution changes" & data$SW.ID == "SW4_1094", "Abundance/biomass/density", data$Response.variable_category)
 data$Response.variable_category[is.na(data$Response.variable_category)==TRUE] <- "Other"
@@ -177,15 +204,12 @@ data$Response.variable_category       <- ifelse(data$Response.variable_category 
 
 ## Check the Pressure types (level 1)
 table(is.na(data$Pressure.type)) ## 2 NAs 
-# Check SW4_1285 --> incomplete info, remove this row for now (paper has 2 more rows with complete info)
-tobechecked                           <- rbind(tobechecked, data[(SW.ID == "SW4_1285" & is.na(Pressure.type)==TRUE)])
-data                                  <- data[!(data$SW.ID == "SW4_1285" & is.na(data$Pressure.type) == TRUE),]
-# Check SW4_1478 --> set to "Discarding", as that is what is affecting the birds.
-data$Pressure.type                    <- ifelse(data$SW.ID == "SW4_1478" & is.na(data$Pressure.type) == T, "Discarding", data$Pressure.type)
-table(data$Pressure.type)
+# Check SW4_1065 --> incomplete info, have asked Dinesen what to fill in here
+tobechecked                           <- rbind(tobechecked, data[(SW.ID == "SW4_1065" & is.na(Pressure.type)==TRUE)])
+data                                  <- data[!(data$SW.ID == "SW4_1065" & is.na(data$Pressure.type) == TRUE),]
 
 ## Check the Pressure types (level 2)
-table(is.na(subset(data, Pressure.type == "Catch_and_bycatch")$Pressure_level)) # There are 114 NAs (for rows where non-NA was expected). These are set to "non specified".
+table(is.na(subset(data, Pressure.type == "Catch_and_bycatch")$Pressure_level)) # There are 116 NAs (for rows where non-NA was expected). These are set to "non specified".
 
 table(data$Pressure_level)
 data$Pressure_level                  <- ifelse(data$Pressure_level == "target", "Target", data$Pressure_level)
@@ -228,7 +252,7 @@ data                                 <- rbindlist(list(data, a, b), use.names=TR
 
 ## Check Fishery types and Gear_level1
 table(is.na(data$Fishery.type)) # all fine
-table(is.na(data$Gear_level1))  # 195 NAs
+table(is.na(data$Gear_level1))  # 194 NAs
 table(data$Fishery.type)
 data$Fishery.type                    <- ifelse(data$Fishery.type %in% c("commercial", "Artisanal"), "Commercial", 
                                                ifelse(data$SW.ID == "SW4_1000", "Commercial", data$Fishery.type))
@@ -241,12 +265,13 @@ data$Gear_level1                     <- ifelse(data$Gear_level1 == "Demersal_tra
 table(is.na(data$WP4.task)) # 1 NA
 table(data$WP4.task)
 data$WP4.task                        <- ifelse(data$WP4.task == "none", "None", 
-                                               ifelse(data$WP4.task == "4.3_4.4", "4.3 _ 4.4", data$WP4.task))
+                                               ifelse(data$WP4.task == "4.3_4.4", "4.3 _ 4.4",
+                                                      ifelse(data$WP4.task == "4.4000000000000004", "4.4", data$WP4.task)))
 ## Look up some strange/missing tasks in the data extraction template
-b                                    <- data[WP4.task %in% c("4.1", "Mediterranean - non CS", "4.6", "4.7", NA)]
+b                                    <- data[WP4.task %in% c("4.1", "4.6", "4.7", NA)]
 unique(b$SW.ID) # "SW4_1991" (4.2), "SW4_1090" (NONE), "SW4_1216" (4.4), "SW_0154" (NONE)
 data$WP4.task                        <- ifelse(data$SW.ID == "SW4_1991", "4.2",
-                                               ifelse(data$SW.ID %in% c("SW4_1090", "SW4_0154"), "None",
+                                               ifelse(data$SW.ID %in% "SW4_0154", "None",
                                                       ifelse(data$SW.ID == "SW4_1216", "4.4", data$WP4.task)))
 
 ## Check what relationships have been reported
@@ -256,26 +281,26 @@ data$Direction.of.relationship       <- ifelse(data$Direction.of.relationship ==
 data$Direction.of.relationship[is.na(data$Direction.of.relationship)] <- "Not specified"
 
 ## Check what species are commonly mentioned
-length(unique(data$Species.taxonomic.group.s.)) # 457 unique input... Let's try to group/categorize these
+length(unique(data$Species.taxonomic.group.s.)) # 460 unique input... Let's try to group/categorize these
 
 ## Change any / or other strange signs within species names.
-data[grep("/", data$Species.taxonomic.group.s.),ROWID] # 117  121  836 1322 1441 ## this does not work with backslash
-data$Species.taxonomic.group.s.      <- ifelse(data$ROWID %in% c(117, 121),"Sparus aurata _ Thunnus thynnus _ Scomber scombrus _ Coryphaena hippurus _ Dicentrarchus labrax _ 
+data[grep("/", data$Species.taxonomic.group.s.),ROWID] # 112  116  860 1346 1465 ## this does not work with backslash
+data$Species.taxonomic.group.s.      <- ifelse(data$ROWID %in% c(112, 116),"Sparus aurata _ Thunnus thynnus _ Scomber scombrus _ Coryphaena hippurus _ Dicentrarchus labrax _ 
                                                Euthynnus alletteratus _ Trachurus trachurus _ Lichia amia _ Pomatomus saltatrix _ Lithognathus mormyrus _ 
                                                Anguilla anguilla _ Boops boops _ Diplodus sargus sargus _ Sarda sarda _ Pagellus erythrinus _ Merluccius merluccius _ 
                                                Scomber colias _ Mugil spp. _ Merlangius merlangus _ Spicara maena _ Chelidonichthys lucerna _ Oblada melanura _ 
                                                Platichthys flesus _ Ombrina cirrosa _ Scophthalmus rhombus _ Scophthalmus maximus",
-                                               ifelse(data$ROWID == 836, "Mollusca _ Asteroidea _ Ophiuroidea _ Echinoidea _ Holoturoidea _ Nemertea _ Sipunculida _ Decapoda _ Annelida",
-                                                      ifelse(data$ROWID == 1322, "Carnivore and scavenge feeding benthos",
-                                                             ifelse(data$ROWID == 1441, "predating and scavenging species", 
-                                                                    ifelse(data$ROWID == 1413, "Larus audouinii _ Larus cachinnans",  data$Species.taxonomic.group.s.)))))
+                                               ifelse(data$ROWID == 860, "Mollusca _ Asteroidea _ Ophiuroidea _ Echinoidea _ Holoturoidea _ Nemertea _ Sipunculida _ Decapoda _ Annelida",
+                                                      ifelse(data$ROWID == 1346, "Carnivore and scavenge feeding benthos",
+                                                             ifelse(data$ROWID == 1465, "predating and scavenging species", 
+                                                                    ifelse(data$ROWID == 1437, "Larus audouinii _ Larus cachinnans",  data$Species.taxonomic.group.s.)))))
 ## fix some rows with double input
 a                                    <- data[Species.taxonomic.group.s. == "other fish (9) and mollusca (2)",,]
 a$Species.taxonomic.group.s.         <- "Fish"
 b                                    <- a
 b$Species.taxonomic.group.s.         <- "Mollusca"
 b$ROWID                              <- max(data$ROWID)+1
-data                                 <- data[!ROWID == 1509,,]
+data                                 <- data[!ROWID == 1533,,]
 data                                 <- rbindlist(list(data, a, b), use.names=TRUE)
 rm(a, b)
 a                                    <- data[Species.taxonomic.group.s. == "asteroids and lamp shells",,]
@@ -283,12 +308,12 @@ a$Species.taxonomic.group.s.         <- "Asteroidea"
 b                                    <- a
 b$Species.taxonomic.group.s.         <- "Brachiopoda"
 b$ROWID                              <- max(data$ROWID)+1
-data                                 <- data[!ROWID == 1513,,]
+data                                 <- data[!ROWID == 1537,,]
 data                                 <- rbindlist(list(data, a, b), use.names=TRUE)
 
 
 ## Check what pressure variables are commonly mentioned
-length(unique(data$Pressure_variable)) # 390 unique input... Let's skip for now.
+length(unique(data$Pressure_variable)) # 403 unique input... Let's skip for now.
 
 
 #-----------------------------------------------
