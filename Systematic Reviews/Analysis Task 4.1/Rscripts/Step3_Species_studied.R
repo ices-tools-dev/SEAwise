@@ -38,7 +38,7 @@ data                                  <- readRDS(data, file=paste0(outPath, "dat
 #-----------------------------------------------
 specs                                <- tstrsplit(data$Species.taxonomic.group.s., split="_")
 dat1                                 <- data
-dat1$Species.taxonomic.group.s.      <- specs[[1]] # 391 unique records
+dat1$Species.taxonomic.group.s.      <- specs[[1]] # 396 unique records
 length(unique(dat1$Species.taxonomic.group.s.))
 for(iL in c(2:length(specs))){
   dat2                               <- data
@@ -59,9 +59,20 @@ specs                                <- specs[!is.na(Spec)==T,,]
 specs$group                          <- c(rep(c(1:25), each=25), rep(26, times=(nrow(specs)-625)))
 
 specs2                               <- wormsbynames(subset(specs, group == 1)$Spec)
-for(i in c(2:26)){ 
+for(i in c(2:10,12:26)){ 
   print(i)
   specs3                             <- wormsbynames(subset(specs, group == i)$Spec)
+  specs2                             <- rbind(specs2, specs3)
+}
+## Separate for group 11: error for "molluscs" and bird species, so add those as NAs (bird species already in there)
+for(i in c(11)){ 
+  print(i)
+  specs4                             <- subset(specs, group == i)
+  specs4                             <- specs4[nrow(specs4):1,]
+  specs4$Spec[1]                     <- "larus audouinii" 
+  specs3                             <- wormsbynames(specs4$Spec[c(1:23)])
+  specs3                             <- rbind(specs3, rep(NA, ncol(specs3)))
+  specs3                             <- rbind(specs3, rep(NA, ncol(specs3)))
   specs2                             <- rbind(specs2, specs3)
   rm(specs3)
 }

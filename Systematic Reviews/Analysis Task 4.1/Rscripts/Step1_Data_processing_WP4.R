@@ -70,7 +70,7 @@ GISpath                               <- "Systematic Reviews/Analysis Task 4.1/G
 #   tab                                    <- read.xlsx(xlsxFile = paste0(datPath, "DataExtractionForm_WP4_", people,".xlsx"), startRow = 2, colNames = TRUE, sheet = 1)
 #   colnames(tab)
 #   tab$Reader                             <- people
-#   
+# 
 #   ## Add all other readers
 #   for(people in readers[2:length(readers)]) {
 #     print(people)
@@ -80,13 +80,13 @@ GISpath                               <- "Systematic Reviews/Analysis Task 4.1/G
 #     tab2                                 <- subset(tab2, !is.na(tab2$SW.ID)==T) # remove empty rows
 #     tab                                  <- rbind(tab,tab2)
 #   } # end people-loop
-#   
+# 
 #   ## Correct some column names so they are the same as if read with 'xlsx' package
 #   names(tab)
 #   names(tab)[c(20:23)]                   <- c("Scale...Spatial..m.","Scale...Temporal","Resolution...Spatial..m.","Resolution...Temporal")
 #   names(tab)[c(27:29)]                   <- c("Quality...Spatial..relative.1.3.","Quality...Temporal","Quality...Methods")
 #   names(tab)[38]                         <- "Species.taxonomic.group.s."
-#   
+# 
 # }
 # 
 # # Save as rds-file
