@@ -22,6 +22,7 @@ rm(list = ls())
 library(viridis)
 library(ggplot2)
 library(splitstackshape)
+library(patchwork)
 
 outPath                               <- "Systematic Reviews/Analysis Task 4.1/Routput/"
 
@@ -252,4 +253,217 @@ axis(1, at=b, colnames(ResVar2), las=3)
 axis(2, at=90, "Number of papers retained", cex.axis=1.5, tick=F, line=1.5)
 legend(x=9, y=70, cex=1.2, fill=viridis(8), legend=Ecoorder$EcoComp)
 dev.off()
+
+
+
+#####################################################################################################################-
+#####################################################################################################################-
+#-----------------------------------------------#
+# Task 4.3 Benthic habitats ----
+#-----------------------------------------------#
+
+#-----------------------------------------------#
+# Subset data to WP task 4.3
+#-----------------------------------------------#
+
+# First select all rows labelled with task 4.2
+Task43                               <- subset(Tasks, WP4.task %in% "4.3")
+
+
+length(unique(Task43$SW.ID)) #170 papers
+
+# Check under which Ecosystem components Type they fall
+table(Task43$Ecosystem.component_level1) #mostly benthos, also some physical habitats
+
+# Check whether there are papers not labelled as 4.3 that involve Physical disturbance?
+TaskOther                             <- subset(Tasks, !WP4.task %in% "4.3" & 
+                                                  Pressure.type %in% "Physical disturbance of the seabed")
+
+table(TaskOther$WP4.task) #quite some other papers looking at physical disturbance
+table(TaskOther$Ecosystem.component_level1, TaskOther$WP4.task) 
+# Benthos looked at in food web (4.4) papers, and other tasks.
+# Bit of fish in other papers as well. 
+# Cephalopods papers seems also related to benthic disturbance (though not always super clear).
+# Seabird paper does not seem to be benthic related, so do not include this one.
+# Plants seem seabed related, so keep.
+
+# Add papers with Pressure type 'Physical disturbance' for all ecosystem components except Seabirds 
+# to 4.3 task data
+Task43                                <- rbind(Task43, TaskOther[!TaskOther$Ecosystem.component_level1 %in% "Seabirds",])
+
+
+#-----------------------------------------------#
+# Heatmap of benthic components and pressure for Task 4.3
+#-----------------------------------------------#
+
+EcoPress                             <- Task43[, .(NrPaps = length(unique(SW.ID))),
+                                             by = c("Ecosystem.component_level1", "Pressure.type")]
+EcoPressmat                          <- matrix(nrow = length(unique(Task43$Ecosystem.component_level1)),
+                                               ncol = length(unique(Task43$Pressure.type)))
+colnames(EcoPressmat)                <- sort(unique(Task43$Pressure.type))  
+rownames(EcoPressmat)                <- sort(unique(Task43$Ecosystem.component_level1))
+
+for(iRow in c(1:nrow(EcoPress))){
+  subdat                             <- EcoPress[iRow,]
+  EcoPressmat[subdat$Ecosystem.component_level1, subdat$Pressure.type] <- subdat$NrPaps
+}
+r                                    <- raster(EcoPressmat)
+
+rCols                                <- viridis(n=max(EcoPressmat, na.rm=T))   
+
+
+tiff(paste0(outPath, "Task 4.3_EcoPress_heatmap.tiff"), width= 1000, height = 1000, res = 100)
+par(mar=c(19, 1, 5, 7))
+plot(r, axes=F, col=rCols, legend=F, box=F)
+segments(x0=0, x1=1, y0=c(0,1), y1=c(0,1))
+abline(v=c(0,1))
+abline(v=c(1/5, 2/5, 3/5, 4/5), lty=2, col="lightgrey", lwd=0.8)
+segments(x0=0, x1=1, y0=c(1/9, 2/9, 3/9, 4/9, 5/9, 6/9, 7/9, 8/9), 
+         y1=c(1/9, 2/9, 3/9, 4/9, 5/9, 6/9, 7/9, 8/9), col="lightgrey", lty=2, lwd=0.8)
+axis(1, at=seq(1/9, 8/9, length.out=5), labels= c("Catch & bycatch", "Discarding", "Electromagnetic input", "Input of litter", "Physical disturbance"), las=3, cex.axis=1.5)
+axis(4, at=seq(1/22, 21/22, length.out=9), labels= rev(rownames(EcoPressmat)), las=1, pos=1, cex.axis=1.5)
+par(fig=c(0,1,0,1), new=TRUE, mar=c(0,1,5,1))
+plot(c(0,1), c(0,1), type="n", axes=F, ann=F)
+title(main="Task 4.3 fishing pressures on benthic habitats", cex.main=1.5, font.main=2)
+gradient.rect(xleft=0.85, xright=0.95, ybottom=0, ytop=0.3, col=rev(rCols), gradient="y")
+text("Number of \n papers retained", x=0.9, y=0.35, font=4, cex=1.3)
+text("1", x=0.97, y=0.3, font=3)
+text("140", x=0.97, y=0, font=3)
+text("70", x=0.97, y=0.15, font=3)
+dev.off()
+
+
+#-----------------------------------------------#
+# Barplot for ecosystem component (level 1) by Case Study region for Task 4.3
+#-----------------------------------------------#
+
+EcoComp                               <- Task43[, .(NrPaps = length(unique(SW.ID))),
+                                                by = c("Region","Ecosystem.component_level1")]
+EcoComp                               <- EcoComp[order(NrPaps),,]
+
+EcoComp$CS                            <- with(EcoComp, ifelse(Region %in% c("CS - North Sea",
+                                                                            "CS - Baltic Sea",
+                                                                            "CS - Western Waters",
+                                                                            "CS - Mediterranean"),"CS","non CS"))
+EcoComp$Area                          <- with(EcoComp, ifelse(Region %in% c("CS - North Sea","North Sea - non CS"),"North Sea",
+                                                              ifelse(Region %in% c("CS - Baltic Sea","Baltic Sea - non CS"),"Baltic Sea",
+                                                                     ifelse(Region %in% c("CS - Western Waters","Western Waters - non CS"),"Western Waters",
+                                                                            ifelse(Region %in% c("CS - Mediterranean", "Mediterranean - non CS"),"Mediterranean Sea", "Other")))))
+EcoComp$Area                          <- factor(EcoComp$Area, levels = c("Mediterranean Sea","Western Waters","North Sea","Baltic Sea","Other"))
+
+p <- ggplot(EcoComp, aes(NrPaps, Ecosystem.component_level1, fill=CS)) +
+  geom_bar(stat="identity") +
+  scale_x_continuous(n.breaks = 10) +
+  scale_y_discrete(limits=rev) +
+  scale_fill_manual(values = viridis(3)) +
+  labs(x="Number of unique retained papers", y="Ecosystem component") +
+  theme_bw() +
+  # guides(x = guide_axis(angle = 90)) +
+  theme(legend.title = element_blank(),
+        legend.position = "top") +
+  facet_wrap(~Area)
+print(p)
+ggsave("Task 4.3_EcoRegion.tiff", p, path=outPath)
+
+
+#-----------------------------------------------#
+# Barplots further split out by ecosystem components
+#-----------------------------------------------#
+
+## Ecosystem level 2 for benthos, physical habitats and plants
+EcoComp                               <- Task43[Task43$Ecosystem.component_level1 %in% c("Benthos","Physical_habitats","Plants","Fish_teleost")]
+EcoComp$Ecosystem.component_level2    <- with(EcoComp, ifelse(is.na(Ecosystem.component_level2) &
+                                                                Ecosystem.component_level1 %in% "Physical_habitats",
+                                                              "Unknown", Ecosystem.component_level2))
+EcoComp                               <- EcoComp[, .(NrPaps = length(unique(SW.ID))),
+                                                by = c("Ecosystem.component_level1","Ecosystem.component_level2",
+                                                        "Ecosystem.component_level3")]
+EcoComp$Ecosystem.component_level2    <- with(EcoComp, ifelse(is.na(Ecosystem.component_level2) &
+                                                                      Ecosystem.component_level1 %in% c("Benthos","Fish_teleost"),
+                                                                    "Unspecified",Ecosystem.component_level2))
+EcoComp$Ecosystem.component_level3    <- with(EcoComp, ifelse(is.na(Ecosystem.component_level3) &
+                                                                Ecosystem.component_level2 %in% c("Benthic_epifauna"),
+                                                              "Unspecified",Ecosystem.component_level3))
+EcoComp                               <- EcoComp[order(NrPaps),,]
+
+p1 <- ggplot(EcoComp[EcoComp$Ecosystem.component_level1 %in% "Benthos",], 
+             aes(Ecosystem.component_level2, NrPaps, fill=Ecosystem.component_level2)) +
+  geom_bar(stat="identity") +
+  scale_x_discrete() +
+  scale_y_continuous(n.breaks = 6) +
+  scale_fill_manual(values=viridis(4)) +
+  labs(y="No. papers", title="Benthos") +
+  theme_bw() +
+  # guides(x = guide_axis(angle = 90)) +
+  theme(legend.position = "none",
+        axis.title.x = element_blank(),
+        axis.text.x = element_text(angle = 90, hjust = 1),
+        plot.title = element_text(size=11))
+print(p1)
+
+p2 <- ggplot(EcoComp[EcoComp$Ecosystem.component_level1 %in% "Physical_habitats",], 
+             aes(Ecosystem.component_level2, NrPaps, fill=Ecosystem.component_level2)) +
+  geom_bar(stat="identity") +
+  scale_x_discrete() +
+  scale_y_continuous(n.breaks = 6) +
+  scale_fill_manual(values=viridis(5)) +
+  labs(y="No. papers", title="Physical habitats") +
+  theme_bw() +
+  # guides(x = guide_axis(angle = 90)) +
+  theme(legend.position = "none",
+        axis.title.x = element_blank(),
+        axis.text.x = element_text(angle = 90, hjust = 1),
+        plot.title = element_text(size=11))
+print(p2)
+
+p3 <- ggplot(EcoComp[EcoComp$Ecosystem.component_level1 %in% "Fish_teleost",], 
+             aes(Ecosystem.component_level2, NrPaps, fill=Ecosystem.component_level2)) +
+  geom_bar(stat="identity") +
+  scale_x_discrete() +
+  scale_y_continuous(n.breaks = 8) +
+  scale_fill_manual(values=viridis(5)) +
+  labs(y="No. papers", title="Fish (teleost)") +
+  theme_bw() +
+  # guides(x = guide_axis(angle = 90)) +
+  theme(legend.position = "none",
+        axis.title.x = element_blank(),
+        axis.text.x = element_text(angle = 90, hjust = 1),
+        plot.title = element_text(size=11))
+print(p3)
+
+p4 <- ggplot(EcoComp[EcoComp$Ecosystem.component_level1 %in% "Plants",], 
+             aes(Ecosystem.component_level2, NrPaps, fill=Ecosystem.component_level2)) +
+  geom_bar(stat="identity") +
+  scale_x_discrete() +
+  scale_y_continuous(n.breaks = 4) +
+  scale_fill_manual(values=viridis(3)) +
+  labs(y="No. papers", title="Plants") +
+  theme_bw() +
+  # guides(x = guide_axis(angle = 90)) +
+  theme(legend.position = "none",
+        axis.title.x = element_blank(),
+        axis.text.x = element_text(angle = 90, hjust = 1),
+        plot.title = element_text(size=11))
+print(p4)
+
+p5 <- ggplot(EcoComp[EcoComp$Ecosystem.component_level2 %in% "Benthic_epifauna",], 
+             aes(Ecosystem.component_level3, NrPaps, fill=Ecosystem.component_level3)) +
+  geom_bar(stat="identity") +
+  scale_x_discrete() +
+  scale_y_continuous(n.breaks = 4) +
+  scale_fill_manual(values=viridis(6)) +
+  labs(y="No. papers", title="Benthic epifauna") +
+  theme_bw() +
+  # guides(x = guide_axis(angle = 90)) +
+  theme(legend.position = "none",
+        axis.title.x = element_blank(),
+        axis.text.x = element_text(angle = 90, hjust = 1),
+        plot.title = element_text(size=11))
+print(p5)
+
+p <- p1 + p5 + p2 + p3 + p4
+
+print(p)
+
+ggsave("Task 4.3_EcoBenthos.tiff", p, path=outPath)
 
