@@ -162,7 +162,7 @@ data                                  <- tab[SW.ID %in% retained,,]
 #rm(tab, contributors, retained, excluded)
 
 ## For easyness, skip the long-text columns.
-# data                                  <- data[,c(1, 5, 19:29, 32:49, 51:52)]
+data                                  <- data[,c(1, 5, 19:29, 32:49, 51:52)]
 
 ## Check the regions (all fine)
 table(is.na(data$Region)) # 1 NA

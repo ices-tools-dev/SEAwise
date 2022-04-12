@@ -266,13 +266,13 @@ dev.off()
 # Subset data to WP task 4.3
 #-----------------------------------------------#
 
-# First select all rows labelled with task 4.2
-Task43                               <- subset(Tasks, WP4.task %in% "4.3")
+# First select all rows labelled with task 4.3
+Task43                                <- subset(Tasks, WP4.task %in% "4.3")
 
 
 length(unique(Task43$SW.ID)) #170 papers
 
-# Check under which Ecosystem components Type they fall
+# Check under which Ecosystem components they fall
 table(Task43$Ecosystem.component_level1) #mostly benthos, also some physical habitats
 
 # Check whether there are papers not labelled as 4.3 that involve Physical disturbance?
@@ -467,3 +467,64 @@ print(p)
 
 ggsave("Task 4.3_EcoBenthos.tiff", p, path=outPath)
 
+
+#-----------------------------------------------#
+# Barplot for Response Variable for Task 4.3
+#-----------------------------------------------#
+
+ResVar                                <- Task43[, .(NrPaps = length(unique(SW.ID))),
+                                                by = c("Response.variable_category","Ecosystem.component_level1")]
+names(ResVar)                         <- c("RespVar", "EcosysComp", "NrPaps")
+
+Resorder                              <- data.frame(RespVar = unique(Task43$Response.variable_category),
+                                                    Sord    = c(1,2,4,6,3,10,5,7,9,11,13,12,8))
+Resorder                              <- Resorder[order(Resorder$Sord),]
+
+Ecoorder                              <- data.frame(EcoComp = unique(Task43$Ecosystem.component_level1),
+                                                    Sord    = c(1,6,2,3,4,7,8,9,5))
+Ecoorder                              <- Ecoorder[order(Ecoorder$Sord),]
+
+ResVar2                               <- matrix(nrow=9, ncol=13, dimnames=list(Ecoorder$EcoComp,Resorder$RespVar))
+
+for(iRow in c(1:nrow(ResVar))){
+  subset                              <- ResVar[iRow,]
+  ResVar2[subset$EcosysComp,subset$RespVar] <- subset$NrPaps
+}
+ResVar2[is.na(ResVar2)]             <- 0
+
+tiff(paste0(outPath, "Task 4.3_ResVarEco.tiff"), width = 800, height = 800, res=100)
+par(mar=c(13,5,5,0))
+b <- barplot(ResVar2, ylim=c(0,90), axes=F, names.arg=rep("", 13), width=1, xlim=c(0,16.2), col=viridis(9), main=NULL)
+axis(2, at=seq(0,90,10), cex.axis=1.2, las=1, pos=0)
+axis(1, at=b, colnames(ResVar2), las=3)
+axis(2, at=40, "Number of papers retained", cex.axis=1.5, tick=F, line=1.5)
+legend(x=11, y=90, cex=1.2, fill=viridis(9), legend=Ecoorder$EcoComp)
+dev.off()
+
+
+#####################################################################################################################-
+#####################################################################################################################-
+#-----------------------------------------------#
+# Task 4.4 Food webs and biodiversity ----
+#-----------------------------------------------#
+
+#-----------------------------------------------#
+# Subset data to WP task 4.4
+#-----------------------------------------------#
+
+# First select all rows labelled with task 4.4
+Task44                                <- subset(Tasks, WP4.task %in% "4.4")
+
+length(unique(Task44$SW.ID)) #170 papers
+
+# Check under which Ecosystem components they fall
+table(Task44$Ecosystem.component_level1) #all are represented, mostly fish, followed by food web and benthos
+
+# Check whether there are papers NOT labelled as 4.4 but have food web as Ecosystem component?
+TaskOther                             <- subset(Tasks, !WP4.task %in% "4.4" & 
+                                                  Ecosystem.component_level1 %in% "Foodweb")
+TaskOther                             <- subset(TaskOther, !SW.ID %in% Task44$SW.ID) #drop papers that also have Task 4.4 label
+length(unique(TaskOther$SW.ID)) #1 paper, which indeed is about a multi-trophic level metric, so can be included under Task 4.4
+
+# Add this paper
+Task44                                <- rbind(Task44, TaskOther)
