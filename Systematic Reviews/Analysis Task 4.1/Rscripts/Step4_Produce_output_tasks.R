@@ -648,3 +648,146 @@ axis(1, at=b, colnames(ResVar2), las=3)
 axis(2, at=40, "Number of papers retained", cex.axis=1.5, tick=F, line=1.5)
 legend(x=11, y=120, cex=1.2, fill=viridis(11), legend=Ecoorder$EcoComp)
 dev.off()
+
+
+
+#####################################################################################################################-
+#####################################################################################################################-
+#-----------------------------------------------#
+# Task 4.5 Litter ----
+#-----------------------------------------------#
+
+
+#-----------------------------------------------#
+# Subset data to WP task 4.5
+#-----------------------------------------------#
+
+# First select all rows labelled with task 4.5
+Task45                                <- subset(Tasks, WP4.task %in% "4.5")
+
+length(unique(Task45$SW.ID)) #27 papers
+
+# Check under which Ecosystem components they fall
+table(Task45$Ecosystem.component_level1) #mostly benthos and physical habitats
+
+# Check pressure type
+table(Task45$Pressure.type) #mostly input of litter
+
+# Check whether there are papers NOT labelled as 4.5 but have 'Input of litter' as Pressure Type
+TaskOther                             <- subset(Tasks, !WP4.task %in% "4.5" & 
+                                                  Pressure.type %in% "Input of litter")
+TaskOther                             <- subset(TaskOther, !SW.ID %in% Task45$SW.ID) #drop papers that also have Task 4.5 label
+length(unique(TaskOther$SW.ID)) #3 papers, all seem related to mortality caused by fishing gear. Benthos paper assigned under 4.3,
+# turtle and marine mammal papers assigned under 4.2 bycatch. Fine to include all in Task 4.5 dataset.
+
+# Add this paper
+Task45                                <- rbind(Task45, TaskOther)
+
+
+#-----------------------------------------------#
+# Heatmap of benthic components and pressure for Task 4.5
+#-----------------------------------------------#
+
+EcoPress                             <- Task45[, .(NrPaps = length(unique(SW.ID))),
+                                               by = c("Ecosystem.component_level1", "Pressure.type")]
+EcoPressmat                          <- matrix(nrow = length(unique(Task45$Ecosystem.component_level1)),
+                                               ncol = length(unique(Task45$Pressure.type)))
+colnames(EcoPressmat)                <- sort(unique(Task45$Pressure.type))  
+rownames(EcoPressmat)                <- sort(unique(Task45$Ecosystem.component_level1))
+
+for(iRow in c(1:nrow(EcoPress))){
+  subdat                             <- EcoPress[iRow,]
+  EcoPressmat[subdat$Ecosystem.component_level1, subdat$Pressure.type] <- subdat$NrPaps
+}
+r                                    <- raster(EcoPressmat)
+
+rCols                                <- viridis(n=max(EcoPressmat, na.rm=T))   
+
+
+tiff(paste0(outPath, "Task 4.5_EcoPress_heatmap.tiff"), width= 1000, height = 1000, res = 100)
+par(mar=c(19, 1, 5, 7))
+plot(r, axes=F, col=rCols, legend=F, box=F)
+segments(x0=0, x1=1, y0=c(0,1), y1=c(0,1))
+abline(v=c(0,1))
+abline(v=c(1/3, 2/3), lty=2, col="lightgrey", lwd=0.8)
+segments(x0=0, x1=1, y0=c(1/7, 2/7, 3/7, 4/7, 5/7, 6/7), 
+         y1=c(1/7, 2/7, 3/7, 4/7, 5/7, 6/7), col="lightgrey", lty=2, lwd=0.8)
+axis(1, at=seq(1/7, 6/7, length.out=3), labels= c("Catch & bycatch", "Input of litter", "Physical disturbance"), las=3, cex.axis=1.5)
+axis(4, at=seq(1/22, 21/22, length.out=7), labels= rev(rownames(EcoPressmat)), las=1, pos=1, cex.axis=1.5)
+par(fig=c(0,1,0,1), new=TRUE, mar=c(0,1,5,1))
+plot(c(0,1), c(0,1), type="n", axes=F, ann=F)
+title(main="Task 4.5 fishing pressures from litter on ecosystem components", cex.main=1.5, font.main=2)
+gradient.rect(xleft=0.85, xright=0.95, ybottom=0, ytop=0.3, col=rev(rCols), gradient="y")
+text("Number of \n papers retained", x=0.9, y=0.35, font=4, cex=1.3)
+text("1", x=0.97, y=0.3, font=3)
+text("12", x=0.97, y=0, font=3)
+text("6", x=0.97, y=0.15, font=3)
+dev.off()
+
+
+#-----------------------------------------------#
+# Barplot for ecosystem component (level 1) by Case Study region for Task 4.5
+#-----------------------------------------------#
+
+EcoComp                               <- Task45[, .(NrPaps = length(unique(SW.ID))),
+                                                by = c("Region","Ecosystem.component_level1")]
+EcoComp                               <- EcoComp[order(NrPaps),,]
+
+EcoComp$CS                            <- with(EcoComp, ifelse(Region %in% c("CS - North Sea",
+                                                                            "CS - Baltic Sea",
+                                                                            "CS - Western Waters",
+                                                                            "CS - Mediterranean"),"CS","non CS"))
+EcoComp$Area                          <- with(EcoComp, ifelse(Region %in% c("CS - North Sea","North Sea - non CS"),"North Sea",
+                                                              ifelse(Region %in% c("CS - Baltic Sea","Baltic Sea - non CS"),"Baltic Sea",
+                                                                     ifelse(Region %in% c("CS - Western Waters","Western Waters - non CS"),"Western Waters",
+                                                                            ifelse(Region %in% c("CS - Mediterranean", "Mediterranean - non CS"),"Mediterranean Sea", "Other")))))
+EcoComp$Area                          <- factor(EcoComp$Area, levels = c("Mediterranean Sea","Western Waters","North Sea","Baltic Sea","Other"))
+
+p <- ggplot(EcoComp, aes(NrPaps, Ecosystem.component_level1, fill=CS)) +
+  geom_bar(stat="identity") +
+  scale_x_continuous(n.breaks = 10) +
+  scale_y_discrete(limits=rev) +
+  scale_fill_manual(values = viridis(3)) +
+  labs(x="Number of unique retained papers", y="Ecosystem component") +
+  theme_bw() +
+  # guides(x = guide_axis(angle = 90)) +
+  theme(legend.title = element_blank(),
+        legend.position = "top") +
+  facet_wrap(~Area)
+print(p)
+ggsave("Task 4.5_EcoRegion.tiff", p, path=outPath, width = 6, height = 5)
+
+
+#-----------------------------------------------#
+# Barplot for Response Variable for Task 4.5
+#-----------------------------------------------#
+
+ResVar                                <- Task45[, .(NrPaps = length(unique(SW.ID))),
+                                                by = c("Response.variable_category","Ecosystem.component_level1")]
+names(ResVar)                         <- c("RespVar", "EcosysComp", "NrPaps")
+
+Resorder                              <- data.frame(RespVar = unique(Task45$Response.variable_category),
+                                                    Sord    = c(1,2,3,6,4,5,7))
+Resorder                              <- Resorder[order(Resorder$Sord),]
+
+Ecoorder                              <- data.frame(EcoComp = unique(Task45$Ecosystem.component_level1),
+                                                    Sord    = c(3,4,1,2,5,6,7))
+Ecoorder                              <- Ecoorder[order(Ecoorder$Sord),]
+
+ResVar2                               <- matrix(nrow=nrow(Ecoorder), ncol=nrow(Resorder), dimnames=list(Ecoorder$EcoComp,Resorder$RespVar))
+
+for(iRow in c(1:nrow(ResVar))){
+  subset                              <- ResVar[iRow,]
+  ResVar2[subset$EcosysComp,subset$RespVar] <- subset$NrPaps
+}
+ResVar2[is.na(ResVar2)]             <- 0
+
+tiff(paste0(outPath, "Task 4.5_ResVarEco.tiff"), width = 800, height = 800, res=100)
+par(mar=c(13,5,5,0))
+b <- barplot(ResVar2, ylim=c(0,20), axes=F, names.arg=rep("", 7), width=1, xlim=c(0,9.2), col=viridis(7), main=NULL)
+axis(2, at=seq(0,20,2), cex.axis=1.2, las=1, pos=0)
+axis(1, at=b, colnames(ResVar2), las=3)
+axis(2, at=10, "Number of papers retained", cex.axis=1.5, tick=F, line=1.5)
+legend(x=6, y=20, cex=1.2, fill=viridis(7), legend=Ecoorder$EcoComp)
+dev.off()
+
