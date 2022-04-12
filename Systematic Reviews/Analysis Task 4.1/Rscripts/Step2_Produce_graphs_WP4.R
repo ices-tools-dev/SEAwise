@@ -4,7 +4,7 @@
 #     Script to read, merge, and analyse data extraction files from SEAwise task 4.1
 #     Step 2. Produce figures for the report.
 #
-#     By Karin van der Reijden
+#     By Karin van der Reijden, additions by Elliot J. Brown
 #     March 2022
 #
 #####################################################################################################################
@@ -20,6 +20,10 @@ library(raster)
 library(plotrix)
 library(sf)
 library(viridis)
+library(plotly)
+library(splitstackshape)
+library(ggthemes)
+library(ggsankey)
 
 datPath                               <- "Systematic Reviews/Analysis Task 4.1/Data_Extraction_Files/" 
 outPath                               <- "Systematic Reviews/Analysis Task 4.1/Routput/"
@@ -34,7 +38,107 @@ GISpath                               <- "Systematic Reviews/Analysis Task 4.1/G
 #-----------------------------------------------
 data                                  <- readRDS(file=paste0(outPath, "data.rds"))
 data_allScreened                      <- readRDS(file=paste0(outPath, "data_allScreened.rds"))
+load(file = paste0(outPath, "FatePapers.Rdata"))
 
+################################################
+#-----------------------------------------------
+# Plot the fate of all records returned from searches
+#
+#  info:
+#  This section is relatively stand-alone.  It creates sankey diagrams illustrating the fate of all records from search to extraction
+#-----------------------------------------------
+#===
+# Data cleanin
+#====
+## Combine exclusion and inclusion reasons to integrated fate column
+FatePapers$Extraction.Code <- NA
+FatePapers[is.na(FatePapers$Extraction.Exclusion.Code), "Extraction.Code"] <- FatePapers[is.na(FatePapers$Extraction.Exclusion.Code), "Extraction.WP4.task"]
+FatePapers[!is.na(FatePapers$Extraction.Exclusion.Code), "Extraction.Code"] <- FatePapers[!is.na(FatePapers$Extraction.Exclusion.Code), "Extraction.Exclusion.Code"]
+
+## Create long versions of both screening and full-text fates for each record
+screenFatelong <- cSplit(indt = FatePapers[, c("SW.ID", "Screening.Code")],
+                         splitCols = "Screening.Code",
+                         sep = " _ ",
+                         direction = "long")
+
+ExtractFatelong <- cSplit(indt = FatePapers[, c("SW.ID", "Extraction.Code")],
+                         splitCols = "Extraction.Code",
+                         sep = " _ ",
+                         direction = "long")
+## Merge screening and extraction fates
+fatelong <- merge(screenFatelong, ExtractFatelong, by = "SW.ID", all = TRUE)
+
+
+## Rename some levels for consistency across screening and extraction phases
+fatelong$Screening.Code[grepl("4.2", fatelong$Screening.Code)] <- "4.2"
+fatelong$Screening.Code[grepl("4.3", fatelong$Screening.Code)] <- "4.3"
+fatelong$Screening.Code[grepl("4.4", fatelong$Screening.Code)] <- "4.4"
+fatelong$Screening.Code[grepl("4.5", fatelong$Screening.Code)] <- "4.5"
+fatelong$Screening.Code[grepl("INCLUDE on title", fatelong$Screening.Code)] <- "4.general"
+
+fatelong$Extraction.Code[grepl("None", fatelong$Extraction.Code)] <- "4.general"
+
+fatelong$SearchResults <- rep("Deduplicated Search Results", nrow(fatelong))
+
+fatelong$UltimateFate <- ifelse(grepl("4.", fatelong$Extraction.Code), "Data Extracted", "Excluded from Review")
+fatelong[!grepl("4.", fatelong$Screening.Code), "UltimateFate"] <- "Excluded from Review"
+fatelong[!grepl("4.", fatelong$Screening.Code), "Extraction.Code"] <- "Excluded from Review"
+
+sfate <- make_long(fatelong, SearchResults, Screening.Code, Extraction.Code, UltimateFate)
+
+#===
+# Create sankey diagram
+#====
+## Build sankey
+sankey <- ggplot(sfate,
+                 mapping = aes(x = x,
+                               next_x = next_x,
+                               node = node,
+                               next_node = next_node,
+                               fill = factor(node),
+                               label = node)) +
+  geom_sankey() +
+  geom_sankey_label() +
+  theme_few()+
+  theme(axis.title = element_blank(),
+        axis.text.y = element_blank())
+
+## View Sankey
+sankey
+
+## Save sankey
+ggsave("Sankey.tiff", sankey, path=outPath,
+       width = 450,
+       height = 200,
+       units = "mm")
+
+## View interactive sankey (needs work)
+ggplotly(sankey)
+#=====
+
+#===
+# Temp visualisations, can be deleted
+#====
+# ggplot(fatelong[fatelong$Screening.Code %in% c("4.2", "4.3", "4.4", "4.5", "4.general"),]) +
+#   geom_bar(mapping = aes(x = Extraction.Code)) +
+#   theme_clean() +
+#   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+# 
+# ggplot(fatelong) +
+#   geom_bar(mapping = aes(x = Screening.Code)) +
+#   theme_clean() +
+#   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+# 
+# ggplot(fatelong) +
+#   geom_tile(mapping = aes(x = Screening.Code,
+#                           y = Extraction.Code)) +
+#   theme_clean() +
+#   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+
+#=====
+#-----------------------------------------------
+
+#-----------------------------------------------
 ################################################
 #-----------------------------------------------
 # Produce some plots
