@@ -528,3 +528,123 @@ length(unique(TaskOther$SW.ID)) #1 paper, which indeed is about a multi-trophic 
 
 # Add this paper
 Task44                                <- rbind(Task44, TaskOther)
+
+# Check whether there are papers NOT labelled as 4.4 that look at Trophic stucture, Biodiversity or Community composition
+TaskOther                             <- subset(Tasks, !WP4.task %in% "4.4" &
+                                                  Response.variable_category %in% c("Trophic structure","Biodiversity",
+                                                                                    "Community composition"))
+TaskOther                             <- subset(TaskOther, !SW.ID %in% Task44$SW.ID) #drop papers that also have Task 4.4 label
+length(unique(TaskOther$SW.ID)) #63 papers
+
+table(TaskOther$WP4.task, TaskOther$Response.variable_category)
+# Lots of 4.3 papers on Biodiversity and Comm comp, some of other tasks as well.
+# Include these papers as well to the Task 4.4 data set.
+Task44                                <- rbind(Task44, TaskOther)
+
+
+#-----------------------------------------------#
+# Heatmap of benthic components and pressure for Task 4.4
+#-----------------------------------------------#
+
+EcoPress                             <- Task44[, .(NrPaps = length(unique(SW.ID))),
+                                               by = c("Ecosystem.component_level1", "Pressure.type")]
+EcoPressmat                          <- matrix(nrow = length(unique(Task44$Ecosystem.component_level1)),
+                                               ncol = length(unique(Task44$Pressure.type)))
+colnames(EcoPressmat)                <- sort(unique(Task44$Pressure.type))  
+rownames(EcoPressmat)                <- sort(unique(Task44$Ecosystem.component_level1))
+
+for(iRow in c(1:nrow(EcoPress))){
+  subdat                             <- EcoPress[iRow,]
+  EcoPressmat[subdat$Ecosystem.component_level1, subdat$Pressure.type] <- subdat$NrPaps
+}
+r                                    <- raster(EcoPressmat)
+
+rCols                                <- viridis(n=max(EcoPressmat, na.rm=T))   
+
+
+tiff(paste0(outPath, "Task 4.4_EcoPress_heatmap.tiff"), width= 1000, height = 1000, res = 100)
+par(mar=c(19, 1, 5, 7))
+plot(r, axes=F, col=rCols, legend=F, box=F)
+segments(x0=0, x1=1, y0=c(0,1), y1=c(0,1))
+abline(v=c(0,1))
+abline(v=c(1/6, 2/6, 3/6, 4/6, 5/6), lty=2, col="lightgrey", lwd=0.8)
+segments(x0=0, x1=1, y0=c(1/11, 2/11, 3/11, 4/11, 5/11, 6/11, 7/11, 8/11, 9/11, 10/11), 
+         y1=c(1/11, 2/11, 3/11, 4/11, 5/11, 6/11, 7/11, 8/11, 9/11, 10/11), col="lightgrey", lty=2, lwd=0.8)
+axis(1, at=seq(1/11, 9/11, length.out=6), labels= c("Catch & bycatch", "Discarding", "Input of litter", "Noise", "Physical disturbance", "Visual disturbance"), las=3, cex.axis=1.5)
+axis(4, at=seq(1/22, 21/22, length.out=11), labels= rev(rownames(EcoPressmat)), las=1, pos=1, cex.axis=1.5)
+par(fig=c(0,1,0,1), new=TRUE, mar=c(0,1,5,1))
+plot(c(0,1), c(0,1), type="n", axes=F, ann=F)
+title(main="Task 4.4 fishing pressures on food webs", cex.main=1.5, font.main=2)
+gradient.rect(xleft=0.85, xright=0.95, ybottom=0, ytop=0.3, col=rev(rCols), gradient="y")
+text("Number of \n papers retained", x=0.9, y=0.35, font=4, cex=1.3)
+text("1", x=0.97, y=0.3, font=3)
+text("77", x=0.97, y=0, font=3)
+text("39", x=0.97, y=0.15, font=3)
+dev.off()
+
+
+#-----------------------------------------------#
+# Barplot for ecosystem component (level 1) by Case Study region for Task 4.4
+#-----------------------------------------------#
+
+EcoComp                               <- Task44[, .(NrPaps = length(unique(SW.ID))),
+                                                by = c("Region","Ecosystem.component_level1")]
+EcoComp                               <- EcoComp[order(NrPaps),,]
+
+EcoComp$CS                            <- with(EcoComp, ifelse(Region %in% c("CS - North Sea",
+                                                                            "CS - Baltic Sea",
+                                                                            "CS - Western Waters",
+                                                                            "CS - Mediterranean"),"CS","non CS"))
+EcoComp$Area                          <- with(EcoComp, ifelse(Region %in% c("CS - North Sea","North Sea - non CS"),"North Sea",
+                                                              ifelse(Region %in% c("CS - Baltic Sea","Baltic Sea - non CS"),"Baltic Sea",
+                                                                     ifelse(Region %in% c("CS - Western Waters","Western Waters - non CS"),"Western Waters",
+                                                                            ifelse(Region %in% c("CS - Mediterranean", "Mediterranean - non CS"),"Mediterranean Sea", "Other")))))
+EcoComp$Area                          <- factor(EcoComp$Area, levels = c("Mediterranean Sea","Western Waters","North Sea","Baltic Sea","Other"))
+
+p <- ggplot(EcoComp, aes(NrPaps, Ecosystem.component_level1, fill=CS)) +
+  geom_bar(stat="identity") +
+  scale_x_continuous(n.breaks = 10) +
+  scale_y_discrete(limits=rev) +
+  scale_fill_manual(values = viridis(3)) +
+  labs(x="Number of unique retained papers", y="Ecosystem component") +
+  theme_bw() +
+  # guides(x = guide_axis(angle = 90)) +
+  theme(legend.title = element_blank(),
+        legend.position = "top") +
+  facet_wrap(~Area)
+print(p)
+ggsave("Task 4.4_EcoRegion.tiff", p, path=outPath, width = 8, height = 5)
+
+
+#-----------------------------------------------#
+# Barplot for Response Variable for Task 4.4
+#-----------------------------------------------#
+
+ResVar                                <- Task44[, .(NrPaps = length(unique(SW.ID))),
+                                                by = c("Response.variable_category","Ecosystem.component_level1")]
+names(ResVar)                         <- c("RespVar", "EcosysComp", "NrPaps")
+
+Resorder                              <- data.frame(RespVar = unique(Task44$Response.variable_category),
+                                                    Sord    = c(7,1,2,10,4,3,11,5,6,13,8,9,12))
+Resorder                              <- Resorder[order(Resorder$Sord),]
+
+Ecoorder                              <- data.frame(EcoComp = unique(Task44$Ecosystem.component_level1),
+                                                    Sord    = c(1,6,4,2,5,7,3,8,11,10,9))
+Ecoorder                              <- Ecoorder[order(Ecoorder$Sord),]
+
+ResVar2                               <- matrix(nrow=nrow(Ecoorder), ncol=nrow(Resorder), dimnames=list(Ecoorder$EcoComp,Resorder$RespVar))
+
+for(iRow in c(1:nrow(ResVar))){
+  subset                              <- ResVar[iRow,]
+  ResVar2[subset$EcosysComp,subset$RespVar] <- subset$NrPaps
+}
+ResVar2[is.na(ResVar2)]             <- 0
+
+tiff(paste0(outPath, "Task 4.4_ResVarEco.tiff"), width = 800, height = 800, res=100)
+par(mar=c(13,5,5,0))
+b <- barplot(ResVar2, ylim=c(0,120), axes=F, names.arg=rep("", 13), width=1, xlim=c(0,16.2), col=viridis(11), main=NULL)
+axis(2, at=seq(0,120,10), cex.axis=1.2, las=1, pos=0)
+axis(1, at=b, colnames(ResVar2), las=3)
+axis(2, at=40, "Number of papers retained", cex.axis=1.5, tick=F, line=1.5)
+legend(x=11, y=120, cex=1.2, fill=viridis(11), legend=Ecoorder$EcoComp)
+dev.off()
