@@ -48,7 +48,7 @@ load(file = paste0(outPath, "FatePapers.Rdata"))
 #  This section is relatively stand-alone.  It creates sankey diagrams illustrating the fate of all records from search to extraction
 #-----------------------------------------------
 #===
-# Data cleanin
+# Data cleaning
 #====
 ## Combine exclusion and inclusion reasons to integrated fate column
 FatePapers$Extraction.Code <- NA
@@ -98,17 +98,20 @@ sankey <- ggplot(sfate,
                                fill = factor(node),
                                label = node)) +
   geom_sankey() +
-  geom_sankey_label() +
+  geom_sankey_label(size=7, colour="white") +
+  scale_fill_manual(values=viridis(16)[-16]) +
   theme_few()+
   theme(axis.title = element_blank(),
-        axis.text.y = element_blank())
+        axis.text.y = element_blank(),
+        axis.text = element_text(size=20),
+        legend.position = "none")
 
 ## View Sankey
 sankey
 
 ## Save sankey
 ggsave("Sankey.tiff", sankey, path=outPath,
-       width = 450,
+       width = 400,
        height = 200,
        units = "mm")
 
@@ -137,6 +140,7 @@ ggplotly(sankey)
 
 #=====
 #-----------------------------------------------
+
 
 #-----------------------------------------------
 ################################################
@@ -340,7 +344,7 @@ p <- ggplot(EcoComp, aes(NrPaps, Ecosystem.component_level1, fill=CS)) +
   # guides(x = guide_axis(angle = 90)) +
   theme(legend.title = element_blank(),
         panel.grid = element_blank()) +
-  facet_wrap(~Area, scales = "free_x")
+  facet_wrap(~Area)
 print(p)
 ggsave("EcoRegion.tiff", p, path=outPath, width = 8, height = 5)
 
@@ -401,6 +405,40 @@ par(mar=c(2,2,6,2))
 plot(c(0,1), c(0,1), type="n", axes=F, ann=F)
 title("The different fishing gears studied", line=0, cex.main=3, font.main=2)
 dev.off()
+
+
+#-----------------------------------------------
+## Barplots of fishing gears studied - Comm + Recr only
+#-----------------------------------------------
+Gears                                <- data[,.(NrPaps = length(unique(SW.ID))),
+                                             by = c("Fishery.type", "Gear_level1")]
+Gears                                <- subset(Gears, Fishery.type %in% c("Commercial","Recreational"))
+Gears$Gear_level1                    <- ifelse(is.na(Gears$Gear_level1)==T, "Not specified", 
+                                               ifelse(Gears$Gear_level1 == "Hooks_and_lines", "Hooks and Lines", Gears$Gear_level1))
+
+tiff(paste0(outPath, "GearsStudiedCommRecr.tiff"), width= 1500, height = 1000, res = 100)
+par(mfrow=c(1,2))
+par(mar=c(15,8,10,1))
+for(iType in unique(Gears$Fishery.type)){
+  subdat                             <- Gears[Fishery.type == iType,,]
+  subdat                             <- subdat[order(NrPaps, decreasing=T)]
+  b                                  <- barplot(subdat$NrPaps, axes=F, ylim=c(0, max(subdat$NrPaps*1.05)))
+  title(iType, cex.main=2, font=2, line=3)
+  title(paste0("(n = ", sum(subdat$NrPaps), ")"), font.main=3, cex.main=1.5, line=1.5)
+  axis(1, at=b, labels=subdat$Gear_level1, las=3, cex.axis=2)
+  axis(2, las=1, cex.axis=2)
+  text(x=b, y=max(subdat$NrPaps)*0.035, labels=subdat$NrPaps, cex=1.5, font=3)
+  box()
+  if(iType=="Commercial"){
+    axis(2, tick=F, at=(max(subdat$NrPaps)*1.05)/2, labels="Number of unique papers retained",
+         line=4.5, cex.axis=2)}
+}
+par(fig=c(0,1,0,1), new=TRUE)
+par(mar=c(2,2,6,2))
+plot(c(0,1), c(0,1), type="n", axes=F, ann=F)
+# title("The different fishing gears studied", line=0, cex.main=3, font.main=2)
+dev.off()
+
 
 
 #-----------------------------------------------
@@ -1242,34 +1280,14 @@ SpecsStudied                         <- SpecsStudied[order(NrPaps, decreasing=T)
 # Check whether papers got assigned multiple exclusion criteria
 data_excl          <- subset(data_allScreened, !is.na(Exclusion.Criteria))
 
-length(unique(data_excl$SW.ID)) #180 papers excluded
+length(unique(data_excl$SW.ID)) #182 papers excluded
 excl_ID            <- unique(data_excl$SW.ID)
 nrow(data_excl) #with 183 rows, so some have multiple
 no_excl_cri        <- aggregate(Exclusion.Criteria ~ SW.ID, data_excl, function(x) length(unique(x))) 
 head(no_excl_cri[order(-no_excl_cri$Exclusion.Criteria),])#SW4_1550 has two
 
 ## Check duplicates
-excl_dupl          <- data_excl[duplicated(data_excl$SW.ID),] #some duplicates of SW ID
-
-## It also seems people have excluded papers but have filled in some data -> make list and ask people
-data_excl_check <- subset(data_excl, !is.na(Region))
-data_excl_check <- rbind(data_excl_check,subset(data_excl, !is.na(Sampling.Method.used.for.data.collection) & is.na(Region)))
-
-# write.xlsx(data_excl_check, file=paste0(outPath, "data_exclusion_check.xlsx"), row.names = FALSE)
-
-## Do some manual changes for now
-data_allScreened <- rbind(data_allScreened, data_excl[data_excl$SW.ID %in% "SW4_0703",])
-data_excl        <- subset(data_excl, !SW.ID %in% "SW4_0703")
-
-## Check duplicates again and remove any
-excl_dupl        <- data_excl[duplicated(data_excl$SW.ID),] #some duplicates of SW ID
-data_excl        <- data_excl[!duplicated(data_excl$SW.ID),]
-excl_ID2         <- unique(data_excl$SW.ID)
-length(excl_ID2) #only 179
-
-## Which SW_ID is not there anymore?
-idx              <- which(!excl_ID %in% excl_ID2)
-excl_ID[idx] #correct, SW4_0703 one has been manually included again
+excl_dupl          <- data_excl[duplicated(data_excl$SW.ID),] #again SW4_1550, so no real duplicates to remove
 
 ## Table with number and percentages of papers excluded during data extraction
 tab              <- aggregate(SW.ID ~ Exclusion.Criteria, data_excl, function(x) length(unique(x)))
