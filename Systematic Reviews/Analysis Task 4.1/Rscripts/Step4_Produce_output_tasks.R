@@ -726,6 +726,66 @@ dev.off()
 
 
 #-----------------------------------------------#
+# Provide taxa list for this task
+#-----------------------------------------------#
+
+# Subset dataset with species/taxonomic group per row (from Step 3)
+Task45spec                            <- dat1[dat1$WP4.task %in% c("4.5","4.3 _ 4.5","4.3 _ 4.4 _ 4.5") |
+                                                dat1$Pressure.type %in% "Input of litter",]
+
+table(Task45spec$Ecosystem.component_level1, Task45spec$WP4.task) #check
+
+# Unique taxa?
+length(unique(Task45spec$Species.taxonomic.group.s.)) #53 - quite a lot
+unique(Task45spec$Species.taxonomic.group.s.) #includes also clearly non-PET species (e.g. plaice? Asterias rubens?)
+
+# Subset relevant data
+spec45                                <- data.frame(Species.taxonomic.group.s. = unique(Task45spec$Species.taxonomic.group.s.))
+spec45                                <- merge(spec45, Task45spec[,c("Species.taxonomic.group.s.","Region",
+                                                                      "Ecosystem.component_level1")], 
+                                               by = "Species.taxonomic.group.s.", all.x=TRUE)
+spec45                               <- spec45[!duplicated(spec45),]
+
+## Adjust and shuffle around so that we get a nice table for in report
+spec45$Species.taxonomic.group.s.    <- stringr::str_to_sentence(spec45$Species.taxonomic.group.s.)
+spec2                              <- data.frame(Species.taxonomic.group.s. = NA, Region = NA)
+specList                              <- unique(spec45$Species.taxonomic.group.s.)
+
+for(iSpecies in c(1:length(specList))){
+  spec3    <- subset(spec45, Species.taxonomic.group.s. %in% specList[iSpecies])
+  spec3$Ecosystem.component_level1 <- NULL
+  
+  if(length(unique(spec3$Region)) == 1){
+    spec2  <- rbind(spec2, spec3[1,])
+  } else{
+    regions    <- sort(unique(spec3$Region))
+    spec4 <- data.frame(Species.taxonomic.group.s. = specList[iSpecies],
+                           Region = paste(regions, collapse = ", "))
+    spec2  <- rbind(spec2, spec4)
+  }
+}
+
+spec2                            <- spec2[-1,] 
+spec2                            <- merge(spec2, spec45[,c("Species.taxonomic.group.s.","Ecosystem.component_level1")],
+                                          by="Species.taxonomic.group.s.", all.x=TRUE)
+spec2                            <- spec2[!duplicated(spec2),]
+spec2$Species.taxonomic.group.s. <- with(spec2, ifelse(Species.taxonomic.group.s. %in% "Bivalves", "Bivalvia", Species.taxonomic.group.s.))
+spec2$Species.taxonomic.group.s. <- with(spec2, ifelse(Species.taxonomic.group.s. %in% "Bryozoans", "Bryozoa", Species.taxonomic.group.s.))
+spec2$Species.taxonomic.group.s. <- with(spec2, ifelse(Species.taxonomic.group.s. %in% "Hydrozoans", "Hydrozoa", Species.taxonomic.group.s.))
+spec2$Species.taxonomic.group.s. <- with(spec2, ifelse(Species.taxonomic.group.s. %in% "Polychaetes", "Polychaeta", Species.taxonomic.group.s.))
+spec2$Species.taxonomic.group.s. <- with(spec2, ifelse(Species.taxonomic.group.s. %in% "Prototoans", "Protozoa", Species.taxonomic.group.s.))
+spec2$Ecosystem.component_level1 <- with(spec2, ifelse(Species.taxonomic.group.s. %in% "Protozoa", "Plankton", Ecosystem.component_level1))
+spec2$Ecosystem.component_level1 <- with(spec2, ifelse(Species.taxonomic.group.s. %in% "Macrophyta", "Plants", Ecosystem.component_level1))
+spec2$Ecosystem.component_level1 <- with(spec2, ifelse(Species.taxonomic.group.s. %in% "Mollusca", "Benthos", Ecosystem.component_level1))
+spec2                            <- spec2[!(spec2$Species.taxonomic.group.s. %in% c("Other fish (9) and mollusca (2)","Fish","Benthic communities")),]
+spec2                            <- spec2[!is.na(spec2$Species.taxonomic.group.s.),]
+spec2                            <- spec2[!duplicated(spec2),]
+spec2                            <- spec2[order(spec2$Ecosystem.component_level1),]
+
+write.csv(spec2, paste0(outPath, "Task 4.5_reported taxa by region.csv"), row.names = FALSE)
+
+
+#-----------------------------------------------#
 # Barplot for ecosystem component (level 1) by Case Study region for Task 4.5
 #-----------------------------------------------#
 
