@@ -69,7 +69,7 @@ names(EcoComp)                        <- c("EcosysComp", "Pressure", "NrPaps")
 EcoComp[is.na(EcoComp)]                 <- "Not specified"
 
 Ecoorder                              <- data.frame(EcoComp = unique(Catch$Ecosystem.component_level1),
-                                                    Sord    = c(1,3,2,7,8,6,4,5,9,10))
+                                                    Sord    = c(1,3,2,8,7,6,4,5,9,10))
 Ecoorder                              <- Ecoorder[order(Ecoorder$Sord),]
 Pressorder                            <- data.frame(Pressure = c(unique(Catch$Pressure_level)),
                                                     Sord    = c(1,3,4,2))
@@ -100,7 +100,7 @@ dev.off()
 # First select all rows labelled with task 4.2
 Task42                                <- subset(Tasks, WP4.task %in% "4.2")
 
-length(unique(Task42$SW.ID)) #115 papers
+length(unique(Task42$SW.ID)) #114 papers
 
 # Check under which Pressure Type they fall
 table(Task42$Pressure.type) #most indeed under 'Catch and bycatch' but alsoq quite some under 'Discarding'
@@ -133,7 +133,7 @@ Task42spec                            <- dat1[dat1$WP4.task %in% c("4.2","4.2 _ 
 table(Task42spec$Ecosystem.component_level1, Task42spec$WP4.task) #check
 
 # Unique taxa?
-length(unique(Task42spec$Species.taxonomic.group.s.)) #150 - that's a lot
+length(unique(Task42spec$Species.taxonomic.group.s.)) #149 - that's a lot
 unique(Task42spec$Species.taxonomic.group.s.) #includes also clearly non-PET species (e.g. plaice? Asterias rubens?)
 # Probably because some studies include both PET and non-PET species, yet those species should not have been reported
 # then as bycatch, but as target or non-target. Other example: pressure 'Discarding' and task 4.2, while this should
@@ -218,7 +218,7 @@ p <- ggplot(EcoComp, aes(NrPaps, Ecosystem.component_level1, fill=CS)) +
         legend.position = "top") +
   facet_wrap(~Area)
 print(p)
-ggsave("Task 4.2_EcoRegion.tiff", p, path=outPath)
+ggsave("Task 4.2_EcoRegion.tiff", p, path=outPath, width = 8, height = 5)
 
 
 #-----------------------------------------------#
@@ -269,8 +269,7 @@ dev.off()
 # First select all rows labelled with task 4.3
 Task43                                <- subset(Tasks, WP4.task %in% "4.3")
 
-
-length(unique(Task43$SW.ID)) #170 papers
+length(unique(Task43$SW.ID)) #172 papers
 
 # Check under which Ecosystem components they fall
 table(Task43$Ecosystem.component_level1) #mostly benthos, also some physical habitats
@@ -328,8 +327,8 @@ title(main="Task 4.3 fishing pressures on benthic habitats", cex.main=1.5, font.
 gradient.rect(xleft=0.85, xright=0.95, ybottom=0, ytop=0.3, col=rev(rCols), gradient="y")
 text("Number of \n papers retained", x=0.9, y=0.35, font=4, cex=1.3)
 text("1", x=0.97, y=0.3, font=3)
-text("140", x=0.97, y=0, font=3)
-text("70", x=0.97, y=0.15, font=3)
+text(max(EcoPressmat, na.rm=T), x=0.97, y=0, font=3)
+text(round(max(EcoPressmat, na.rm=T)/2,0), x=0.97, y=0.15, font=3)
 dev.off()
 
 
@@ -363,7 +362,7 @@ p <- ggplot(EcoComp, aes(NrPaps, Ecosystem.component_level1, fill=CS)) +
         legend.position = "top") +
   facet_wrap(~Area)
 print(p)
-ggsave("Task 4.3_EcoRegion.tiff", p, path=outPath)
+ggsave("Task 4.3_EcoRegion.tiff", p, path=outPath, width=8, height = 5)
 
 
 #-----------------------------------------------#
@@ -391,7 +390,7 @@ p1 <- ggplot(EcoComp[EcoComp$Ecosystem.component_level1 %in% "Benthos",],
   geom_bar(stat="identity") +
   scale_x_discrete() +
   scale_y_continuous(n.breaks = 6) +
-  scale_fill_manual(values=viridis(4)) +
+  scale_fill_manual(values=viridis(3)) +
   labs(y="No. papers", title="Benthos") +
   theme_bw() +
   # guides(x = guide_axis(angle = 90)) +
@@ -405,7 +404,7 @@ p2 <- ggplot(EcoComp[EcoComp$Ecosystem.component_level1 %in% "Physical_habitats"
              aes(Ecosystem.component_level2, NrPaps, fill=Ecosystem.component_level2)) +
   geom_bar(stat="identity") +
   scale_x_discrete() +
-  scale_y_continuous(n.breaks = 6) +
+  scale_y_continuous(n.breaks = 5) +
   scale_fill_manual(values=viridis(5)) +
   labs(y="No. papers", title="Physical habitats") +
   theme_bw() +
@@ -451,7 +450,7 @@ p5 <- ggplot(EcoComp[EcoComp$Ecosystem.component_level2 %in% "Benthic_epifauna",
   geom_bar(stat="identity") +
   scale_x_discrete() +
   scale_y_continuous(n.breaks = 4) +
-  scale_fill_manual(values=viridis(6)) +
+  scale_fill_manual(values=viridis(5)) +
   labs(y="No. papers", title="Benthic epifauna") +
   theme_bw() +
   # guides(x = guide_axis(angle = 90)) +
@@ -465,7 +464,7 @@ p <- p1 + p5 + p2 + p3 + p4
 
 print(p)
 
-ggsave("Task 4.3_EcoBenthos.tiff", p, path=outPath)
+ggsave("Task 4.3_EcoBenthos.tiff", p, path=outPath, width=8, height=5)
 
 
 #-----------------------------------------------#
@@ -515,7 +514,7 @@ dev.off()
 # First select all rows labelled with task 4.4
 Task44                                <- subset(Tasks, WP4.task %in% "4.4")
 
-length(unique(Task44$SW.ID)) #170 papers
+length(unique(Task44$SW.ID)) #173 papers
 
 # Check under which Ecosystem components they fall
 table(Task44$Ecosystem.component_level1) #all are represented, mostly fish, followed by food web and benthos
@@ -578,8 +577,8 @@ title(main="Task 4.4 fishing pressures on food webs", cex.main=1.5, font.main=2)
 gradient.rect(xleft=0.85, xright=0.95, ybottom=0, ytop=0.3, col=rev(rCols), gradient="y")
 text("Number of \n papers retained", x=0.9, y=0.35, font=4, cex=1.3)
 text("1", x=0.97, y=0.3, font=3)
-text("77", x=0.97, y=0, font=3)
-text("39", x=0.97, y=0.15, font=3)
+text(max(EcoPressmat,na.rm = T), x=0.97, y=0, font=3)
+text(round(max(EcoPressmat,na.rm = T)/2,0), x=0.97, y=0.15, font=3)
 dev.off()
 
 
@@ -665,7 +664,7 @@ dev.off()
 # First select all rows labelled with task 4.5
 Task45                                <- subset(Tasks, WP4.task %in% "4.5")
 
-length(unique(Task45$SW.ID)) #27 papers
+length(unique(Task45$SW.ID)) #28 papers
 
 # Check under which Ecosystem components they fall
 table(Task45$Ecosystem.component_level1) #mostly benthos and physical habitats
@@ -677,8 +676,8 @@ table(Task45$Pressure.type) #mostly input of litter
 TaskOther                             <- subset(Tasks, !WP4.task %in% "4.5" & 
                                                   Pressure.type %in% "Input of litter")
 TaskOther                             <- subset(TaskOther, !SW.ID %in% Task45$SW.ID) #drop papers that also have Task 4.5 label
-length(unique(TaskOther$SW.ID)) #3 papers, all seem related to mortality caused by fishing gear. Benthos paper assigned under 4.3,
-# turtle and marine mammal papers assigned under 4.2 bycatch. Fine to include all in Task 4.5 dataset.
+length(unique(TaskOther$SW.ID)) #2 papers, seem related to mortality caused by fishing gear. Benthos paper assigned under 4.3,
+# turtle paper assigned under 4.2 bycatch. Fine to include all in Task 4.5 dataset.
 
 # Add this paper
 Task45                                <- rbind(Task45, TaskOther)
@@ -720,8 +719,8 @@ title(main="Task 4.5 fishing pressures from litter on ecosystem components", cex
 gradient.rect(xleft=0.85, xright=0.95, ybottom=0, ytop=0.3, col=rev(rCols), gradient="y")
 text("Number of \n papers retained", x=0.9, y=0.35, font=4, cex=1.3)
 text("1", x=0.97, y=0.3, font=3)
-text("12", x=0.97, y=0, font=3)
-text("6", x=0.97, y=0.15, font=3)
+text(max(EcoPressmat, na.rm=TRUE), x=0.97, y=0, font=3)
+text(round(max(EcoPressmat, na.rm=TRUE),0), x=0.97, y=0.15, font=3)
 dev.off()
 
 
@@ -736,19 +735,19 @@ Task45spec                            <- dat1[dat1$WP4.task %in% c("4.5","4.3 _ 
 table(Task45spec$Ecosystem.component_level1, Task45spec$WP4.task) #check
 
 # Unique taxa?
-length(unique(Task45spec$Species.taxonomic.group.s.)) #53 - quite a lot
-unique(Task45spec$Species.taxonomic.group.s.) #includes also clearly non-PET species (e.g. plaice? Asterias rubens?)
+length(unique(Task45spec$Species.taxonomic.group.s.)) #52 - quite a lot
+unique(Task45spec$Species.taxonomic.group.s.)
 
 # Subset relevant data
 spec45                                <- data.frame(Species.taxonomic.group.s. = unique(Task45spec$Species.taxonomic.group.s.))
 spec45                                <- merge(spec45, Task45spec[,c("Species.taxonomic.group.s.","Region",
                                                                       "Ecosystem.component_level1")], 
                                                by = "Species.taxonomic.group.s.", all.x=TRUE)
-spec45                               <- spec45[!duplicated(spec45),]
+spec45                                <- spec45[!duplicated(spec45),]
 
 ## Adjust and shuffle around so that we get a nice table for in report
-spec45$Species.taxonomic.group.s.    <- stringr::str_to_sentence(spec45$Species.taxonomic.group.s.)
-spec2                              <- data.frame(Species.taxonomic.group.s. = NA, Region = NA)
+spec45$Species.taxonomic.group.s.     <- stringr::str_to_sentence(spec45$Species.taxonomic.group.s.)
+spec2                                 <- data.frame(Species.taxonomic.group.s. = NA, Region = NA)
 specList                              <- unique(spec45$Species.taxonomic.group.s.)
 
 for(iSpecies in c(1:length(specList))){
@@ -769,15 +768,15 @@ spec2                            <- spec2[-1,]
 spec2                            <- merge(spec2, spec45[,c("Species.taxonomic.group.s.","Ecosystem.component_level1")],
                                           by="Species.taxonomic.group.s.", all.x=TRUE)
 spec2                            <- spec2[!duplicated(spec2),]
+spec2                            <- subset(spec2, !Species.taxonomic.group.s. %in% c("Anthropogenic litter","Benthic communities","Fish"))
 spec2$Species.taxonomic.group.s. <- with(spec2, ifelse(Species.taxonomic.group.s. %in% "Bivalves", "Bivalvia", Species.taxonomic.group.s.))
 spec2$Species.taxonomic.group.s. <- with(spec2, ifelse(Species.taxonomic.group.s. %in% "Bryozoans", "Bryozoa", Species.taxonomic.group.s.))
 spec2$Species.taxonomic.group.s. <- with(spec2, ifelse(Species.taxonomic.group.s. %in% "Hydrozoans", "Hydrozoa", Species.taxonomic.group.s.))
 spec2$Species.taxonomic.group.s. <- with(spec2, ifelse(Species.taxonomic.group.s. %in% "Polychaetes", "Polychaeta", Species.taxonomic.group.s.))
-spec2$Species.taxonomic.group.s. <- with(spec2, ifelse(Species.taxonomic.group.s. %in% "Prototoans", "Protozoa", Species.taxonomic.group.s.))
+spec2$Species.taxonomic.group.s. <- with(spec2, ifelse(Species.taxonomic.group.s. %in% "Protozoans", "Protozoa", Species.taxonomic.group.s.))
 spec2$Ecosystem.component_level1 <- with(spec2, ifelse(Species.taxonomic.group.s. %in% "Protozoa", "Plankton", Ecosystem.component_level1))
 spec2$Ecosystem.component_level1 <- with(spec2, ifelse(Species.taxonomic.group.s. %in% "Macrophyta", "Plants", Ecosystem.component_level1))
 spec2$Ecosystem.component_level1 <- with(spec2, ifelse(Species.taxonomic.group.s. %in% "Mollusca", "Benthos", Ecosystem.component_level1))
-spec2                            <- spec2[!(spec2$Species.taxonomic.group.s. %in% c("Other fish (9) and mollusca (2)","Fish","Benthic communities")),]
 spec2                            <- spec2[!is.na(spec2$Species.taxonomic.group.s.),]
 spec2                            <- spec2[!duplicated(spec2),]
 spec2                            <- spec2[order(spec2$Ecosystem.component_level1),]
@@ -904,8 +903,8 @@ title(main="Task 'None' fishing pressures effects on ecosystem components", cex.
 gradient.rect(xleft=0.85, xright=0.95, ybottom=0, ytop=0.3, col=rev(rCols), gradient="y")
 text("Number of \n papers retained", x=0.9, y=0.35, font=4, cex=1.3)
 text("1", x=0.97, y=0.3, font=3)
-text("57", x=0.97, y=0, font=3)
-text("28", x=0.97, y=0.15, font=3)
+text(max(EcoPressmat, na.rm = T), x=0.97, y=0, font=3)
+text(round(max(EcoPressmat, na.rm = T),0), x=0.97, y=0.15, font=3)
 dev.off()
 
 
@@ -950,7 +949,7 @@ ResVar                                <- None[, .(NrPaps = length(unique(SW.ID))
 names(ResVar)                         <- c("RespVar", "EcosysComp", "NrPaps")
 
 Resorder                              <- data.frame(RespVar = unique(None$Response.variable_category),
-                                                    Sord    = c(1,3,9,4,6,11,7,2,5,10,8,12,13))
+                                                    Sord    = c(1,3,6,5,4,11,8,2,7,10,9,12,13))
 Resorder                              <- Resorder[order(Resorder$Sord),]
 
 Ecoorder                              <- data.frame(EcoComp = unique(None$Ecosystem.component_level1),
