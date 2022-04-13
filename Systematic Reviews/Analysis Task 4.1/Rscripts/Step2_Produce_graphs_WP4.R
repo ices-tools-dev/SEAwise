@@ -246,9 +246,9 @@ tiff(paste0(outPath, "RegMap.tiff"), width = 1000, height = 1000, res = 100)
 par(mar=c(1,1,4,1))
 plot(st_geometry(SEAwise4.1_regions), col=SEAwise4.1_regions$colcode, border=F)
 title(main = "Retained papers per region", cex.main=2, font.main=2)
-text(SEAwise4.1_regions$NrPaps, x= SEAwise4.1_regions$Xloc, y=SEAwise4.1_regions$Yloc, col=SEAwise4.1_regions$textcol, font=2)
-text(x= 1E6, y=6E6, "Global studies:", font=3, cex=1.2)
-text(x=1e6, y=5.85e6, paste0(subset(Regions, Region == "Global")$NrPaps), font=2)
+text(SEAwise4.1_regions$NrPaps, x= SEAwise4.1_regions$Xloc, y=SEAwise4.1_regions$Yloc, col=SEAwise4.1_regions$textcol, font=2, cex=1.4)
+text(x= 1E6, y=6.01E6, "Global studies:", font=3, cex=1.4)
+text(x=1e6, y=5.85e6, paste0(subset(Regions, Region == "Global")$NrPaps), font=2, cex=1.4)
 gradient.rect(xleft=0, xright=1E6, ytop=1.5e6, ybottom=1.25E6, col=RegCol$colcode, gradient="x")
 text(x=0, y=1.18e6, "1")
 text(x=1E6, y=1.18e6, max(Regions$NrPaps))
@@ -283,7 +283,7 @@ ResVarCats                            <- ResVarCats[order(NrPaps),,]
 
 tiff(paste0(outPath, "ResVarCats.tiff"), width=1000, height=750, res=100)
 par(mar=c(5, 15, 4, 2))
-b                                     <- barplot(ResVarCats$NrPaps, horiz=TRUE, axes=F, xlim=c(0,255))
+b                                     <- barplot(ResVarCats$NrPaps, horiz=TRUE, axes=F, xlim=c(0,260))
 box()
 axis(2, at=b, labels=ResVarCats$Response.variable_category, las=1, cex.axis=1.2)
 axis(1, at= seq(0,250, 20), labels=seq(0, 250, 20), cex.axis=1.2)
@@ -302,7 +302,7 @@ EcoComp                               <- EcoComp[order(NrPaps),,]
 
 tiff(paste0(outPath, "EcoComp.tiff"), width=1000, height=750, res=100)
 par(mar=c(5, 15, 4, 2))
-b                                     <- barplot(EcoComp$NrPaps, horiz=TRUE, axes=F, xlim=c(0,220))
+b                                     <- barplot(EcoComp$NrPaps, horiz=TRUE, axes=F, xlim=c(0,230))
 box()
 axis(2, at=b, labels=EcoComp$Ecosystem.component_level1 , las=1, cex.axis=1.2)
 axis(1, at= seq(0,220, 20), labels=seq(0, 220, 20), cex.axis=1.2)
@@ -342,7 +342,7 @@ p <- ggplot(EcoComp, aes(NrPaps, Ecosystem.component_level1, fill=CS)) +
         panel.grid = element_blank()) +
   facet_wrap(~Area, scales = "free_x")
 print(p)
-ggsave("EcoRegion.tiff", p, path=outPath)
+ggsave("EcoRegion.tiff", p, path=outPath, width = 8, height = 5)
 
 #-----------------------------------------------
 ## Barplot for WP4 task
@@ -428,7 +428,7 @@ smallScale                            <- Scales2[,c(1:11)]
 
 ## Create plot
 tiff(paste0(outPath, "Spatialscale&resolution.tiff"), width = 1000, height = 1000, res=100)
-layout(mat = (matrix(nrow=1, ncol=2, data=c(1,2))), widths = c(5,1), heights = c(1,1))
+graphics::layout(mat = (matrix(nrow=1, ncol=2, data=c(1,2))), widths = c(5,1), heights = c(1,1))
 # plot 1: small scales
 par(mar=c(10,5,5,0))
 b <- barplot(smallScale, ylim=c(0,90), axes=F, names.arg=rep("", 11), width=1, xlim=c(0,13.2), col=viridis(12))
@@ -476,7 +476,7 @@ smallTemp                             <- TempSc2[,c(1:9)]
 
 ## Create plot
 tiff(paste0(outPath, "Temporalscale&resolution.tiff"), width = 1000, height = 1000, res=100)
-layout(mat = (matrix(nrow=1, ncol=2, data=c(1,2))), widths = c(6,4), heights = c(1,1))
+graphics::layout(mat = (matrix(nrow=1, ncol=2, data=c(1,2))), widths = c(6,4), heights = c(1,1))
 # plot 1: small scales
 par(mar=c(10,5,8,0))
 b <- barplot(smallTemp, ylim=c(0,40), axes=F, names.arg=rep("", 9), width=1, xlim=c(0,11), col=viridis(15))
@@ -520,8 +520,7 @@ rCols                                <- viridis(n=max(EcoPressmat, na.rm=T))
 
 tiff(paste0(outPath, "EcoPress_heatmap.tiff"), width= 1000, height = 1000, res = 100)
 par(mar=c(19, 1, 5, 7))
-plot(r, axes=F,
-     col=rCols, legend=F, box=F)
+plot(r, axes=F, col=rCols, legend=F, box=F)
 segments(x0=0, x1=1, y0=c(0,1), y1=c(0,1))
 abline(v=c(0,1))
 abline(v=c(1/7, 2/7, 3/7, 4/7, 5/7, 6/7), lty=2, col="lightgrey", lwd=0.8)
@@ -637,6 +636,98 @@ gradient.rect(xleft=0.9, xright=1.01, ybottom=0.05, ytop=0.15, col=rCols$colcode
 text("Number of \n papers retained", x=0.955, y=0.2, font=4, cex=1.3)
 text("1", x=0.89, y=0.1, font=3)
 text("146", x=1.02, y=0.1, font=3)
+dev.off()
+
+#-----------------------------------------------
+## Heatmap of ecosystem component vs gear_level 1 for Commercial
+#-----------------------------------------------
+
+EcoFishGear                          <- data[, .(NrPaps = length(unique(SW.ID))),
+                                             by = c("Ecosystem.component_level1", "Fishery.type", "Gear_level1")]
+EcoFishGear                          <- subset(EcoFishGear, Fishery.type %in% "Commercial")
+EcoFishGear$Gear_level1              <- ifelse(is.na(EcoFishGear$Gear_level1)==T, "Not specified", 
+                                               ifelse(EcoFishGear$Gear_level1 == "Hooks_and_lines", "Hooks and Lines", EcoFishGear$Gear_level1)) 
+rCols                                <- data.table(colcode = viridis(max(EcoFishGear$NrPaps)),
+                                                   value = c(1:max(EcoFishGear$NrPaps)))
+
+EcoFishmat                           <- matrix(nrow = length(unique(EcoFishGear$Ecosystem.component_level1)),
+                                               ncol = length(unique(EcoFishGear$Gear_level1)))
+colnames(EcoFishmat)                 <- sort(unique(EcoFishGear$Gear_level1))  
+rownames(EcoFishmat)                 <- sort(unique(EcoFishGear$Ecosystem.component_level1))
+
+for(iRow in c(1:nrow(EcoFishGear))){
+  subdat                             <- EcoFishGear[iRow,]
+  EcoFishmat[subdat$Ecosystem.component_level1, subdat$Gear_level1] <- subdat$NrPaps
+}
+r                                    <- raster(EcoFishmat)
+#rCols                                <- colorRampPalette(c("mistyrose", "darkred"))(max(EcoFishmat, na.rm=T))
+rCols                                <- viridis(n=(max(EcoFishmat, na.rm=T)))
+
+
+tiff(paste0(outPath, "EcoFishComm_heatmap.tiff"), width= 1000, height = 1000, res = 100)
+par(mar=c(19, 1, 5, 7))
+plot(r, axes=F, col=rCols, legend=F, box=F)
+segments(x0=0, x1=1, y0=c(0,1), y1=c(0,1))
+abline(v=c(0,1))
+abline(v=c(1/9, 2/9, 3/9, 4/9, 5/9, 6/9, 7/9, 8/9), lty=2, col="lightgrey", lwd=0.8)
+segments(x0=0, x1=1, y0=c(1/11, 2/11, 3/11, 4/11, 5/11, 6/11, 7/11, 8/11, 9/11,10/11), 
+         y1=c(1/11, 2/11, 3/11, 4/11, 5/11, 6/11, 7/11, 8/11, 9/11,10/11), col="lightgrey", lty=2, lwd=0.8)
+axis(1, at=seq(0.05, 0.95, length.out=9), labels= colnames(EcoFishmat), las=3, cex.axis=1.5)
+axis(4, at=seq(1/22, 21/22, length.out=11), labels= rev(rownames(EcoFishmat)), las=1, pos=1, cex.axis=1.5)
+par(fig=c(0,1,0,1), new=TRUE, mar=c(0,1,5,1))
+plot(c(0,1), c(0,1), type="n", axes=F, ann=F)
+title(main="Commercial fishing gears studied per ecosystem component", cex.main=1.5, font.main=2)
+gradient.rect(xleft=0.85, xright=0.95, ybottom=0, ytop=0.3, col=rev(rCols), gradient="y")
+text("Number of \n papers retained", x=0.9, y=0.35, font=4, cex=1.3)
+text("1", x=0.97, y=0.3, font=3)
+text("152", x=0.97, y=0, font=3)
+text("76", x=0.97, y=0.15, font=3)
+dev.off()
+
+#-----------------------------------------------
+## Heatmap of ecosystem component vs gear_level 1 for Recreational
+#-----------------------------------------------
+
+EcoFishGear                          <- data[, .(NrPaps = length(unique(SW.ID))),
+                                             by = c("Ecosystem.component_level1", "Fishery.type", "Gear_level1")]
+EcoFishGear                          <- subset(EcoFishGear, Fishery.type %in% "Recreational")
+EcoFishGear$Gear_level1              <- ifelse(is.na(EcoFishGear$Gear_level1)==T, "Not specified", 
+                                               ifelse(EcoFishGear$Gear_level1 == "Hooks_and_lines", "Hooks and Lines", EcoFishGear$Gear_level1)) 
+rCols                                <- data.table(colcode = viridis(max(EcoFishGear$NrPaps)),
+                                                   value = c(1:max(EcoFishGear$NrPaps)))
+
+EcoFishmat                           <- matrix(nrow = length(unique(EcoFishGear$Ecosystem.component_level1)),
+                                               ncol = length(unique(EcoFishGear$Gear_level1)))
+colnames(EcoFishmat)                 <- sort(unique(EcoFishGear$Gear_level1))  
+rownames(EcoFishmat)                 <- sort(unique(EcoFishGear$Ecosystem.component_level1))
+
+for(iRow in c(1:nrow(EcoFishGear))){
+  subdat                             <- EcoFishGear[iRow,]
+  EcoFishmat[subdat$Ecosystem.component_level1, subdat$Gear_level1] <- subdat$NrPaps
+}
+r                                    <- raster(EcoFishmat)
+#rCols                                <- colorRampPalette(c("mistyrose", "darkred"))(max(EcoFishmat, na.rm=T))
+rCols                                <- viridis(n=(max(EcoFishmat, na.rm=T)))
+
+
+tiff(paste0(outPath, "EcoFishRecr_heatmap.tiff"), width= 1000, height = 1000, res = 100)
+par(mar=c(19, 1, 5, 7))
+plot(r, axes=F, col=rCols, legend=F, box=F)
+segments(x0=0, x1=1, y0=c(0,1), y1=c(0,1))
+abline(v=c(0,1))
+abline(v=c(1/6, 2/6, 3/6, 4/6, 5/6), lty=2, col="lightgrey", lwd=0.8)
+segments(x0=0, x1=1, y0=c(1/8, 2/8, 3/8, 4/8, 5/8, 6/8, 7/8), 
+         y1=c(1/8, 2/8, 3/8, 4/8, 5/8, 6/8, 7/8), col="lightgrey", lty=2, lwd=0.8)
+axis(1, at=seq(0.05, 0.95, length.out=6), labels= colnames(EcoFishmat), las=3, cex.axis=1.5)
+axis(4, at=seq(1/22, 21/22, length.out=8), labels= rev(rownames(EcoFishmat)), las=1, pos=1, cex.axis=1.5)
+par(fig=c(0,1,0,1), new=TRUE, mar=c(0,1,5,1))
+plot(c(0,1), c(0,1), type="n", axes=F, ann=F)
+title(main="Recreational fishing gears studied per ecosystem component", cex.main=1.5, font.main=2)
+gradient.rect(xleft=0.85, xright=0.95, ybottom=0, ytop=0.3, col=rev(rCols), gradient="y")
+text("Number of \n papers retained", x=0.9, y=0.35, font=4, cex=1.3)
+text("1", x=0.97, y=0.3, font=3)
+text("15", x=0.97, y=0, font=3)
+text("7", x=0.97, y=0.15, font=3)
 dev.off()
 
 #-----------------------------------------------
