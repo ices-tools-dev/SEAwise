@@ -1322,3 +1322,92 @@ tab               <- rbind(tab, RetTask)
 tab$perc          <- round(tab$perc,1)
 
 write.csv(tab, file = paste0(outPath,"summary table data extraction exclusion and inclusion.csv"), row.names = FALSE)
+
+
+
+#-----------------------------------------------
+## Table of quality scores  
+#-----------------------------------------------
+
+dataUnique        <- data[!duplicated(data$SW.ID),]
+
+tab               <- aggregate(SW.ID ~ Quality...Spatial..relative.1.3., dataUnique, function(x) length(unique(x)))
+names(tab)        <- c("Quality.spatial","NrPaps")
+tab$PercPaps      <- tab$NrPaps / sum(tab$NrPaps) * 100
+
+write.csv(tab, file=paste0(outPath, "QualitySpatialPercentage.csv"), row.names = FALSE)
+
+
+tab               <- aggregate(SW.ID ~ Quality...Temporal, dataUnique, function(x) length(unique(x)))
+names(tab)        <- c("Quality.temporal","NrPaps")
+tab$PercPaps      <- tab$NrPaps / sum(tab$NrPaps) * 100
+
+write.csv(tab, file=paste0(outPath, "QualityTemporalPercentage.csv"), row.names = FALSE)
+
+
+tab               <- aggregate(SW.ID ~ Quality...Methods, dataUnique, function(x) length(unique(x)))
+names(tab)        <- c("Quality.methods","NrPaps")
+tab$PercPaps      <- tab$NrPaps / sum(tab$NrPaps) * 100
+
+write.csv(tab, file=paste0(outPath, "QualityMethodsPercentage.csv"), row.names = FALSE)
+
+
+#-----------------------------------------------
+## Barplot of quality scores by region
+#-----------------------------------------------
+
+dataUnique        <- data[!duplicated(data$SW.ID),]
+
+## Spatial
+Qual              <- aggregate(SW.ID ~ Region + Quality...Spatial..relative.1.3., dataUnique, function(x) length(unique(x)))
+names(Qual)       <- c("Region","Quality","NrPaps")
+Qual$Region       <- factor(Qual$Region, levels=c("CS - Mediterranean","CS - Western Waters","CS - North Sea", "CS - Baltic Sea",
+                                                  "Mediterranean - non CS","Western Waters - non CS","North Sea - non CS","Baltic Sea - non CS",
+                                                  "Barents Sea","Black Sea","NE-Atlantic","Global"))
+
+p <- ggplot(Qual, aes(Region,NrPaps, fill=as.factor(Quality))) +
+  geom_bar(position = "fill",stat="identity") +
+  scale_y_continuous(expand = c(0,0)) +
+  scale_fill_manual(values=viridis(3), name= "Quality spatial") +
+  labs(x="Region", y="Proportion of papers") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle=90, hjust=1))
+print(p)
+ggsave("QualitySpatial.tiff", p, path=outPath, width = 8, height = 5)
+
+## Temporal
+Qual              <- aggregate(SW.ID ~ Region + Quality...Temporal, dataUnique, function(x) length(unique(x)))
+names(Qual)       <- c("Region","Quality","NrPaps")
+Qual$Region       <- factor(Qual$Region, levels=c("CS - Mediterranean","CS - Western Waters","CS - North Sea", "CS - Baltic Sea",
+                                                  "Mediterranean - non CS","Western Waters - non CS","North Sea - non CS","Baltic Sea - non CS",
+                                                  "Barents Sea","Black Sea","NE-Atlantic","Global"))
+
+p <- ggplot(Qual, aes(Region,NrPaps, fill=as.factor(Quality))) +
+  geom_bar(position = "fill",stat="identity") +
+  scale_y_continuous(expand = c(0,0)) +
+  scale_fill_manual(values=viridis(3), name= "Quality temporal") +
+  labs(x="Region", y="Proportion of papers") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle=90, hjust=1))
+print(p)
+print(p)
+ggsave("QualityTemporal.tiff", p, path=outPath, width = 8, height = 5)
+
+## Methods
+Qual              <- aggregate(SW.ID ~ Region + Quality...Methods, dataUnique, function(x) length(unique(x)))
+names(Qual)       <- c("Region","Quality","NrPaps")
+Qual$Region       <- factor(Qual$Region, levels=c("CS - Mediterranean","CS - Western Waters","CS - North Sea", "CS - Baltic Sea",
+                                                  "Mediterranean - non CS","Western Waters - non CS","North Sea - non CS","Baltic Sea - non CS",
+                                                  "Barents Sea","Black Sea","NE-Atlantic","Global"))
+
+p <- ggplot(Qual, aes(Region,NrPaps, fill=as.factor(Quality))) +
+  geom_bar(position = "fill",stat="identity") +
+  scale_y_continuous(expand = c(0,0)) +
+  scale_fill_manual(values=viridis(3), name= "Quality methods") +
+  labs(x="Quality methods", y="Proportion of papers") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle=90, hjust=1))
+print(p)
+print(p)
+ggsave("QualityMethods.tiff", p, path=outPath, width = 8, height = 5)
+

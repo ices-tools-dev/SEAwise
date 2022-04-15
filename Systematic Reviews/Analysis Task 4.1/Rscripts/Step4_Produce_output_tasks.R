@@ -107,7 +107,7 @@ table(Task42$Pressure.type) #most indeed under 'Catch and bycatch' but alsoq qui
 table(Task42$Pressure_level, useNA = "always") #most indeed under 'Bycatch'
 
 # Check whether there are other papers not labelled as 4.2 that involve bycatch?
-TaskOther                             <- subset(Tasks, !WP4.task %in% "4.2" & Pressure_level %in% "Bycatch")
+TaskOther                             <- subset(Tasks, !(WP4.task %in% "4.2") & Pressure_level %in% "Bycatch" & !(SW.ID %in% Task42$SW.ID))
 
 table(TaskOther$WP4.task) #quite some other papers looking at bycatch. 
 # "None" most likely deals with bycatch of non-PET species.
@@ -120,6 +120,7 @@ table(TaskOther$Ecosystem.component_level1, TaskOther$WP4.task)
 Task42                                <- rbind(Task42, TaskOther[TaskOther$Ecosystem.component_level1 %in% 
                                                                  c("Fish_cartilaginous","Marine_mammals",
                                                                  "Reptiles","Seabirds"),])
+length(unique(Task42$SW.ID)) #119 papers
 
 #-----------------------------------------------#
 # Provide taxa list for this task
@@ -290,6 +291,7 @@ table(TaskOther$Ecosystem.component_level1, TaskOther$WP4.task)
 # to 4.3 task data
 Task43                                <- rbind(Task43, TaskOther[!TaskOther$Ecosystem.component_level1 %in% "Seabirds",])
 
+length(unique(Task43$SW.ID)) #203 papers
 
 #-----------------------------------------------#
 # Heatmap of benthic components and pressure for Task 4.3
@@ -540,6 +542,7 @@ table(TaskOther$WP4.task, TaskOther$Response.variable_category)
 # Include these papers as well to the Task 4.4 data set.
 Task44                                <- rbind(Task44, TaskOther)
 
+length(unique(Task44$SW.ID)) #237 papers
 
 #-----------------------------------------------#
 # Heatmap of components and pressure for Task 4.4
@@ -682,6 +685,8 @@ length(unique(TaskOther$SW.ID)) #2 papers, seem related to mortality caused by f
 # Add this paper
 Task45                                <- rbind(Task45, TaskOther)
 
+length(unique(Task45$SW.ID)) #30 papers
+
 
 #-----------------------------------------------#
 # Heatmap of components and pressure for Task 4.5
@@ -776,7 +781,11 @@ spec2$Species.taxonomic.group.s. <- with(spec2, ifelse(Species.taxonomic.group.s
 spec2$Species.taxonomic.group.s. <- with(spec2, ifelse(Species.taxonomic.group.s. %in% "Protozoans", "Protozoa", Species.taxonomic.group.s.))
 spec2$Ecosystem.component_level1 <- with(spec2, ifelse(Species.taxonomic.group.s. %in% "Protozoa", "Plankton", Ecosystem.component_level1))
 spec2$Ecosystem.component_level1 <- with(spec2, ifelse(Species.taxonomic.group.s. %in% "Macrophyta", "Plants", Ecosystem.component_level1))
+spec2$Ecosystem.component_level1 <- with(spec2, ifelse(Species.taxonomic.group.s. %in% "Algae", "Plankton", Ecosystem.component_level1))
 spec2$Ecosystem.component_level1 <- with(spec2, ifelse(Species.taxonomic.group.s. %in% "Mollusca", "Benthos", Ecosystem.component_level1))
+spec2$Region                     <- with(spec2, ifelse(Species.taxonomic.group.s. %in% "Bivalvia", c("CS - Mediterranean, Mediterranean - non CS"), Region))
+spec2$Region                     <- with(spec2, ifelse(Species.taxonomic.group.s. %in% "Hydrozoa", c("CS - Mediterranean, Mediterranean - non CS"), Region))
+spec2$Region                     <- with(spec2, ifelse(Species.taxonomic.group.s. %in% "Polychaeta", c("CS - Mediterranean, Mediterranean - non CS"), Region))
 spec2                            <- spec2[!is.na(spec2$Species.taxonomic.group.s.),]
 spec2                            <- spec2[!duplicated(spec2),]
 spec2                            <- spec2[order(spec2$Ecosystem.component_level1),]
