@@ -1366,10 +1366,10 @@ Qual$Region       <- factor(Qual$Region, levels=c("CS - Mediterranean","CS - Wes
                                                   "Barents Sea","Black Sea","NE-Atlantic","Global"))
 
 p <- ggplot(Qual, aes(Region,NrPaps, fill=as.factor(Quality))) +
-  geom_bar(position = "fill",stat="identity") +
-  scale_y_continuous(expand = c(0,0)) +
+  geom_bar(stat="identity") +
+  scale_y_continuous(expand = c(0.01,0), n.breaks = 10) +
   scale_fill_manual(values=viridis(3), name= "Quality spatial") +
-  labs(x="Region", y="Proportion of papers") +
+  labs(x="Region", y="Number of papers") +
   theme_bw() +
   theme(axis.text.x = element_text(angle=90, hjust=1))
 print(p)
@@ -1383,13 +1383,12 @@ Qual$Region       <- factor(Qual$Region, levels=c("CS - Mediterranean","CS - Wes
                                                   "Barents Sea","Black Sea","NE-Atlantic","Global"))
 
 p <- ggplot(Qual, aes(Region,NrPaps, fill=as.factor(Quality))) +
-  geom_bar(position = "fill",stat="identity") +
-  scale_y_continuous(expand = c(0,0)) +
+  geom_bar(stat="identity") +
+  scale_y_continuous(expand = c(0.01,0), n.breaks = 10) +
   scale_fill_manual(values=viridis(3), name= "Quality temporal") +
-  labs(x="Region", y="Proportion of papers") +
+  labs(x="Region", y="Number of papers") +
   theme_bw() +
   theme(axis.text.x = element_text(angle=90, hjust=1))
-print(p)
 print(p)
 ggsave("QualityTemporal.tiff", p, path=outPath, width = 8, height = 5)
 
@@ -1401,13 +1400,12 @@ Qual$Region       <- factor(Qual$Region, levels=c("CS - Mediterranean","CS - Wes
                                                   "Barents Sea","Black Sea","NE-Atlantic","Global"))
 
 p <- ggplot(Qual, aes(Region,NrPaps, fill=as.factor(Quality))) +
-  geom_bar(position = "fill",stat="identity") +
-  scale_y_continuous(expand = c(0,0)) +
-  scale_fill_manual(values=viridis(3), name= "Quality methods") +
-  labs(x="Quality methods", y="Proportion of papers") +
+  geom_bar(stat="identity") +
+  scale_y_continuous(expand = c(0.01,0), n.breaks = 10) +
+  scale_fill_manual(values=c("#440154FF","#FDE725FF","#21908CFF"), name= "Quality methods") +
+  labs(x="Quality methods", y="Number of papers") +
   theme_bw() +
   theme(axis.text.x = element_text(angle=90, hjust=1))
-print(p)
 print(p)
 ggsave("QualityMethods.tiff", p, path=outPath, width = 8, height = 5)
 
