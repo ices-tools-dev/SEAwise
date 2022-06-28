@@ -40,55 +40,55 @@ GISpath                               <- "Systematic Reviews/Analysis Task 4.1/G
 #  Note: I manually switched rows 1 and 2 in the Binch-file, otherwise the file is not read correctly.
 #  Note: I manually restored some of the column-names in the file for Thorpe.
 #-----------------------------------------------
-readers                                <- c("Altuna-Etxabe", "Anastasopoulou", "Astarloa", "Basurko", "Binch", "Bluemel", "Brown",
-                                            "Carbonara", "Dinesen", "Festjens", "garcia", "Girardin", "Halouani", "Lefkaditou_Chatzispyrou", "MacMillan", "Papadopoulou", "Potier",
-                                            "Romagnoni", "Seghers", "Smith", "Spedicato", "Thorpe", "Thuenen","Tsagarakis", "Uhlmann_Reid", "VanHoey", "vdReijden")
-
-## Create a table from the first reader
-people                                 <- readers[1]
-tab                                    <- read.xlsx(file=paste0(datPath, "DataExtractionForm_WP4_", people,".xlsx"), startRow = 2, header = TRUE, sheetIndex = 1)
-colnames(tab)
-tab$Reader                             <- people
-
-## Add all other readers
-for(people in readers[2:length(readers)]) {
-  print(people)
-  tab1                                 <- read.xlsx(file=paste0(datPath, "DataExtractionForm_WP4_", people,".xlsx"), startRow = 2, header = TRUE, sheetIndex = 1)
-  tab1$Reader                          <- people
-  tab2                                 <- tab1[,colnames(tab1) %in% colnames(tab)] # remove empty / additional columns
-  tab2                                 <- subset(tab2, !is.na(tab2$SW.ID)==T) # remove empty rows
-  tab                                  <- rbind(tab,tab2)
-} # end people-loop
-
-## In case package 'xlsx' doesn't work: same but with another package
-if(!"xlsx" %in% .packages()){
-  ## Create a table from the first reader
-  people                                 <- readers[1]
-  tab                                    <- read.xlsx(xlsxFile = paste0(datPath, "DataExtractionForm_WP4_", people,".xlsx"), startRow = 2, colNames = TRUE, sheet = 1)
-  colnames(tab)
-  tab$Reader                             <- people
-
-  ## Add all other readers
-  for(people in readers[2:length(readers)]) {
-    print(people)
-    tab1                                 <- read.xlsx(xlsxFile = paste0(datPath, "DataExtractionForm_WP4_", people,".xlsx"), startRow = 2, colNames = TRUE, sheet = 1)
-    tab1$Reader                          <- people
-    tab2                                 <- tab1[,colnames(tab1) %in% colnames(tab)] # remove empty / additional columns
-    tab2                                 <- subset(tab2, !is.na(tab2$SW.ID)==T) # remove empty rows
-    tab                                  <- rbind(tab,tab2)
-  } # end people-loop
-
-  ## Correct some column names so they are the same as if read with 'xlsx' package
-  names(tab)
-  names(tab)[c(20:23)]                   <- c("Scale...Spatial..m.","Scale...Temporal","Resolution...Spatial..m.","Resolution...Temporal")
-  names(tab)[c(27:29)]                   <- c("Quality...Spatial..relative.1.3.","Quality...Temporal","Quality...Methods")
-  names(tab)[38]                         <- "Species.taxonomic.group.s."
-
-}
-
-# Save as rds-file
-saveRDS(tab, paste0(outPath, "tab.rds"))
-rm(tab1, tab2, people, readers)
+# readers                                <- c("Altuna-Etxabe", "Anastasopoulou", "Astarloa", "Basurko", "Binch", "Bluemel", "Brown",
+#                                             "Carbonara", "Dinesen", "Festjens", "garcia", "Girardin", "Halouani", "Lefkaditou_Chatzispyrou", "MacMillan", "Papadopoulou", "Potier",
+#                                             "Romagnoni", "Seghers", "Smith", "Spedicato", "Thorpe", "Thuenen","Tsagarakis", "Uhlmann_Reid", "VanHoey", "vdReijden")
+# 
+# ## Create a table from the first reader
+# people                                 <- readers[1]
+# tab                                    <- read.xlsx(file=paste0(datPath, "DataExtractionForm_WP4_", people,".xlsx"), startRow = 2, header = TRUE, sheetIndex = 1)
+# colnames(tab)
+# tab$Reader                             <- people
+# 
+# ## Add all other readers
+# for(people in readers[2:length(readers)]) {
+#   print(people)
+#   tab1                                 <- read.xlsx(file=paste0(datPath, "DataExtractionForm_WP4_", people,".xlsx"), startRow = 2, header = TRUE, sheetIndex = 1)
+#   tab1$Reader                          <- people
+#   tab2                                 <- tab1[,colnames(tab1) %in% colnames(tab)] # remove empty / additional columns
+#   tab2                                 <- subset(tab2, !is.na(tab2$SW.ID)==T) # remove empty rows
+#   tab                                  <- rbind(tab,tab2)
+# } # end people-loop
+# 
+# ## In case package 'xlsx' doesn't work: same but with another package
+# if(!"xlsx" %in% .packages()){
+#   ## Create a table from the first reader
+#   people                                 <- readers[1]
+#   tab                                    <- read.xlsx(xlsxFile = paste0(datPath, "DataExtractionForm_WP4_", people,".xlsx"), startRow = 2, colNames = TRUE, sheet = 1)
+#   colnames(tab)
+#   tab$Reader                             <- people
+# 
+#   ## Add all other readers
+#   for(people in readers[2:length(readers)]) {
+#     print(people)
+#     tab1                                 <- read.xlsx(xlsxFile = paste0(datPath, "DataExtractionForm_WP4_", people,".xlsx"), startRow = 2, colNames = TRUE, sheet = 1)
+#     tab1$Reader                          <- people
+#     tab2                                 <- tab1[,colnames(tab1) %in% colnames(tab)] # remove empty / additional columns
+#     tab2                                 <- subset(tab2, !is.na(tab2$SW.ID)==T) # remove empty rows
+#     tab                                  <- rbind(tab,tab2)
+#   } # end people-loop
+# 
+#   ## Correct some column names so they are the same as if read with 'xlsx' package
+#   names(tab)
+#   names(tab)[c(20:23)]                   <- c("Scale...Spatial..m.","Scale...Temporal","Resolution...Spatial..m.","Resolution...Temporal")
+#   names(tab)[c(27:29)]                   <- c("Quality...Spatial..relative.1.3.","Quality...Temporal","Quality...Methods")
+#   names(tab)[38]                         <- "Species.taxonomic.group.s."
+# 
+# }
+# 
+# # Save as rds-file
+# saveRDS(tab, paste0(outPath, "tab.rds"))
+# rm(tab1, tab2, people, readers)
 
 
 
@@ -156,7 +156,7 @@ data                                  <- tab[SW.ID %in% retained,,]
 #rm(tab, contributors, retained, excluded)
 
 ## For easyness, skip the long-text columns.
-data                                  <- data[,c(1, 5, 19:29, 32:49, 51:52)]
+# data                                  <- data[,c(1, 5, 19:29, 32:49, 51:52)]
 
 ## Check the regions (all fine)
 table(is.na(data$Region))
@@ -166,12 +166,12 @@ tobechecked                           <- data[is.na(Region)==T,,]
 data                                  <- data[is.na(Region)==F,,]
 
 ## Check the spatial scale and resolution, and correct for input mistakes
-table(is.na(data$Scale...Spatial..m.)) # There are 16 NAs
+table(is.na(data$Scale...Spatial..m.)) # There are 17 NAs
 table(data$Scale...Spatial..m.)
 data$Scale...Spatial..m.              <- ifelse(data$Scale...Spatial..m. %in% c("50,000-100,001",  "50,000-100,002",  "50,000-100,003"), "50,000-100,000",
                                                 ifelse(data$Scale...Spatial..m. == "100-501", "100-500", 
                                                        ifelse(data$Scale...Spatial..m. == "50-101", "50-100", data$Scale...Spatial..m.)))
-table(is.na(data$Resolution...Spatial..m.)) # There are 79 NAs
+table(is.na(data$Resolution...Spatial..m.)) # There are 82 NAs
 table(data$Resolution...Spatial..m.)
 data$Resolution...Spatial..m.         <- ifelse(data$Resolution...Spatial..m. %in% c("50,000-100,001",  "50,000-100,002",  "50,000-100,003"), "50,000-100,000",
                                                 ifelse(data$Resolution...Spatial..m. == "50-101", "50-100", 
@@ -182,7 +182,7 @@ data$Resolution...Spatial..m.         <- ifelse(data$Resolution...Spatial..m. %i
 table(data$Scale...Temporal)
 table(data$Resolution...Temporal)
 table(is.na(data$Scale...Temporal)) # There are 15 NAs
-table(is.na(data$Resolution...Temporal)) # There are 43 NAs
+table(is.na(data$Resolution...Temporal)) # There are 44 NAs
 
 ## Check the Response variable category
 table(is.na(data$Response.variable_category)) #no NAs
@@ -197,7 +197,7 @@ data$Response.variable_category       <- ifelse(data$Response.variable_category 
 table(is.na(data$Pressure.type)) ## all fine 
 
 ## Check the Pressure types (level 2)
-table(is.na(subset(data, Pressure.type == "Catch_and_bycatch")$Pressure_level)) # There are 101 NAs (for rows where non-NA was expected). These are set to "non specified".
+table(is.na(subset(data, Pressure.type == "Catch_and_bycatch")$Pressure_level)) # There are 97 NAs (for rows where non-NA was expected). These are set to "non specified".
 
 table(data$Pressure_level)
 data$Pressure_level                  <- ifelse(data$Pressure_level == "target", "Target", data$Pressure_level)
@@ -239,18 +239,8 @@ data$Direction.of.relationship       <- ifelse(data$Direction.of.relationship ==
 data$Direction.of.relationship[is.na(data$Direction.of.relationship)] <- "Not specified"
 
 ## Check what species are commonly mentioned
-length(unique(data$Species.taxonomic.group.s.)) # 460 unique input... Let's try to group/categorize these
+length(unique(data$Species.taxonomic.group.s.)) # 461 unique input... Let's try to group/categorize these in a separate script (step 3)
 
-## Change any / or other strange signs within species names.
-data[grep("/", data$Species.taxonomic.group.s.),ROWID] # 110  114 1359 1478 ## this does not work with backslash
-data$Species.taxonomic.group.s.      <- ifelse(data$ROWID %in% c(110, 114),"Sparus aurata _ Thunnus thynnus _ Scomber scombrus _ Coryphaena hippurus _ Dicentrarchus labrax _ 
-                                               Euthynnus alletteratus _ Trachurus trachurus _ Lichia amia _ Pomatomus saltatrix _ Lithognathus mormyrus _ 
-                                               Anguilla anguilla _ Boops boops _ Diplodus sargus sargus _ Sarda sarda _ Pagellus erythrinus _ Merluccius merluccius _ 
-                                               Scomber colias _ Mugil spp. _ Merlangius merlangus _ Spicara maena _ Chelidonichthys lucerna _ Oblada melanura _ 
-                                               Platichthys flesus _ Ombrina cirrosa _ Scophthalmus rhombus _ Scophthalmus maximus",
-                                               ifelse(data$ROWID == 1359, "Carnivore and scavenge feeding benthos",
-                                                      ifelse(data$ROWID == 1478, "predating and scavenging species", 
-                                                             ifelse(data$ROWID == 1437, "Larus audouinii _ Larus cachinnans",  data$Species.taxonomic.group.s.))))
 ## fix some rows with double input
 a                                    <- data[Species.taxonomic.group.s. == "other fish (9) and mollusca (2)",,]
 a$Species.taxonomic.group.s.         <- "Fish"
@@ -270,7 +260,7 @@ data                                 <- rbindlist(list(data, a, b), use.names=TR
 
 
 ## Check what pressure variables are commonly mentioned
-length(unique(data$Pressure_variable)) # 402 unique input... Let's skip for now.
+length(unique(data$Pressure_variable)) # 400 unique input... Let's skip for now.
 
 
 #-----------------------------------------------
