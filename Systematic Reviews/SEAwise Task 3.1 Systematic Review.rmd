@@ -1,30 +1,209 @@
 ---
-title: "SEAwise Task 2.1 Systematic Review"
+title: "SEAwise Task 3.1 Systematic Review"
 author: "Elliot J. Brown"
-date: "15/03/2022"
-output: html_document
+date: "26/04/2022"
+output: 
+  bookdown::html_document2:
+    toc: true
+    toc_float: true
+    code_folding: hide
+    code_download: true
 ---
 
+<style type="text/css">
+.main-container {
+  max-width: 90% !important;
+  margin: auto;
+}
+p.caption {
+  font-size: 0.8em;
+  font-style: italic;
+}
+</style>
+
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo=TRUE,
+                      eval = TRUE,
+                      warning = FALSE,
+                      fig.align = "center",
+                      tidy = 'formatR',
+                      out.width = "90%")
+
 ```
 
-## R Markdown
+# Introduction
+This document explores the database produced for _SEAwise_ task 3.1 via a systematic review.  
+The input data comes from Marie Savina-Rolland.  The database itself and the methods used to construct it can be found in the _SEAwise_ github repository under "Analysis Task 3.1".  An explanation of the methods used to undertake the review can be found in _SEAwise_'s deliverable reports D1.1 and D3.1.  
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+Most of the code used to process data and create visualisations are hidden in this HTML. To view each chunk, simply click on the button to the right of the relevant section. To download the entire R-markdown (.rmd) file including all text and code chunks, use the code button at the top of the page, with the dropdown arrow.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+To render run the calculations or re-render this html document from the .rmd file, you need the following R packages installed.
 
-```{r cars}
-summary(cars)
+```{r loadLibraries, message=FALSE, results='hide'}
+require(knitr)
+require(scales)
+require(bookdown)
+require(ggplot2)
+require(ggthemes)
+require(plotly)
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
+# Data
+In this section we read in, explore and "clean" formatting of the data from Marie for our own purposes.
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r readRawData}
+#===
+# Read in raw data
+#====
+load(file = "Analysis Task 3.1/scripts/finaldataextracted_3.Rdata")
+dbraw <- data3
+rm(data3)
+#=====
+
+#===
+# Clean up formats
+#====
+colnames(dbraw) <- gsub(pattern = ".",
+                        replacement = "",
+                        x = colnames(dbraw),
+                        fixed = TRUE)
+
+unique(dbraw$Directionofrelationship)
+#=====
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+# Analyses by Demographic Rates
+## General
+First we will investigate how the different rates have been investigated in the literature. 
+
+
+## Abundance and Biomass
+
+## Survival
+
+## Growth and Condition
+
+## Reproduction and Maturity
+
+## Migration and Spatial Distributions
+
+## Production
+
+## Other
+
+
+# Analyses by Region
+## General Spatial Patterns
+
+
+## Baltic Sea
+
+```{r BalticDataWrangling}
+baltic <- dbraw[dbraw$Region %in% c("Baltic Sea - CS", "Baltic Sea - non CS"),]
+
+```
+In the Baltic Sea, `r nrow(baltic)` interactions between environment and fish productivity were found.  These came from `r nrow(baltic[unique(baltic$SWID), )` individual works published over a `r max(baltic$Year)-min(baltic$Year)` period, from `r min(baltic$Year)` to `r max(baltic$Year)`. 
+
+```{r fig.cap="Baltic studies over time"}
+ggplotly(ggplot()+
+           geom_bar(data = baltic[!duplicated(baltic$SWID),],
+                    mapping = aes(x = as.integer(Year),
+                                  fill = Region))+
+  theme_clean()+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))+
+    # scale_x_continuous(breaks = )
+  scale_fill_viridis_d(option = "viridis"))
+
+```
+
+```{r fig.cap="Frequency at which life-history stages considered in studies from the baltic"}
+#===
+# data wrangling for life-history studies
+#====
+bagg_temp <- table(baltic[baltic$Year %in% c(2019:2022), "Lifestage"],
+                   baltic[baltic$Year %in% c(2019:2022), "Year"])
+
+bagg_temp <- as.data.frame(bagg_temp)
+colnames(bagg_temp) <- c("Lifestage", "Year", "No. Papers")
+
+bagg_temp$`No. Papers` <- as.numeric(bagg_temp$`No. Papers`)
+bagg_temp$Lifestage <- gsub(pattern = "ABIOTIC ANTHROPIC", replacement = "ANTHROPIC", x = bagg_temp$Lifestage)
+
+#===
+# Plot it out
+#====
+ggplotly(ggplot(bagg_temp) +
+           geom_tile(mapping = aes(x = Year,
+                                   y = Lifestage,
+                                   fill = `No. Papers`))+
+           theme_clean() +
+           theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))+
+           scale_fill_viridis_c(option = "viridis"))
+#=====
+
+```
+
+```{r fig.cap="The frequency at which combinations of drivers and responses  have been addressed in recent (2019-2022) literature".}
+#===
+# Species agnostic recent investigations
+#====
+bagg_temp <- table(baltic[baltic$Year %in% c(2019:2022), "Process"],
+                   baltic[baltic$Year %in% c(2019:2022), "Driverscategory"])
+
+bagg_temp <- as.data.frame(bagg_temp)
+colnames(bagg_temp) <- c("Process", "Driver", "No. Papers")
+
+bagg_temp$`No. Papers` <- as.numeric(bagg_temp$`No. Papers`)
+bagg_temp$Driver <- gsub(pattern = "COMPETITION & DENSITY DEPENDENCE", replacement = "COMPETITION &\nDENSITY DEPENDENCE", x = bagg_temp$Driver)
+bagg_temp$Driver <- gsub(pattern = "CLIMATE & OCEANOGRAPHY", replacement = "CLIMATE &\nOCEANOGRAPHY", x = bagg_temp$Driver)
+bagg_temp$Driver <- gsub(pattern = "ABIOTIC ANTHROPIC", replacement = "ANTHROPIC", x = bagg_temp$Driver)
+
+ggplotly(ggplot(bagg_temp) +
+           geom_tile(mapping = aes(x = Driver,
+                                   y = Process,
+                                   fill = `No. Papers`))+
+           theme_clean() +
+           theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))+
+           scale_fill_viridis_c(option = "viridis"))
+#=====
+```
+
+```{r fig.cap="Frequency of driver impacts upon growth for differnt species in the Baltic"}
+#===
+# Factors impacting growth
+#====
+bagg_temp <- table(baltic[baltic$Process == "Growth", "Directionofrelationship"],
+                   baltic[baltic$Process == "Growth", "Species"])
+
+bagg_temp <- as.data.frame(bagg_temp)
+colnames(bagg_temp) <- c("Response", "Species", "No. Papers")
+
+bagg_temp$Response <- gsub(pattern = " response", replacement = "", x = bagg_temp$Response)
+bagg_temp$`No. Papers` <- as.numeric(bagg_temp$`No. Papers`)
+#=====
+
+#===
+# Plot it
+#====
+ggplotly(ggplot(bagg_temp) +
+           geom_tile(mapping = aes(x = Response,
+                                   y = Species,
+                                   fill = `No. Papers`))+
+           theme_clean() +
+           theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))+
+           scale_fill_viridis_c(option = "viridis"))
+#=====
+```
+
+
+## North Sea
+
+## Western Waters
+
+## Mediterranean Sea
+
+
+# Analyses by Select Species
+
