@@ -126,11 +126,11 @@ length(unique(tab$SW.ID))
 ## Check who did how many papers
 contributors                          <- tab[,.(Papers_read = length(unique(SW.ID))), by="Reader"]
 
-## how many papers retained : 549 papers
+## how many papers retained : 542 papers
 retained                              <- unique(subset(tab, is.na(Exclusion.Criteria)==TRUE)$SW.ID)
 length(retained)
 
-## how many rejected : 182 papers
+## how many rejected : 189 papers
 excluded                              <- unique(subset(tab, !is.na(Exclusion.Criteria) == TRUE)$SW.ID)
 length(excluded)
 
@@ -156,7 +156,7 @@ data                                  <- tab[SW.ID %in% retained,,]
 #rm(tab, contributors, retained, excluded)
 
 ## For easyness, skip the long-text columns.
-data                                  <- data[,c(1, 5, 19:29, 32:49, 51:52)]
+# data                                  <- data[,c(1, 5, 19:29, 32:49, 51:52)]
 
 ## Check the regions (all fine)
 table(is.na(data$Region))
@@ -166,7 +166,7 @@ tobechecked                           <- data[is.na(Region)==T,,]
 data                                  <- data[is.na(Region)==F,,]
 
 ## Check the spatial scale and resolution, and correct for input mistakes
-table(is.na(data$Scale...Spatial..m.)) # There are 16 NAs
+table(is.na(data$Scale...Spatial..m.)) # There are 17 NAs
 table(data$Scale...Spatial..m.)
 data$Scale...Spatial..m.              <- ifelse(data$Scale...Spatial..m. %in% c("50,000-100,001",  "50,000-100,002",  "50,000-100,003"), "50,000-100,000",
                                                 ifelse(data$Scale...Spatial..m. == "100-501", "100-500", 
@@ -182,15 +182,12 @@ data$Resolution...Spatial..m.         <- ifelse(data$Resolution...Spatial..m. %i
 table(data$Scale...Temporal)
 table(data$Resolution...Temporal)
 table(is.na(data$Scale...Temporal)) # There are 15 NAs
-table(is.na(data$Resolution...Temporal)) # There are 43 NAs
+table(is.na(data$Resolution...Temporal)) # There are 44 NAs
 
 ## Check the Response variable category
-table(is.na(data$Response.variable_category)) # There are 8 NA's. 
-## 2 are described as "spatial distribution changes", which are classified to Abundance/biomass/density. The remaining NAs are classified as Other.
-data$Response.variable_category       <- ifelse(data$Response.variable_paper == "spatial distribution changes" & data$SW.ID == "SW4_1094", "Abundance/biomass/density", data$Response.variable_category)
-data$Response.variable_category[is.na(data$Response.variable_category)==TRUE] <- "Other"
-
+table(is.na(data$Response.variable_category)) #no NAs
 table(data$Response.variable_category)
+
 data$Response.variable_category       <- ifelse(data$Response.variable_category %in% c("abundance", "Abundance", "Abundance by taxon"), "Abundance/biomass/density",
                                                 ifelse(data$Response.variable_category %in% c("other"), "Other",
                                                        ifelse(data$Response.variable_category == "Other_physical", "Physiology", data$Response.variable_category)))
@@ -200,53 +197,29 @@ data$Response.variable_category       <- ifelse(data$Response.variable_category 
 table(is.na(data$Pressure.type)) ## all fine 
 
 ## Check the Pressure types (level 2)
-table(is.na(subset(data, Pressure.type == "Catch_and_bycatch")$Pressure_level)) # There are 113 NAs (for rows where non-NA was expected). These are set to "non specified".
+table(is.na(subset(data, Pressure.type == "Catch_and_bycatch")$Pressure_level)) # There are 97 NAs (for rows where non-NA was expected). These are set to "non specified".
 
 table(data$Pressure_level)
 data$Pressure_level                  <- ifelse(data$Pressure_level == "target", "Target", data$Pressure_level)
 data$Pressure_level                  <- ifelse(data$Pressure.type == "Catch_and_bycatch" & is.na(data$Pressure_level), "Not specified", data$Pressure_level)
-# 'Fix' the input of paper SW4_1621, that states both target and non-target (in data)
-b                                    <- subset(data, SW.ID == "SW4_1621")
-b$Pressure_level                     <- "Target"
-a                                    <- b
-a$Pressure_level                     <- "Non-target"
-a$ROWID                              <- max(data$ROWID)+1
-data                                 <- subset(data, !SW.ID == "SW4_1621")
-data                                 <- rbindlist(list(data, a, b), use.names=TRUE)
+
 
 ## Check the ecosystem component level 1
-table(is.na(data$Ecosystem.component_level1)) # 2 NAs. 
-# THey dominantly focus on fish_teleost and Nephrops (SW.ID SW4_0479)
-# 'Fix' the input of paper SW4_0479, that should refer to both Nephrops and fish_teleost flatfish
-b                                    <- data[(SW.ID == "SW4_0479" & is.na(data$Ecosystem.component_level1)==T),]
-b$Ecosystem.component_level1         <- "Fish_teleost"
-b$Ecosystem.component_level2         <- "Flatfish"
-a                                    <- b
-a$Ecosystem.component_level1         <- "Benthos"
-a$Ecosystem.component_level2         <- "Benthic_epifauna"
-a$ROWID                              <- max(data$ROWID) + c(1:nrow(a))
-data                                 <- data[!(data$SW.ID == "SW4_0479"& is.na(data$Ecosystem.component_level1)==T),]
-data                                 <- rbindlist(list(data, a, b), use.names=TRUE)
+table(is.na(data$Ecosystem.component_level1)) #no NAs 
 
 ## Check the ecosystem component level 2
 table(is.na(subset(data, Ecosystem.component_level1 %in% c("Fish_teleost", "Benthos", "Marine_mammals", "Fish_cartilaginous",
-                                                     "Physical_habitats", "Plankton", "Plants", "Reptiles"))$Ecosystem.component_level2)==T) # 283 NA's where there should be none.
+                                                     "Physical_habitats", "Plankton", "Plants", "Reptiles"))$Ecosystem.component_level2)==T) #301 NAs
 table(data$Ecosystem.component_level2)
-# 'Fix' the input of paper SW4_0746, that states both benthic epifauna and infauna
-b                                    <- subset(data, SW.ID == "SW4_0746")
-b$Ecosystem.component_level2         <- "Benthic_epifauna"
-a                                    <- b
-a$Ecosystem.component_level2         <- "Benthic_infauna"
-a$ROWID                              <- max(data$ROWID) + c(1:nrow(a))
-data                                 <- subset(data, !SW.ID == "SW4_0746")
-data                                 <- rbindlist(list(data, a, b), use.names=TRUE)
+
 
 ## Check Fishery types and Gear_level1
 table(is.na(data$Fishery.type)) # all fine
-table(is.na(data$Gear_level1))  # 191 NAs
+
 table(data$Fishery.type)
-data$Fishery.type                    <- ifelse(data$Fishery.type %in% c("commercial", "Artisanal"), "Commercial", 
+data$Fishery.type                    <- ifelse(data$Fishery.type %in% "Artisanal", "Commercial", 
                                                ifelse(data$SW.ID == "SW4_1000", "Commercial", data$Fishery.type))
+
 table(data$Gear_level1)
 data$Gear_level1                     <- ifelse(data$Gear_level1 == "Demersal_trawls", "Demersal trawls",
                                                ifelse(data$Gear_level1 %in% c("Pelagic _trawls", "Pelagic_trawls"), "Pelagic trawls",
@@ -258,32 +231,16 @@ table(data$WP4.task)
 data$WP4.task                        <- ifelse(data$WP4.task == "none", "None", 
                                                ifelse(data$WP4.task == "4.3_4.4", "4.3 _ 4.4",
                                                       ifelse(data$WP4.task == "4.4000000000000004", "4.4", data$WP4.task)))
-## Look up some strange/missing tasks in the data extraction template
-b                                    <- data[WP4.task %in% c("4.1", "4.6", "4.7", NA)]
-unique(b$SW.ID) # "SW4_1991" (4.2), "SW4_1090" (NONE), "SW4_1216" (4.4), "SW_0154" (NONE)
-data$WP4.task                        <- ifelse(data$SW.ID == "SW4_1991", "4.2",
-                                               ifelse(data$SW.ID %in% "SW4_0154", "None",
-                                                      ifelse(data$SW.ID == "SW4_1216", "4.4", data$WP4.task)))
 
 ## Check what relationships have been reported
-table(data$Direction.of.relationship)
+table(data$Direction.of.relationship, useNA = "always")
 table(is.na(data$Direction.of.relationship)) # 41 NA's --> classify those as not specified
 data$Direction.of.relationship       <- ifelse(data$Direction.of.relationship == "negative", "Negative", data$Direction.of.relationship)
 data$Direction.of.relationship[is.na(data$Direction.of.relationship)] <- "Not specified"
 
 ## Check what species are commonly mentioned
-length(unique(data$Species.taxonomic.group.s.)) # 463 unique input... Let's try to group/categorize these
+length(unique(data$Species.taxonomic.group.s.)) # 461 unique input... Let's try to group/categorize these in a separate script (step 3)
 
-## Change any / or other strange signs within species names.
-data[grep("/", data$Species.taxonomic.group.s.),ROWID] # 110  114 1359 1478 ## this does not work with backslash
-data$Species.taxonomic.group.s.      <- ifelse(data$ROWID %in% c(110, 114),"Sparus aurata _ Thunnus thynnus _ Scomber scombrus _ Coryphaena hippurus _ Dicentrarchus labrax _ 
-                                               Euthynnus alletteratus _ Trachurus trachurus _ Lichia amia _ Pomatomus saltatrix _ Lithognathus mormyrus _ 
-                                               Anguilla anguilla _ Boops boops _ Diplodus sargus sargus _ Sarda sarda _ Pagellus erythrinus _ Merluccius merluccius _ 
-                                               Scomber colias _ Mugil spp. _ Merlangius merlangus _ Spicara maena _ Chelidonichthys lucerna _ Oblada melanura _ 
-                                               Platichthys flesus _ Ombrina cirrosa _ Scophthalmus rhombus _ Scophthalmus maximus",
-                                               ifelse(data$ROWID == 1359, "Carnivore and scavenge feeding benthos",
-                                                      ifelse(data$ROWID == 1478, "predating and scavenging species", 
-                                                             ifelse(data$ROWID == 1437, "Larus audouinii _ Larus cachinnans",  data$Species.taxonomic.group.s.))))
 ## fix some rows with double input
 a                                    <- data[Species.taxonomic.group.s. == "other fish (9) and mollusca (2)",,]
 a$Species.taxonomic.group.s.         <- "Fish"
@@ -303,7 +260,7 @@ data                                 <- rbindlist(list(data, a, b), use.names=TR
 
 
 ## Check what pressure variables are commonly mentioned
-length(unique(data$Pressure_variable)) # 402 unique input... Let's skip for now.
+length(unique(data$Pressure_variable)) # 400 unique input... Let's skip for now.
 
 
 #-----------------------------------------------
