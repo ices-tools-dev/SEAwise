@@ -22,9 +22,13 @@ library(ggthemes)
 library(dplyr)
 library(splitstackshape)
 library(RColorBrewer)
+library(sf)
+library(plotrix)
+
 
 datPath                               <- "Systematic Reviews/Analysis Task 4.1/Routput/"
 outPath                               <- "Systematic Reviews/Analysis Task 4.1/Routput/Manuscript/"
+GISpath                               <- "Systematic Reviews/Analysis Task 4.1/GIS/"
 
 
 #-----------------------------------------------#
@@ -585,7 +589,99 @@ ggsave("Sankey5.tiff", sankey, path=outPath,
        width = 400,
        height = 200,
        units = "mm")
+x
 
+
+
+#####################################################################################################################-
+#####################################################################################################################-
+#-----------------------------------------------#
+# Map with regions ----
+#-----------------------------------------------#
+
+-----------------------------------------------#
+## Creating shapefile with Regions ----
+-----------------------------------------------#
+## Load ICES regions as downloaded from https://gis.ices.dk/sf/ and mediterranean GSA's from https://www.fao.org/gfcm/data/maps/gsas/en/
+ICESareas                            <- st_read(paste0(GISpath, "ICES_Areas_20160601_cut_dense_3857.shp"))
+ICESareas                            <- st_transform(ICESareas, crs=3035)
+ICESEcors                            <- st_read(paste0(GISpath, "ICES_ecoregions_20171207_erase_ESRI.shp"))
+ICESEcors                            <- st_transform(ICESEcors, crs=3035)
+
+ICESEcors$Region                     <- ifelse(ICESEcors$Ecoregion %in% c("Western Mediterranean Sea", "Adriatic Sea",
+                                                                   "Ionian Sea and the Central Mediterranean Sea",
+                                                                   "Aegean-Levantine Sea"), "Mediterranean Sea",
+                                               ifelse(ICESEcors$Ecoregion == "Greater North Sea", "North Sea",
+                                                      ifelse(ICESEcors$Ecoregion %in% c("Black Sea", "Norwegian Sea","Barents Sea","Baltic Sea"), ICESEcors$Ecoregion,
+                                                             ifelse(ICESEcors$Ecoregion %in% c("Azores", "Oceanic Northeast Atlantic", "Greenland Sea",
+                                                                                                      "Icelandic Waters", "Faroes", "Celtic Seas"), "NE-Atlantic", NA))))
+
+ICESareas$Region                     <- ifelse(ICESareas$Area_Full %in% c("27.7.a", "27.7.e", "27.7.f", "27.7.g", "27.7.h", "27.8.a","27.8.b","27.8.c", "27.8.d.2"), "Western Waters",
+                                               ifelse(ICESareas$Area_Full %in% c("27.9.a", "27.9.b.1", "27.9.b.2", "27.8.e.1", "27.8.e.2", "27.6.a", "27.7.c.2",
+                                                                                 "27.6.b.2", "27.7.b", "27.7.k.2", "27.7.j.2", "27.7.b", "27.7.j.1"), "NE-Atlantic", NA))
+
+Regions                              <- rbind(subset(ICESEcors[,c("Region", "geometry")], is.na(Region)==F), subset(ICESareas[,c("Region", "geometry")], is.na(Region)==F))
+
+# Select regions that already consist of one area
+Regs                                 <- subset(Regions, Region %in% c("Baltic Sea","Barents Sea", "Black Sea", "North Sea", "Norwegian Sea"))
+
+# Combine subregions into on region
+for (iReg in c("Mediterranean Sea", "Western Waters", "NE-Atlantic")){
+  subdat                             <- subset(Regions, Region == iReg)
+  a                                  <- st_sf(st_union(subdat))
+  b                                  <- data.frame(Region = iReg)
+  b                                  <- st_set_geometry(b, st_geometry(a))
+  Regs                               <- rbind(Regs, b)
+} # end iReg loop
+
+## Fix some overlaps that should not be there
+## NE-Atlantic
+WW                                   <- st_difference(subset(Regs, Region == "NE-Atlantic"), subset(Regs, Region == "Western Waters"))
+WW$Region.1                          <- NULL
+
+## Update the fixes
+Regs2                                <- subset(Regs, !Region %in% "NE-Atlantic")
+Regs2                                <- rbind(Regs2, WW)
+
+RegionalSeas                         <- Regs2
+st_write(RegionalSeas, paste0(GISpath, "RegionalSeas.shp"))
+save(RegionalSeas, file=paste0(GISpath, "RegionalSeas.Rdata"))
+
+
+#-----------------------------------------------#
+## Creating map with Region specific info ----
+#-----------------------------------------------#
+Regions                              <- data[, .(NrPaps = length(unique(SW.ID))), 
+                                              by = Region]
+Regions                              <- Regions[order(NrPaps),,]
+RegCol                               <- data.frame(colcode = viridis(max(Regions$NrPaps)),
+                                                   value = c(1:max(Regions$NrPaps)))
+Regions$Colcode                      <- RegCol$colcode [match(Regions$NrPaps, RegCol$value)]
+load(paste0(GISpath, "RegionalSeas.Rdata"))
+RegionalSeas$colcode                 <- Regions$Colcode [match(RegionalSeas$Region, Regions$Region)]
+Centerpoints                         <- st_coordinates(st_centroid(RegionalSeas))
+RegionalSeas$Xloc              <- Centerpoints[,1]
+RegionalSeas$Yloc              <- Centerpoints[,2]
+RegionalSeas$NrPaps            <- Regions$NrPaps [match(RegionalSeas$Region, Regions$Region)]
+RegionalSeas$textcol           <- ifelse(RegionalSeas$NrPaps >50, "black", "white")
+
+## Change some points to a better location
+RegionalSeas$Xloc              <- ifelse(RegionalSeas$Region == "Baltic Sea", 4900000, RegionalSeas$Xloc)
+RegionalSeas$Xloc              <- ifelse(RegionalSeas$Region == "Western Waters", 3100000, RegionalSeas$Xloc)
+
+
+## Create plot
+tiff(paste0(outPath, "RegMap.tiff"), width = 1000, height = 900, res = 100)
+par(mar=c(1,1,1,1))
+plot(st_geometry(RegionalSeas), col=RegionalSeas$colcode, border=F)
+text(RegionalSeas$NrPaps, x= RegionalSeas$Xloc, y=RegionalSeas$Yloc, col=RegionalSeas$textcol, font=2, cex=1.4)
+text(x= 1E6, y=6.01E6, "Global studies:", font=3, cex=1.4)
+text(x=1e6, y=5.85e6, paste0(subset(Regions, Region == "Global")$NrPaps), font=2, cex=1.4)
+gradient.rect(xleft=0, xright=1E6, ytop=1.5e6, ybottom=1.25E6, col=RegCol$colcode, gradient="x")
+text(x=0, y=1.18e6, "1")
+text(x=1E6, y=1.18e6, max(Regions$NrPaps))
+text(x=0.5e6, y=1.72e6, "Number of papers", font=4, cex=1.2)
+dev.off()
 
 
 
