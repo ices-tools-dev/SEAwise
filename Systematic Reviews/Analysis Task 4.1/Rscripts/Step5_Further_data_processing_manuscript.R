@@ -2,7 +2,7 @@
 #####################################################################################################################-
 #
 #     Additional data processing of the data extraction files from SEAwise task 4.1
-#     Step 5. Preparing tht data for publishing manuscript and database
+#     Step 5. Preparing the data for publishing manuscript and database
 #
 #     By Esther Beukhof
 #     June 2022
@@ -91,9 +91,18 @@ table(datDeDupl$Direction.of.relationship[datDeDupl$Response.variable_category %
 
 # Merging? Possible by changing response variable to 'mortality' for survival studies and reverse the direction of the relationship (this because 
 # there are fewer survival than mortality studies).
-# Although some survival studies might particularly have focussed context-wise on survival rather than mortality, two are exchangable:
+# Although some survival studies might particularly have focussed context-wise on survival rather than mortality, the two are exchangeable:
 # x% survival = 1-x% mortality.
 
+# Merge by converting Survival to mortality
+SurvToMort <- data[data$Response.variable_category %in% "Survival",]
+table(SurvToMort$Direction.of.relationship)
+
+SurvToMort$Direction.of.relationship <- with(SurvToMort, ifelse(Direction.of.relationship %in% "Positive","Negative",
+                                                          ifelse(Direction.of.relationship %in% "Negative","Positive",Direction.of.relationship)))
+table(SurvToMort$Direction.of.relationship)
+
+SurvToMort$Response.variable_category <- "Mortality"
 
 
 #####################################################################################################################-
@@ -111,7 +120,7 @@ table(datDeDupl$Direction.of.relationship[datDeDupl$Response.variable_category %
 # - Before/after studies?
 # - Bycatch reduction & selectivity
 # - Discarding
-# - Occurrence/abundance of litter/ghost nets
+# - Marine litter & ghost nets
 # - Electromagnetic input
 # - Light
 # - Noise
@@ -351,6 +360,7 @@ datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(grepl("expl
 
 PV_mortality                          <- subset(datPressvar, Pressure.variable_category %in% "Mortality")
 
+
 ## Closure/ban/MPA ----
 sort(unique(datPressvar[which(grepl("closure", datPressvar$Pressure_variable) & is.na(datPressvar$Pressure.variable_category)),]$Pressure_variable)) #all
 sort(unique(datPressvar[which(grepl("Closure", datPressvar$Pressure_variable) & is.na(datPressvar$Pressure.variable_category)),]$Pressure_variable)) #all
@@ -443,8 +453,9 @@ sort(unique(papers$Pressure_variable))
 
 
 # use of FADs and keep net to Bycatch reduc?
-# # 'low pressure jet' -> more general category: Improvind selecting & reducing ecological impact of gear?
+# # 'low pressure jet' -> more general category: Improving selectivity & reducing ecological impact of gear?
 # What to do with 'disturbance'?
+
 
 
 #####################################################################################################################-
@@ -515,7 +526,7 @@ table(studiesDeDup$Pressure_variable[studiesDeDup$Direction.of.relationship %in%
 length(unique(studiesDeDup$Pressure_variable[studiesDeDup$Direction.of.relationship %in% "Positive"])) #24 pressure variables out of the 43 wordings
 
 # Go through the papers and mark those which report on the effect of the MPA/ban/closure/absence of fishing
-# NOTE: papers for which reported has been done reversely should not be included (e.g. they studied ban on fishing, but reported then the opposite,
+# NOTE: papers for which reporting has been done reversely should not be included (e.g. they studied ban on fishing, but reported then the opposite,
 # so that the table would be read as 'increase in )
 studiesClosure    <- c("SW4_1042","SW4_1136")
 
