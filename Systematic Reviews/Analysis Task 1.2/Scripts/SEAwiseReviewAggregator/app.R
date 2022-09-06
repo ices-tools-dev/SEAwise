@@ -41,6 +41,10 @@ wp4$Exclusion.Criteria <- NULL
 wp4o <- wp4
 wp4$Sampling.Method.used.for.data.collection <- ifelse(wp4$Sampling.Method.used.for.data.collection == "other", wp4$Description.Other.Sampling.Method, wp4$Sampling.Method.used.for.data.collection)
 wp4$Description.Other.Sampling.Method <- NULL
+wp4$Study.type <- ifelse(is.na(wp4$Study.type), "Other", wp4$Study.type)
+wp4$Study.type <- ifelse(wp4$Study.type == "combination of field surveys, byctach and over many decades", "Other", wp4$Study.type)
+# wp4$Pressure_level <- ifelse(is.na(wp4$Pressure_level), "Not specified", wp4$Pressure_level)
+
 
 # wp5 <- read.csv(file = "Systematic Reviews/Analysis Task 1.2/Databases/Database_5_20220829.csv", header = T) # Path when run manually
 wp5 <- read.csv(file = "../../Databases/Database_5_20220829.csv", header = T)
@@ -182,7 +186,7 @@ ui <- navbarPage(
     ),
     # third tab ----
     tabPanel(
-        title = "Ecological Effects on Fishing",
+        title = "Ecological Effects",
         # Sidebar with filtering options
         sidebarLayout(
             sidebarPanel(
@@ -198,23 +202,33 @@ ui <- navbarPage(
                 checkboxGroupInput(inputId = "wp3region",
                                    label = "Regions",
                                    choices = regionlist,),
-                # Dropdown for selecting multiple MANAGEMENT POLICIES
-                selectInput(inputId = "wp3MP",
-                            label = "Relevant Managment Policy",
-                            choices = unique(wp2$Management.Policy.Clean),
+                # Dropdown for selecting multiple Driver Categories
+                selectInput(inputId = "wp3DC",
+                            label = "Driver Categories",
+                            choices = unique(wp3$Driverscategory),
                             multiple = TRUE),
-                # Dropdown for selecting multiple MANAGEMENT POLICY OBJECTIVES
-                selectInput(inputId = "wp2MPO",
-                            label = "Managment Policy Objectives",
-                            choices = unique(wp2$Objective.of.Management.Policy.Clean),
+                # Dropdown for selecting multiple Driver sub-Categories
+                selectInput(inputId = "wp3DSC",
+                            label = "Driver sub-Categories",
+                            choices = unique(wp3$Environmental.Drivers.),
                             multiple = TRUE),
-                # Dropdown for selecting multiple TYPES OF IMPACT
-                selectInput(inputId = "wp2ToI",
-                            label = "Types of Impact",
-                            choices = wp2ImpactList,
+                # Dropdown for selecting multiple Process of Fisheries Productivity
+                selectInput(inputId = "wp3PFP",
+                            label = "Processes Being Modified",
+                            choices = unique(wp3$Process),
+                            multiple = TRUE),
+                # Dropdown for selecting multiple Species
+                selectInput(inputId = "wp3Spp",
+                            label = "Species",
+                            choices = unique(wp3$Species),
+                            multiple = TRUE),
+                # Dropdown for selecting multiple Life-History Stages
+                selectInput(inputId = "wp3LHS",
+                            label = "Life-History Stages",
+                            choices = unique(wp3$Life.stage),
                             multiple = TRUE),
                 # Create data download button
-                downloadButton(outputId = "wp2Download",
+                downloadButton(outputId = "wp3Download",
                                label = "Download CSV")
             ),
             # Introduce the tab and show a plot of the records being retained by the filters in the main panel
@@ -225,7 +239,81 @@ ui <- navbarPage(
                 p("This tab ......"),
                 p("The downloaded file from this tab contains bibliographic information for each record, the common fields that were extracted by each of the different reviews, as well as a series of binary information fields specific to WP2, i.e. the socio-economic interactions with fisheries."),
                 p("The filters and displays on this page include the spatio-temporal ones seen on the front page as well as a few example filters selected from all of the possible variables extracted from these records.  This list of radio buttons is a work in progress and your feedback will be used to ensure they developed to be useful and appropriate."),
-                plotOutput("wp2TS")
+                plotOutput("wp3TS")
+            )
+        )
+    ),
+    # Fourth tab ----
+    tabPanel(
+        title = "Fisheries Effects",
+        # Sidebar with filtering options
+        sidebarLayout(
+            sidebarPanel(
+                # Slider for date ranges
+                sliderInput(inputId = "wp4years",
+                            label = "Publication Year Range",
+                            min = min(wp4$Year, na.rm = T),
+                            max = max(wp4$Year, na.rm = T),
+                            value = c(min(wp4$Year, na.rm = T),max(wp4$Year, na.rm = T)),
+                            step = 1,
+                            sep = ""),
+                # Checkboxes for selecting by regions
+                checkboxGroupInput(inputId = "wp4region",
+                                   label = "Regions",
+                                   choices = regionlist,),
+                # Dropdown for selecting multiple Study Types
+                selectInput(inputId = "wp4ST",
+                            label = "Study Type",
+                            choices = unique(wp4$Study.type),
+                            multiple = TRUE),
+                # Dropdown for selecting multiple Ecosystem Component
+                selectInput(inputId = "wp4EC",
+                            label = "Ecosystem Component",
+                            choices = unique(wp4$Ecosystem.component_level1),
+                            multiple = TRUE),
+                # Dropdown for selecting multiple Ecosystem sub-Component
+                selectInput(inputId = "wp4ESC",
+                            label = "Ecosystem sub-Component",
+                            choices = unique(wp4[!is.na(wp4$Ecosystem.component_level2), c("Ecosystem.component_level2")]),
+                            multiple = TRUE),
+                # # Dropdown for selecting multiple Species             #### Needs more work on categorising species 
+                # selectInput(inputId = "wp4Spp",
+                #             label = "Species",
+                #             choices = unique(wp4$Species.taxonomic.group.s.),
+                #             multiple = TRUE),
+                # Dropdown for selecting Response Category
+                selectInput(inputId = "wp4RC",
+                            label = "Response Measured (Category)",
+                            choices = unique(wp4$Response.variable_category),
+                            multiple = TRUE),
+                # Dropdown for selecting multiple Types of Pressure
+                selectInput(inputId = "wp4ToP",
+                            label = "Pressure Exerted by Fisheries",
+                            choices = unique(wp4$Pressure.type),
+                            multiple = TRUE),
+                # Dropdown for selecting Target or Non-target Ecosystem Components
+                selectInput(inputId = "wp4TnT",
+                            label = "Target or Non-target Ecosystem Components",
+                            choices = unique(wp4[wp4$Pressure_level != "Not specified" | is.na(wp4$Pressure_level), c("Pressure_level")]),
+                            multiple = TRUE),
+                # Dropdown for selecting Fishery Type
+                selectInput(inputId = "wp4FT",
+                            label = "Fishery Segment",
+                            choices = unique(wp4$Fishery.type),
+                            multiple = TRUE),
+                # Create data download button
+                downloadButton(outputId = "wp4Download",
+                               label = "Download CSV")
+            ),
+            # Introduce the tab and show a plot of the records being retained by the filters in the main panel
+            mainPanel(
+                h1("SEAwise Systematic Reviews"),
+                p(paste0("This app. provides access to the results from the range of SEAwise systematic reviews, with the themes ", paste(labels(allRev), collapse = ", "), ".")),
+                h2("Socio-economic Interactions with Fishing"),
+                p("This tab ......"),
+                p("The downloaded file from this tab contains bibliographic information for each record, the common fields that were extracted by each of the different reviews, as well as a series of binary information fields specific to WP2, i.e. the socio-economic interactions with fisheries."),
+                p("The filters and displays on this page include the spatio-temporal ones seen on the front page as well as a few example filters selected from all of the possible variables extracted from these records.  This list of filters is a work in progress and your feedback will be used to ensure they developed to be useful and appropriate."),
+                plotOutput("wp4TS")
             )
         )
     )
@@ -355,12 +443,16 @@ server <- function(input, output) {
                 grepl(pattern = paste(input$wp3region, collapse = "|"),
                       x = wp3$Region,
                       ignore.case = TRUE)  &
-                grepl(pattern = paste(input$wp3MP, collapse = "|"),
-                      x = wp3$Management.Policy.Clean)  &
-                grepl(pattern = paste(input$wp3MPO, collapse = "|"),
-                      x = wp3$Objective.of.Management.Policy.Clean)  &
-                grepl(pattern = paste(input$wp3ToI, collapse = "|"),
-                      x = wp3$Type.of.impact.Clean), ]
+                grepl(pattern = paste(input$wp3DC, collapse = "|"),
+                      x = wp3$Driverscategory)  &
+                grepl(pattern = paste(input$wp3DSC, collapse = "|"),
+                      x = wp3$Environmental.Drivers.)  &
+                grepl(pattern = paste(input$wp3PFP, collapse = "|"),
+                      x = wp3$Process)  &
+                grepl(pattern = paste(input$wp3Spp, collapse = "|"),
+                      x = wp3$Species)  &
+                grepl(pattern = paste(input$wp3LHS, collapse = "|"),
+                      x = wp3$Life.stage), ]
     })
     
     tsWp3 <- reactive({
@@ -414,7 +506,77 @@ server <- function(input, output) {
     #===
     # Output for the Fisheries Effects tab ----
     #===
+    # create reactive dataset modified by user input and utilised to draw figures and create downloadable dataset
+    wp4Data <- reactive({
+        wp4[wp4$Year >= input$wp4years[1] &
+                wp4$Year <= input$wp4years[2] &
+                grepl(pattern = paste(input$wp4region, collapse = "|"),
+                      x = wp4$Region,
+                      ignore.case = TRUE)  &
+                grepl(pattern = paste(input$wp4ST, collapse = "|"),
+                      x = wp4$Study.type)  &
+                grepl(pattern = paste(input$wp4EC, collapse = "|"),
+                      x = wp4$Ecosystem.component_level1)  &
+                grepl(pattern = paste(input$wp4ESC, collapse = "|"),
+                      x = wp4$Ecosystem.component_level2)  &
+                # grepl(pattern = paste(input$wp4Spp, collapse = "|"),          ### Needs more work on categorising species
+                #       x = wp4$Species.taxonomic.group.s.)  &
+                grepl(pattern = paste(input$wp4RC, collapse = "|"),
+                      x = wp4$Response.variable_category)  &
+                grepl(pattern = paste(input$wp4ToP, collapse = "|"),
+                      x = wp4$Pressure.type)  &
+                grepl(pattern = paste(input$wp4TnT, collapse = "|"),
+                      x = wp4$Pressure_level)  &
+                grepl(pattern = paste(input$wp4FT, collapse = "|"),
+                      x = wp4$Fishery.type), ]
+    })
     
+    tsWp4 <- reactive({
+        merge(data.frame(PublicationYear=as.numeric(rownames(table(wp4Data()[!duplicated(wp4Data()$SW.ID), "Year"]))),
+                         TotalRecords=as.vector(table(wp4Data()[!duplicated(wp4Data()$SW.ID), "Year"]))),
+              data.frame(PublicationYear=c(min(as.numeric(rownames(table(wp4Data()[!duplicated(wp4Data()$SW.ID), "Year"])))):max(as.numeric(rownames(table(wp4Data()[!duplicated(wp4Data()$SW.ID), "Year"])))))),
+              by="PublicationYear",
+              all = TRUE)
+    })
+    # draw bar plot of records by area with a moving average of totals
+    output$wp4TS <- renderPlot({
+        req(wp4Data(), tsWp4())
+        if(nrow(wp4Data()) <= 6){ 
+            wp4TSplot <- ggplot() +
+                geom_bar(data = wp4Data(),
+                         mapping = aes(x = Year,
+                                       fill = WP),
+                         position = position_dodge(preserve = "single")) +
+                scale_x_continuous(n.breaks = ((max(wp4Data()$Year, na.rm = T)-min(wp4Data()$Year, na.rm = T))/5)) +
+                scale_fill_manual(values = swCols[1:length(unique(wp4Data()$WP))]) +
+                theme_few()+
+                theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+                      legend.position = "bottom") +
+                guides(fill = "none")
+        } else {wp4TSplot <- ggplot() +
+            geom_bar(data = wp4Data(),
+                     mapping = aes(x = Year,
+                                   fill = WP),
+                     position = position_dodge(preserve = "single")) +
+            geom_ma(data = tsWp4(),
+                    mapping = aes(x = `PublicationYear`, y = TotalRecords),
+                    ma_fun = SMA, n = 5, color = swCols[2], linetype = 1, size = 1) +
+            scale_x_continuous(n.breaks = ((max(wp4Data()$Year, na.rm = T)-min(wp4Data()$Year, na.rm = T))/5)) +
+            scale_fill_manual(values = swCols[1:length(unique(wp4Data()$WP))]) +
+            theme_few()+
+            theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+                  legend.position = "bottom") +
+            guides(fill = "none")
+        }
+        wp4TSplot
+    })
+    # Create downloadable csv product
+    output$wp4Download <- downloadHandler(filename = function(){
+        paste0("SW_EcologicalEffects_", input$wp4years[1], "-", input$wp4years[2], "_", paste(input$wp4region,collapse = "-"), "_", Sys.Date(), ".csv")
+    },
+    content = function(file){
+        write.csv(wp4Data(), file, row.names = FALSE)
+    })
     #====
     
     #===
