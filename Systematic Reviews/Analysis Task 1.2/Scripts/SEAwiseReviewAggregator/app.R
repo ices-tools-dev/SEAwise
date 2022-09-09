@@ -19,7 +19,7 @@ library(lubridate)
 #====
 
 #===
-# Data ----
+# Data import and cleaning ----
 #===
 # wp2 <- read.csv(file = "Systematic Reviews/Analysis Task 1.2/Databases/Database_2_20220829.csv", header = T) # Path when run manually
 wp2 <- read.csv(file = "../../Databases/Database_2_20220829.csv", header = T)
@@ -51,6 +51,23 @@ wp5 <- read.csv(file = "../../Databases/Database_5_20220829.csv", header = T)
 wp5$Name <- NULL
 wp5 <- wp5[wp5$Exclusion.Criteria == "K",]
 wp5$Exclusion.Criteria <- NULL
+wp5$Sampling.Method.used.for.data.collection <- ifelse(wp5$Sampling.Method.used.for.data.collection == "Regular & Irregular Fisheries Independent Survey", "Regular Fisheries Independent Survey _ Irregular Fisheries Independent Survey", wp5$Sampling.Method.used.for.data.collection)
+wp5$species <- gsub(pattern = "crustaceans", replacement = "Crustaceans", wp5$species)
+wp5$species <- gsub(pattern = "various", replacement = "Various", wp5$species)
+wp5$species <- gsub(pattern = "Various", replacement = "Species assemblage", wp5$species)
+wp5$species <- gsub(pattern = "Scombrus scombrus", replacement = "Scomber scombrus", wp5$species)
+wp5$species <- gsub(pattern = "Merlangius merlangius", replacement = "Merlangius merlangus", wp5$species)
+wp5$species <- gsub(pattern = "Melanogarmmus aeglefinus", replacement = "Melanogrammus aeglefinus", wp5$species)
+wp5$species <- gsub(pattern = "Pelagic species", replacement = "Pelagic assemblage", wp5$species)
+wp5$species <- gsub(pattern = "small pelagics", replacement = "Pelagic assemblage", wp5$species)
+wp5$species <- gsub(pattern = "Trachurus trachurus", replacement = "Trachurus spp", wp5$species)
+wp5$species <- gsub(pattern = "elasmobranch", replacement = "Elasmobranch", wp5$species)
+wp5$species <- gsub(pattern = "Flatfish species", replacement = "Species assemblage", wp5$species)
+wp5$species <- gsub(pattern = "Lophius budegassa", replacement = "Lophius spp", wp5$species)
+wp5$species <- gsub(pattern = "Lophius", replacement = "Lophius spp", wp5$species)
+wp5$life.stage <- gsub("juv and adults", "juveniles and adults", wp5$life.stage)
+wp5$life.stage <- gsub("Juveniles", "juveniles", wp5$life.stage)
+wp5$life.stage <- gsub("all", "full lifecycle", wp5$life.stage)
 
 allRev <- list(
     "Socio-economic Interactions with Fishing" = wp2,
@@ -82,7 +99,18 @@ regionlist <- c("Baltic Sea" = "baltic",
 
 wp2ImpactList <- c("Economic", "Environmental", "Governance", "Health", "Social", "Unspecified")
 
+wp5tasks <- c("5.1", "5.2", "5.3", "5.4", "5.5")
+wp5spList <- paste(gsub(pattern = " _ ", ", ", unique(wp5$species)), collapse = ", ")
+wp5spList <- paste(gsub(pattern = "_ ", ", ", wp5spList), collapse = ", ")
+wp5spList <- unlist(strsplit(paste(gsub(pattern = "_", ", ", wp5spList), collapse = ", "), split = ", "))
+wp5spList <- wp5spList[!wp5spList %in% c("")]
+wp5spList <- unique(wp5spList[order(wp5spList)])
+wp5LHSlist <- c("adults", "juveniles", "early life  stages", "full lifecycle")
+wp5FSList <- c("Commercial", "Recreational", "Research")
+wp5ATList <- unique(wp5$analysis_category)[!unique(wp5$analysis_category) %in% c("")]
+wp5ATList <- wp5ATList[order(wp5ATList)]
 
+wp5SampMethList <- c("Regular Fisheries Independent Survey", "Irregular Fisheries Independent Survey", "Active Acoustic Sampling Survey", "Fisheries Dependent Data", "Simulated dynamics", "Tagging", "Interview", "Visual Analyses")
 
 #====
 
@@ -94,230 +122,325 @@ swCols <- c("#210384", "#037184", "#00B292", "#00B262", "#86C64E", "#C6E83E")
 
 
 # Define UI ----
-ui <- navbarPage(
-    
-    # Application title
-    title = "SEAwise Review Aggregator",
-    # First Tab ----
-    tabPanel(
-        title = "Reviews Combined",
-        # Sidebar with filtering options
-        sidebarLayout(
-            sidebarPanel(
-                # Slider for date ranges
-                sliderInput(inputId = "years",
-                            label = "Publication Year Range",
-                            min = min(combRev$Year, na.rm = T),
-                            max = max(combRev$Year, na.rm = T),
-                            value = c(min(combRev$Year, na.rm = T),max(combRev$Year, na.rm = T)),
-                            step = 1,
-                            sep = ""),
-                # Checkboxes for selecting by regions
-                checkboxGroupInput(inputId = "region",
-                                   label = "Regions",
-                                   choices = regionlist,),
-                # Create data download button
-                downloadButton(outputId = "dfDownload",
-                               label = "Download CSV")
-            ),
-            
-            # Introduce the tab and show a plot of the records being retained by the filters in the main panel
-            mainPanel(
-                h1("SEAwise Systematic Reviews"),
-                p(paste0("This app. provides access to the results from the range of SEAwise systematic reviews, with the themes ", paste(labels(allRev), collapse = ", "), ".")),
-                h2("Combined Results"),
-                p("This front page provides an indication of where and when the total records from all reviews are from, allows you to apply time and space filters and download the resulting filtered data."),
-                p("The downloaded file from this front page contains bibliographic information for each record, as well as the common fields that were extracted by each of the different reviews.  These fields cover temporal and spatial scale, sampling methods/data sources, broad analytical methods and some quality assessments.  These quality assessments are based on the appropriateness of the different scales of observations and the analyses employed to meet the studies' own stated aims and objectives."),
-                h2("Theme Specific Results"),
-                p("More specific review data can be investigated, filtered and downloaded using the different tabs at the top of the page"),
-                p("The filters and displays in these pages are works in progress and your feedback will be used to ensure they developed to be useful and appropriate."),
-                plotOutput("combTS")
-            )
+ui <- fluidPage(
+    list(tags$head(HTML('<link rel="icon", href="SEAwise_Logo_Multicolour.png", type="image/png" />'))),
+    div(style="padding: 1px 0px; width: '100%'",
+        titlePanel(
+            title="", windowTitle="SEAwise Review Aggregator"
         )
     ),
-    # Second tab ----
-    tabPanel(
-        title = "Socio-economic Interactions",
-        # Sidebar with filtering options
-        sidebarLayout(
-            sidebarPanel(
-                # Slider for date ranges
-                sliderInput(inputId = "wp2years",
-                            label = "Publication Year Range",
-                            min = min(wp2$Year, na.rm = T),
-                            max = max(wp2$Year, na.rm = T),
-                            value = c(min(wp2$Year, na.rm = T),max(wp2$Year, na.rm = T)),
-                            step = 1,
-                            sep = ""),
-                # Checkboxes for selecting by regions
-                checkboxGroupInput(inputId = "wp2region",
-                                   label = "Regions",
-                                   choices = regionlist,),
-                # Dropdown for selecting multiple MANAGEMENT POLICIES
-                selectInput(inputId = "wp2MP",
-                            label = "Relevant Managment Policy",
-                            choices = unique(wp2$Management.Policy.Clean),
-                            multiple = TRUE),
-                # Dropdown for selecting multiple MANAGEMENT POLICY OBJECTIVES
-                selectInput(inputId = "wp2MPO",
-                            label = "Managment Policy Objectives",
-                            choices = unique(wp2$Objective.of.Management.Policy.Clean),
-                            multiple = TRUE),
-                # Dropdown for selecting multiple TYPES OF IMPACT
-                selectInput(inputId = "wp2ToI",
-                            label = "Types of Impact",
-                            choices = wp2ImpactList,
-                            multiple = TRUE),
-                # Create data download button
-                downloadButton(outputId = "wp2Download",
-                               label = "Download CSV")
-            ),
-            # Introduce the tab and show a plot of the records being retained by the filters in the main panel
-            mainPanel(
-                h1("SEAwise Systematic Reviews"),
-                p(paste0("This app. provides access to the results from the range of SEAwise systematic reviews, with the themes ", paste(labels(allRev), collapse = ", "), ".")),
-                h2("Socio-economic Interactions with Fishing"),
-                p("This tab ......"),
-                p("The downloaded file from this tab contains bibliographic information for each record, the common fields that were extracted by each of the different reviews, as well as a series of binary information fields specific to WP2, i.e. the socio-economic interactions with fisheries."),
-                p("The filters and displays on this page include the spatio-temporal ones seen on the front page as well as a few example filters selected from all of the possible variables extracted from these records.  This list of radio buttons is a work in progress and your feedback will be used to ensure they developed to be useful and appropriate."),
-                plotOutput("wp2TS")
+    navbarPage(
+        
+        # Apply Theme
+        theme = bs_theme(version = 4, bootswatch = "minty",
+                         # base_font = "Futura",
+                         # heading_font = "Roboto",
+                         bg = "#FFFFFF",
+                         fg = "#210384",
+                         primary = "#00B292",
+                         secondary = "#037184",
+                         success = "#00B262",
+                         info = "#86C64E",
+                         danger = "#C6E83E"
+                         ),
+        # Application title
+        title = div(img(src="SEAwise_Logo_Multicolour.png", height = '70px', width = '50px'), "SEAwise Review Aggregator"),
+        
+        # First Tab ----
+        tabPanel(
+            title = "Reviews Combined",
+            # Sidebar with filtering options
+            sidebarLayout(
+                sidebarPanel(
+                    # Slider for date ranges
+                    sliderInput(inputId = "years",
+                                label = "Publication Year Range",
+                                min = min(combRev$Year, na.rm = T),
+                                max = max(combRev$Year, na.rm = T),
+                                value = c(min(combRev$Year, na.rm = T),max(combRev$Year, na.rm = T)),
+                                step = 1,
+                                sep = ""),
+                    # Checkboxes for selecting by regions
+                    checkboxGroupInput(inputId = "region",
+                                       label = "Regions",
+                                       choices = regionlist),
+                    # Create data download button
+                    downloadButton(outputId = "dfDownload",
+                                   label = "Download CSV")
+                ),
+                
+                # Introduce the tab and show a plot of the records being retained by the filters in the main panel
+                mainPanel(
+                    h1("SEAwise Systematic Reviews"),
+                    p(paste0("This app. provides access to the results from the range of SEAwise systematic reviews, with the themes ", paste(labels(allRev), collapse = ", "), ".")),
+                    h2("Combined Results"),
+                    p("This front page provides an indication of where and when the total records from all reviews are from, allows you to apply time and space filters and download the resulting filtered data."),
+                    p("The downloaded file from this front page contains bibliographic information for each record, as well as the common fields that were extracted by each of the different reviews.  These fields cover temporal and spatial scale, sampling methods/data sources, broad analytical methods and some quality assessments.  These quality assessments are based on the appropriateness of the different scales of observations and the analyses employed to meet the studies' own stated aims and objectives."),
+                    h2("Theme Specific Results"),
+                    p("More specific review data can be investigated, filtered and downloaded using the different tabs at the top of the page"),
+                    p("The filters and displays in these pages are works in progress and your feedback will be used to ensure they developed to be useful and appropriate."),
+                    plotOutput("combTS")
+                )
             )
-        )
-    ),
-    # third tab ----
-    tabPanel(
-        title = "Ecological Effects",
-        # Sidebar with filtering options
-        sidebarLayout(
-            sidebarPanel(
-                # Slider for date ranges
-                sliderInput(inputId = "wp3years",
-                            label = "Publication Year Range",
-                            min = min(wp3$Year, na.rm = T),
-                            max = max(wp3$Year, na.rm = T),
-                            value = c(min(wp3$Year, na.rm = T),max(wp3$Year, na.rm = T)),
-                            step = 1,
-                            sep = ""),
-                # Checkboxes for selecting by regions
-                checkboxGroupInput(inputId = "wp3region",
-                                   label = "Regions",
-                                   choices = regionlist,),
-                # Dropdown for selecting multiple Driver Categories
-                selectInput(inputId = "wp3DC",
-                            label = "Driver Categories",
-                            choices = unique(wp3$Driverscategory),
-                            multiple = TRUE),
-                # Dropdown for selecting multiple Driver sub-Categories
-                selectInput(inputId = "wp3DSC",
-                            label = "Driver sub-Categories",
-                            choices = unique(wp3$Environmental.Drivers.),
-                            multiple = TRUE),
-                # Dropdown for selecting multiple Process of Fisheries Productivity
-                selectInput(inputId = "wp3PFP",
-                            label = "Processes Being Modified",
-                            choices = unique(wp3$Process),
-                            multiple = TRUE),
-                # Dropdown for selecting multiple Species
-                selectInput(inputId = "wp3Spp",
-                            label = "Species",
-                            choices = unique(wp3$Species),
-                            multiple = TRUE),
-                # Dropdown for selecting multiple Life-History Stages
-                selectInput(inputId = "wp3LHS",
-                            label = "Life-History Stages",
-                            choices = unique(wp3$Life.stage),
-                            multiple = TRUE),
-                # Create data download button
-                downloadButton(outputId = "wp3Download",
-                               label = "Download CSV")
-            ),
-            # Introduce the tab and show a plot of the records being retained by the filters in the main panel
-            mainPanel(
-                h1("SEAwise Systematic Reviews"),
-                p(paste0("This app. provides access to the results from the range of SEAwise systematic reviews, with the themes ", paste(labels(allRev), collapse = ", "), ".")),
-                h2("Socio-economic Interactions with Fishing"),
-                p("This tab ......"),
-                p("The downloaded file from this tab contains bibliographic information for each record, the common fields that were extracted by each of the different reviews, as well as a series of binary information fields specific to WP2, i.e. the socio-economic interactions with fisheries."),
-                p("The filters and displays on this page include the spatio-temporal ones seen on the front page as well as a few example filters selected from all of the possible variables extracted from these records.  This list of radio buttons is a work in progress and your feedback will be used to ensure they developed to be useful and appropriate."),
-                plotOutput("wp3TS")
+        ),
+        # Second tab ----
+        tabPanel(
+            title = "Socio-economic Interactions",
+            # Sidebar with filtering options
+            sidebarLayout(
+                sidebarPanel(
+                    # Slider for date ranges
+                    sliderInput(inputId = "wp2years",
+                                label = "Publication Year Range",
+                                min = min(wp2$Year, na.rm = T),
+                                max = max(wp2$Year, na.rm = T),
+                                value = c(min(wp2$Year, na.rm = T),max(wp2$Year, na.rm = T)),
+                                step = 1,
+                                sep = ""),
+                    # Checkboxes for selecting by regions
+                    checkboxGroupInput(inputId = "wp2region",
+                                       label = "Regions",
+                                       choices = regionlist),
+                    # Dropdown for selecting multiple MANAGEMENT POLICIES
+                    selectInput(inputId = "wp2MP",
+                                label = "Relevant Managment Policy",
+                                choices = unique(wp2$Management.Policy.Clean),
+                                multiple = TRUE),
+                    # Dropdown for selecting multiple MANAGEMENT POLICY OBJECTIVES
+                    selectInput(inputId = "wp2MPO",
+                                label = "Managment Policy Objectives",
+                                choices = unique(wp2$Objective.of.Management.Policy.Clean),
+                                multiple = TRUE),
+                    # Dropdown for selecting multiple TYPES OF IMPACT
+                    selectInput(inputId = "wp2ToI",
+                                label = "Types of Impact",
+                                choices = wp2ImpactList,
+                                multiple = TRUE),
+                    # Create data download button
+                    downloadButton(outputId = "wp2Download",
+                                   label = "Download CSV")
+                ),
+                # Introduce the tab and show a plot of the records being retained by the filters in the main panel
+                mainPanel(
+                    h1("SEAwise Systematic Reviews"),
+                    p(paste0("This app. provides access to the results from the range of SEAwise systematic reviews, with the themes ", paste(labels(allRev), collapse = ", "), ".")),
+                    h2("Socio-economic Interactions with Fishing"),
+                    p("This tab ......"),
+                    p("The downloaded file from this tab contains bibliographic information for each record, the common fields that were extracted by each of the different reviews, as well as a series of binary information fields specific to WP2, i.e. the socio-economic interactions with fisheries."),
+                    p("The filters and displays on this page include the spatio-temporal ones seen on the front page as well as a few example filters selected from all of the possible variables extracted from these records.  This list of radio buttons is a work in progress and your feedback will be used to ensure they developed to be useful and appropriate."),
+                    plotOutput("wp2TS")
+                )
             )
-        )
-    ),
-    # Fourth tab ----
-    tabPanel(
-        title = "Fisheries Effects",
-        # Sidebar with filtering options
-        sidebarLayout(
-            sidebarPanel(
-                # Slider for date ranges
-                sliderInput(inputId = "wp4years",
-                            label = "Publication Year Range",
-                            min = min(wp4$Year, na.rm = T),
-                            max = max(wp4$Year, na.rm = T),
-                            value = c(min(wp4$Year, na.rm = T),max(wp4$Year, na.rm = T)),
-                            step = 1,
-                            sep = ""),
-                # Checkboxes for selecting by regions
-                checkboxGroupInput(inputId = "wp4region",
-                                   label = "Regions",
-                                   choices = regionlist,),
-                # Dropdown for selecting multiple Study Types
-                selectInput(inputId = "wp4ST",
-                            label = "Study Type",
-                            choices = unique(wp4$Study.type),
-                            multiple = TRUE),
-                # Dropdown for selecting multiple Ecosystem Component
-                selectInput(inputId = "wp4EC",
-                            label = "Ecosystem Component",
-                            choices = unique(wp4$Ecosystem.component_level1),
-                            multiple = TRUE),
-                # Dropdown for selecting multiple Ecosystem sub-Component
-                selectInput(inputId = "wp4ESC",
-                            label = "Ecosystem sub-Component",
-                            choices = unique(wp4[!is.na(wp4$Ecosystem.component_level2), c("Ecosystem.component_level2")]),
-                            multiple = TRUE),
-                # # Dropdown for selecting multiple Species             #### Needs more work on categorising species 
-                # selectInput(inputId = "wp4Spp",
-                #             label = "Species",
-                #             choices = unique(wp4$Species.taxonomic.group.s.),
-                #             multiple = TRUE),
-                # Dropdown for selecting Response Category
-                selectInput(inputId = "wp4RC",
-                            label = "Response Measured (Category)",
-                            choices = unique(wp4$Response.variable_category),
-                            multiple = TRUE),
-                # Dropdown for selecting multiple Types of Pressure
-                selectInput(inputId = "wp4ToP",
-                            label = "Pressure Exerted by Fisheries",
-                            choices = unique(wp4$Pressure.type),
-                            multiple = TRUE),
-                # Dropdown for selecting Target or Non-target Ecosystem Components
-                selectInput(inputId = "wp4TnT",
-                            label = "Target or Non-target Ecosystem Components",
-                            choices = unique(wp4[wp4$Pressure_level != "Not specified" | is.na(wp4$Pressure_level), c("Pressure_level")]),
-                            multiple = TRUE),
-                # Dropdown for selecting Fishery Type
-                selectInput(inputId = "wp4FT",
-                            label = "Fishery Segment",
-                            choices = unique(wp4$Fishery.type),
-                            multiple = TRUE),
-                # Create data download button
-                downloadButton(outputId = "wp4Download",
-                               label = "Download CSV")
-            ),
-            # Introduce the tab and show a plot of the records being retained by the filters in the main panel
-            mainPanel(
-                h1("SEAwise Systematic Reviews"),
-                p(paste0("This app. provides access to the results from the range of SEAwise systematic reviews, with the themes ", paste(labels(allRev), collapse = ", "), ".")),
-                h2("Socio-economic Interactions with Fishing"),
-                p("This tab ......"),
-                p("The downloaded file from this tab contains bibliographic information for each record, the common fields that were extracted by each of the different reviews, as well as a series of binary information fields specific to WP2, i.e. the socio-economic interactions with fisheries."),
-                p("The filters and displays on this page include the spatio-temporal ones seen on the front page as well as a few example filters selected from all of the possible variables extracted from these records.  This list of filters is a work in progress and your feedback will be used to ensure they developed to be useful and appropriate."),
-                plotOutput("wp4TS")
+        ),
+        # third tab ----
+        tabPanel(
+            title = "Ecological Effects",
+            # Sidebar with filtering options
+            sidebarLayout(
+                sidebarPanel(
+                    # Slider for date ranges
+                    sliderInput(inputId = "wp3years",
+                                label = "Publication Year Range",
+                                min = min(wp3$Year, na.rm = T),
+                                max = max(wp3$Year, na.rm = T),
+                                value = c(min(wp3$Year, na.rm = T),max(wp3$Year, na.rm = T)),
+                                step = 1,
+                                sep = ""),
+                    # Checkboxes for selecting by regions
+                    checkboxGroupInput(inputId = "wp3region",
+                                       label = "Regions",
+                                       choices = regionlist),
+                    # Dropdown for selecting multiple Driver Categories
+                    selectInput(inputId = "wp3DC",
+                                label = "Driver Categories",
+                                choices = unique(wp3$Driverscategory),
+                                multiple = TRUE),
+                    # Dropdown for selecting multiple Driver sub-Categories
+                    selectInput(inputId = "wp3DSC",
+                                label = "Driver sub-Categories",
+                                choices = unique(wp3$Environmental.Drivers.),
+                                multiple = TRUE),
+                    # Dropdown for selecting multiple Process of Fisheries Productivity
+                    selectInput(inputId = "wp3PFP",
+                                label = "Processes Being Modified",
+                                choices = unique(wp3$Process),
+                                multiple = TRUE),
+                    # Dropdown for selecting multiple Species
+                    selectInput(inputId = "wp3Spp",
+                                label = "Species",
+                                choices = unique(wp3$Species),
+                                multiple = TRUE),
+                    # Dropdown for selecting multiple Life-History Stages
+                    selectInput(inputId = "wp3LHS",
+                                label = "Life-History Stages",
+                                choices = unique(wp3$Life.stage),
+                                multiple = TRUE),
+                    # Create data download button
+                    downloadButton(outputId = "wp3Download",
+                                   label = "Download CSV")
+                ),
+                # Introduce the tab and show a plot of the records being retained by the filters in the main panel
+                mainPanel(
+                    h1("SEAwise Systematic Reviews"),
+                    p(paste0("This app. provides access to the results from the range of SEAwise systematic reviews, with the themes ", paste(labels(allRev), collapse = ", "), ".")),
+                    h2("Socio-economic Interactions with Fishing"),
+                    p("This tab ......"),
+                    p("The downloaded file from this tab contains bibliographic information for each record, the common fields that were extracted by each of the different reviews, as well as a series of binary information fields specific to WP2, i.e. the socio-economic interactions with fisheries."),
+                    p("The filters and displays on this page include the spatio-temporal ones seen on the front page as well as a few example filters selected from all of the possible variables extracted from these records.  This list of radio buttons is a work in progress and your feedback will be used to ensure they developed to be useful and appropriate."),
+                    plotOutput("wp3TS")
+                )
+            )
+        ),
+        # Fourth tab ----
+        tabPanel(
+            title = "Fisheries Effects",
+            # Sidebar with filtering options
+            sidebarLayout(
+                sidebarPanel(
+                    # Slider for date ranges
+                    sliderInput(inputId = "wp4years",
+                                label = "Publication Year Range",
+                                min = min(wp4$Year, na.rm = T),
+                                max = max(wp4$Year, na.rm = T),
+                                value = c(min(wp4$Year, na.rm = T),max(wp4$Year, na.rm = T)),
+                                step = 1,
+                                sep = ""),
+                    # Checkboxes for selecting by regions
+                    checkboxGroupInput(inputId = "wp4region",
+                                       label = "Regions",
+                                       choices = regionlist),
+                    # Dropdown for selecting multiple Study Types
+                    selectInput(inputId = "wp4ST",
+                                label = "Study Type",
+                                choices = unique(wp4$Study.type),
+                                multiple = TRUE),
+                    # Dropdown for selecting multiple Ecosystem Component
+                    selectInput(inputId = "wp4EC",
+                                label = "Ecosystem Component",
+                                choices = unique(wp4$Ecosystem.component_level1),
+                                multiple = TRUE),
+                    # Dropdown for selecting multiple Ecosystem sub-Component
+                    selectInput(inputId = "wp4ESC",
+                                label = "Ecosystem sub-Component",
+                                choices = unique(wp4[!is.na(wp4$Ecosystem.component_level2), c("Ecosystem.component_level2")]),
+                                multiple = TRUE),
+                    # # Dropdown for selecting multiple Species             #### Needs more work on categorising species 
+                    # selectInput(inputId = "wp4Spp",
+                    #             label = "Species",
+                    #             choices = unique(wp4$Species.taxonomic.group.s.),
+                    #             multiple = TRUE),
+                    # Dropdown for selecting Response Category
+                    selectInput(inputId = "wp4RC",
+                                label = "Response Measured (Category)",
+                                choices = unique(wp4$Response.variable_category),
+                                multiple = TRUE),
+                    # Dropdown for selecting multiple Types of Pressure
+                    selectInput(inputId = "wp4ToP",
+                                label = "Pressure Exerted by Fisheries",
+                                choices = unique(wp4$Pressure.type),
+                                multiple = TRUE),
+                    # Dropdown for selecting Target or Non-target Ecosystem Components
+                    selectInput(inputId = "wp4TnT",
+                                label = "Target or Non-target Ecosystem Components",
+                                choices = unique(wp4[wp4$Pressure_level != "Not specified" | is.na(wp4$Pressure_level), c("Pressure_level")]),
+                                multiple = TRUE),
+                    # Dropdown for selecting Fishery Type
+                    selectInput(inputId = "wp4FT",
+                                label = "Fishery Segment",
+                                choices = unique(wp4$Fishery.type),
+                                multiple = TRUE),
+                    # Create data download button
+                    downloadButton(outputId = "wp4Download",
+                                   label = "Download CSV")
+                ),
+                # Introduce the tab and show a plot of the records being retained by the filters in the main panel
+                mainPanel(
+                    h1("SEAwise Systematic Reviews"),
+                    p(paste0("This app. provides access to the results from the range of SEAwise systematic reviews, with the themes ", paste(labels(allRev), collapse = ", "), ".")),
+                    h2("Socio-economic Interactions with Fishing"),
+                    p("This tab ......"),
+                    p("The downloaded file from this tab contains bibliographic information for each record, the common fields that were extracted by each of the different reviews, as well as a series of binary information fields specific to WP2, i.e. the socio-economic interactions with fisheries."),
+                    p("The filters and displays on this page include the spatio-temporal ones seen on the front page as well as a few example filters selected from all of the possible variables extracted from these records.  This list of filters is a work in progress and your feedback will be used to ensure they developed to be useful and appropriate."),
+                    plotOutput("wp4TS")
+                )
+            )
+        ),
+        # Fifth tab ----
+        tabPanel(
+            title = "Spatial Management",
+            # Sidebar with filtering options
+            sidebarLayout(
+                sidebarPanel(
+                    # Slider for date ranges
+                    sliderInput(inputId = "wp5years",
+                                label = "Publication Year Range",
+                                min = min(wp5$Year, na.rm = T),
+                                max = max(wp5$Year, na.rm = T),
+                                value = c(min(wp5$Year, na.rm = T),max(wp5$Year, na.rm = T)),
+                                step = 1,
+                                sep = ""),
+                    # Checkboxes for selecting by regions
+                    checkboxGroupInput(inputId = "wp5region",
+                                       label = "Regions",
+                                       choices = regionlist),
+                    # Dropdown for selecting WP5 Tasks             
+                    selectInput(inputId = "wp5task",
+                                label = "WP5 Tasks",
+                                choices = wp5tasks,
+                                multiple = TRUE),
+                    # Dropdown for selecting multiple Species             
+                    selectInput(inputId = "wp5Spp",
+                                label = "Species",
+                                choices = wp5spList,
+                                multiple = TRUE),
+                    # Dropdown for selecting multiple Species             
+                    selectInput(inputId = "wp5LHS",
+                                label = "Life-history Stages",
+                                choices = wp5LHSlist,
+                                multiple = TRUE),
+                    # Dropdown for selecting multiple Habitat Categories
+                    selectInput(inputId = "wp5HC",
+                                label = "Broad Scale Habitats",
+                                choices = unique(wp5$habitats),
+                                multiple = TRUE),
+                    # Dropdown for selecting Fishery Type
+                    selectInput(inputId = "wp5FT",
+                                label = "Fishery Segment",
+                                choices = unique(wp5$Fishery.type),
+                                multiple = TRUE),
+                    # Dropdown for selecting Driver/pressure
+                    selectInput(inputId = "wp5DP",
+                                label = "Driver/Pressure",
+                                choices = unique(wp5$Driver.pressure.type),
+                                multiple = TRUE),
+                    # Dropdown for selecting Type of Analyses
+                    selectInput(inputId = "wp5AT",
+                                label = "Type of Analysis",
+                                choices = wp5ATList,
+                                multiple = TRUE),
+                    # radio button for selecting if Maps are produced
+                    checkboxInput(inputId = "wp5map",
+                                  label = "Only records that produced maps.",
+                                  value = FALSE),
+                    # Create data download button
+                    downloadButton(outputId = "wp5Download",
+                                   label = "Download CSV")
+                ),
+                # Introduce the tab and show a plot of the records being retained by the filters in the main panel
+                mainPanel(
+                    h1("SEAwise Systematic Reviews"),
+                    p(paste0("This app. provides access to the results from the range of SEAwise systematic reviews, with the themes ", paste(labels(allRev), collapse = ", "), ".")),
+                    h2("Socio-economic Interactions with Fishing"),
+                    p("This tab ......"),
+                    p("The downloaded file from this tab contains bibliographic information for each record, the common fields that were extracted by each of the different reviews, as well as a series of binary information fields specific to WP2, i.e. the socio-economic interactions with fisheries."),
+                    p("The filters and displays on this page include the spatio-temporal ones seen on the front page as well as a few example filters selected from all of the possible variables extracted from these records.  This list of filters is a work in progress and your feedback will be used to ensure they developed to be useful and appropriate."),
+                    plotOutput("wp5TS")
+                )
             )
         )
     )
 )
+#====
 
 # Define server ----
 server <- function(input, output) {
@@ -582,7 +705,86 @@ server <- function(input, output) {
     #===
     # Output for the Spatial Management tab ----
     #===
+    # create reactive dataset modified by user input and utilised to draw figures and create downloadable dataset
+    wp5Data0 <- reactive({
+        wp5[wp5$Year >= input$wp5years[1] &
+                wp5$Year <= input$wp5years[2] &
+                grepl(pattern = paste(input$wp5region, collapse = "|"),
+                      x = wp5$Region,
+                      ignore.case = TRUE)  &
+                grepl(pattern = paste(input$wp5task, collapse = "|"),
+                      x = wp5$WP5.task,
+                      ignore.case = TRUE)  &
+                grepl(pattern = paste(input$wp5Spp, collapse = "|"),       
+                      x = wp5$species,
+                      ignore.case = TRUE)  &
+                grepl(pattern = paste(input$wp5LHS, collapse = "|"),       
+                      x = wp5$life.stage,
+                      ignore.case = TRUE)  &
+                grepl(pattern = paste(input$wp5HC, collapse = "|"),
+                      x = wp5$habitats,
+                      ignore.case = TRUE)  &
+                grepl(pattern = paste(input$wp5FT, collapse = "|"),
+                      x = wp5$Fishery.type,
+                      ignore.case = T) &
+                grepl(pattern = paste(input$wp5DP, collapse = "|"),
+                      x = wp5$Driver.pressure.type)  &
+                grepl(pattern = paste(input$wp5AT, collapse = "|"),
+                      x = wp5$analysis_category), ]
+    })
     
+    wp5Data <- reactive({
+        if(input$wp5map == TRUE){
+            wp5Data0()[grepl(pattern = "yes", x = wp5Data0()$Maps.provided., ignore.case = TRUE),]
+        } else {wp5Data0()}
+    })
+    
+    tsWp5 <- reactive({
+        merge(data.frame(PublicationYear=as.numeric(rownames(table(wp5Data()[!duplicated(wp5Data()$SW.ID), "Year"]))),
+                         TotalRecords=as.vector(table(wp5Data()[!duplicated(wp5Data()$SW.ID), "Year"]))),
+              data.frame(PublicationYear=c(min(as.numeric(rownames(table(wp5Data()[!duplicated(wp5Data()$SW.ID), "Year"])))):max(as.numeric(rownames(table(wp5Data()[!duplicated(wp5Data()$SW.ID), "Year"])))))),
+              by="PublicationYear",
+              all = TRUE)
+    })
+    # draw bar plot of records by area with a moving average of totals
+    output$wp5TS <- renderPlot({
+        req(wp5Data(), tsWp5())
+        if(nrow(wp5Data()) <= 6){ 
+            wp5TSplot <- ggplot() +
+                geom_bar(data = wp5Data(),
+                         mapping = aes(x = Year,
+                                       fill = WP),
+                         position = position_dodge(preserve = "single")) +
+                scale_x_continuous(n.breaks = ((max(wp5Data()$Year, na.rm = T)-min(wp5Data()$Year, na.rm = T))/5)) +
+                scale_fill_manual(values = swCols[1:length(unique(wp5Data()$WP))]) +
+                theme_few()+
+                theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+                      legend.position = "bottom") +
+                guides(fill = "none")
+        } else {wp5TSplot <- ggplot() +
+            geom_bar(data = wp5Data(),
+                     mapping = aes(x = Year,
+                                   fill = WP),
+                     position = position_dodge(preserve = "single")) +
+            geom_ma(data = tsWp5(),
+                    mapping = aes(x = `PublicationYear`, y = TotalRecords),
+                    ma_fun = SMA, n = 5, color = swCols[2], linetype = 1, size = 1) +
+            scale_x_continuous(n.breaks = ((max(wp5Data()$Year, na.rm = T)-min(wp5Data()$Year, na.rm = T))/5)) +
+            scale_fill_manual(values = swCols[1:length(unique(wp5Data()$WP))]) +
+            theme_few()+
+            theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+                  legend.position = "bottom") +
+            guides(fill = "none")
+        }
+        wp5TSplot
+    })
+    # Create downloadable csv product
+    output$wp5Download <- downloadHandler(filename = function(){
+        paste0("SW_EcologicalEffects_", input$wp5years[1], "-", input$wp5years[2], "_", paste(input$wp5region,collapse = "-"), "_", Sys.Date(), ".csv")
+    },
+    content = function(file){
+        write.csv(wp5Data(), file, row.names = FALSE)
+    })
     #====
 }
 
