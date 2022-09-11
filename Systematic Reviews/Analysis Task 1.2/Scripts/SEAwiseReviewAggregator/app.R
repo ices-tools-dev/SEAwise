@@ -19,7 +19,7 @@ library(lubridate)
 #====
 
 #===
-# Data import and cleaning ----
+# Data import, cleaning and create variables for webApp ----
 #===
 # wp2 <- read.csv(file = "Systematic Reviews/Analysis Task 1.2/Databases/Database_2_20220829.csv", header = T) # Path when run manually
 wp2 <- read.csv(file = "../../Databases/Database_2_20220829.csv", header = T)
@@ -92,10 +92,53 @@ combRev <- rbind(wp2[!duplicated(wp2$SW.ID), keepcols],
                  wp4[!duplicated(wp4$SW.ID), keepcols],
                  wp5[!duplicated(wp5$SW.ID), keepcols])
 
+## Sanitise regions
 regionlist <- c("Baltic Sea" = "baltic",
                 "North Sea" = "north Sea",
                 "Western Waters" = "western Waters",
                 "Mediterranean Sea" = "mediterranean")
+
+combRev$Regions <- "NA"
+for(i in 1:length(regionlist)){
+    combRev$Regions <- ifelse(grepl(pattern = unname(regionlist[i]),
+                                    x = combRev$Region,
+                                    ignore.case = TRUE),
+                              names(regionlist[i]),
+                              no = combRev$Regions)
+}
+wp2$Regions <- "NA"
+for(i in 1:length(regionlist)){
+    wp2$Regions <- ifelse(grepl(pattern = unname(regionlist[i]),
+                                x = wp2$Region,
+                                ignore.case = TRUE),
+                          names(regionlist[i]),
+                          no = wp2$Regions)
+}
+wp3$Regions <- "NA"
+for(i in 1:length(regionlist)){
+    wp3$Regions <- ifelse(grepl(pattern = unname(regionlist[i]),
+                                x = wp3$Region,
+                                ignore.case = TRUE),
+                          names(regionlist[i]),
+                          no = wp3$Regions)
+}
+wp4$Regions <- "NA"
+for(i in 1:length(regionlist)){
+    wp4$Regions <- ifelse(grepl(pattern = unname(regionlist[i]),
+                                x = wp4$Region,
+                                ignore.case = TRUE),
+                          names(regionlist[i]),
+                          no = wp4$Regions)
+}
+wp5$Regions <- "NA"
+for(i in 1:length(regionlist)){
+    wp5$Regions <- ifelse(grepl(pattern = unname(regionlist[i]),
+                                x = wp5$Region,
+                                ignore.case = TRUE),
+                          names(regionlist[i]),
+                          no = wp5$Regions)
+}
+
 
 wp2ImpactList <- c("Economic", "Environmental", "Governance", "Health", "Social", "Unspecified")
 
@@ -118,17 +161,38 @@ wp5SampMethList <- c("Regular Fisheries Independent Survey", "Irregular Fisherie
 # Look and Feel ----
 #===
 swCols <- c("#210384", "#037184", "#00B292", "#00B262", "#86C64E", "#C6E83E")
+csCols <- c("Baltic Sea" = "#037184",
+            "North Sea" = "#00B292",
+            "Western Waters" = "#00B262",
+            "Mediterranean Sea" = "#86C64E")
+setNames(c("#037184", "#00B292", "#00B262", "#86C64E"),c("Baltic Sea", "North Sea", "Western Waters", "Mediterranean Sea"))
+scale_fill_csCols <- function(...){
+    ggplot2:::manual_scale(
+        'fill',
+        values = csCols,
+        ...
+    )
+}
 #====
 
-
+#===
 # Define UI ----
+#===
 ui <- fluidPage(
+    #===
+    # Create browser tab title and logo ----
+    #===
     list(tags$head(HTML('<link rel="icon", href="SEAwise_Logo_Multicolour.png", type="image/png" />'))),
     div(style="padding: 1px 0px; width: '100%'",
         titlePanel(
             title="", windowTitle="SEAwise Review Aggregator"
         )
     ),
+    #====
+    
+    #===
+    # Create basic webpage structure (including theme and main title) ----
+    #===
     navbarPage(
         
         # Apply Theme
@@ -145,7 +209,7 @@ ui <- fluidPage(
                          ),
         # Application title
         title = div(img(src="SEAwise_Logo_Multicolour.png", height = '70px', width = '50px'), "SEAwise Review Aggregator"),
-        
+    #====
         # First Tab ----
         tabPanel(
             title = "Reviews Combined",
@@ -172,14 +236,15 @@ ui <- fluidPage(
                 # Introduce the tab and show a plot of the records being retained by the filters in the main panel
                 mainPanel(
                     h1("SEAwise Systematic Reviews"),
-                    p(paste0("This app. provides access to the results from the range of SEAwise systematic reviews, with the themes ", paste(labels(allRev), collapse = ", "), ".")),
+                    p(paste0("This app. provides access to the results from the range of SEAwise systematic reviews, with the themes ", paste(labels(allRev), collapse = ", "), "."), " These  are scoping type reviews, because they cover broad topics for which it is not feasible to dive deep into details. Therefore, the qualitative data that can be accessed from these reviews, are designed to make any further data-extraction easier by providing pre-screened, and filterable records.  Subsets of records from these reviews could be used for a systematic meta-analysis, with further specific data extraction, or as a method of selecting the best available data for parameterising broader ecosystem models."),
                     h2("Combined Results"),
-                    p("This front page provides an indication of where and when the total records from all reviews are from, allows you to apply time and space filters and download the resulting filtered data."),
+                    p("This front page provides an indication of where and when the articles reviewe for each of the reviews are from, allows you to apply time and space filters and download the resulting filtered data."),
                     p("The downloaded file from this front page contains bibliographic information for each record, as well as the common fields that were extracted by each of the different reviews.  These fields cover temporal and spatial scale, sampling methods/data sources, broad analytical methods and some quality assessments.  These quality assessments are based on the appropriateness of the different scales of observations and the analyses employed to meet the studies' own stated aims and objectives."),
+                    plotOutput("combTS"),
+                    plotOutput("combCSTS"),
                     h2("Theme Specific Results"),
                     p("More specific review data can be investigated, filtered and downloaded using the different tabs at the top of the page"),
-                    p("The filters and displays in these pages are works in progress and your feedback will be used to ensure they developed to be useful and appropriate."),
-                    plotOutput("combTS")
+                    p("The filters and displays in these pages are works in progress and your feedback will be used to ensure they are further developed to be useful and appropriate.")
                 )
             )
         ),
@@ -223,12 +288,13 @@ ui <- fluidPage(
                 # Introduce the tab and show a plot of the records being retained by the filters in the main panel
                 mainPanel(
                     h1("SEAwise Systematic Reviews"),
-                    p(paste0("This app. provides access to the results from the range of SEAwise systematic reviews, with the themes ", paste(labels(allRev), collapse = ", "), ".")),
+                    p(paste0("This app. provides access to the results from the range of SEAwise systematic reviews, with the themes ", paste(labels(allRev), collapse = ", "), "."), " These  are scoping type reviews, because they cover broad topics for which it is not feasible to dive deep into details. Therefore, the qualitative data that can be accessed from these reviews, are designed to make any further data-extraction easier by providing pre-screened, and filterable records.  Subsets of records from these reviews could be used for a systematic meta-analysis, with further specific data extraction, or as a method of selecting the best available data for parameterising broader ecosystem models."),
                     h2("Socio-economic Interactions with Fishing"),
-                    p("This tab ......"),
+                    p("The purpose of this systematic review was to identify the critical social and economic aspects of fisheries, relevant social and economic indicators, and regionally‐relevant management measures to be considered in the evaluations of different management strategies later in the project.  For more details please see the Deliverable Report 2.1."),
                     p("The downloaded file from this tab contains bibliographic information for each record, the common fields that were extracted by each of the different reviews, as well as a series of binary information fields specific to WP2, i.e. the socio-economic interactions with fisheries."),
                     p("The filters and displays on this page include the spatio-temporal ones seen on the front page as well as a few example filters selected from all of the possible variables extracted from these records.  This list of radio buttons is a work in progress and your feedback will be used to ensure they developed to be useful and appropriate."),
-                    plotOutput("wp2TS")
+                    plotOutput("wp2TS"),
+                    plotOutput("wp2CSTS")
                 )
             )
         ),
@@ -282,12 +348,13 @@ ui <- fluidPage(
                 # Introduce the tab and show a plot of the records being retained by the filters in the main panel
                 mainPanel(
                     h1("SEAwise Systematic Reviews"),
-                    p(paste0("This app. provides access to the results from the range of SEAwise systematic reviews, with the themes ", paste(labels(allRev), collapse = ", "), ".")),
-                    h2("Socio-economic Interactions with Fishing"),
-                    p("This tab ......"),
-                    p("The downloaded file from this tab contains bibliographic information for each record, the common fields that were extracted by each of the different reviews, as well as a series of binary information fields specific to WP2, i.e. the socio-economic interactions with fisheries."),
-                    p("The filters and displays on this page include the spatio-temporal ones seen on the front page as well as a few example filters selected from all of the possible variables extracted from these records.  This list of radio buttons is a work in progress and your feedback will be used to ensure they developed to be useful and appropriate."),
-                    plotOutput("wp3TS")
+                    p(paste0("This app. provides access to the results from the range of SEAwise systematic reviews, with the themes ", paste(labels(allRev), collapse = ", "), "."), " These  are scoping type reviews, because they cover broad topics for which it is not feasible to dive deep into details. Therefore, the qualitative data that can be accessed from these reviews, are designed to make any further data-extraction easier by providing pre-screened, and filterable records.  Subsets of records from these reviews could be used for a systematic meta-analysis, with further specific data extraction, or as a method of selecting the best available data for parameterising broader ecosystem models."),
+                    h2("Ecological Effects on Stock Productivity"),
+                    p("The purpose of this systematic review was to collate the knowledge and science available about the impact of environmental drivers on the productivity of commercial species."),
+                    p("The downloaded file from this tab contains bibliographic information for each record, the common fields that were extracted by each of the different reviews, as well as a raft of other information regarding the details of different drivers investigated, the stocks (and specifically the demographic rates) that were influenced by the specific environmental conditions.  Furthermore, evaluations of the types of relationships between drivers and vital rates are also provided qualitatively."),
+                    p("The filters and displays on this page include the spatio-temporal ones seen on the front page as well as a few example filters selected from all of the possible variables extracted from these records.  This list of filters is a work in progress and your feedback will be used to ensure they are developed to be useful and appropriate."),
+                    plotOutput("wp3TS"),
+                    plotOutput("wp3CSTS")
                 )
             )
         ),
@@ -356,12 +423,13 @@ ui <- fluidPage(
                 # Introduce the tab and show a plot of the records being retained by the filters in the main panel
                 mainPanel(
                     h1("SEAwise Systematic Reviews"),
-                    p(paste0("This app. provides access to the results from the range of SEAwise systematic reviews, with the themes ", paste(labels(allRev), collapse = ", "), ".")),
-                    h2("Socio-economic Interactions with Fishing"),
-                    p("This tab ......"),
-                    p("The downloaded file from this tab contains bibliographic information for each record, the common fields that were extracted by each of the different reviews, as well as a series of binary information fields specific to WP2, i.e. the socio-economic interactions with fisheries."),
-                    p("The filters and displays on this page include the spatio-temporal ones seen on the front page as well as a few example filters selected from all of the possible variables extracted from these records.  This list of filters is a work in progress and your feedback will be used to ensure they developed to be useful and appropriate."),
-                    plotOutput("wp4TS")
+                    p(paste0("This app. provides access to the results from the range of SEAwise systematic reviews, with the themes ", paste(labels(allRev), collapse = ", "), "."), " These  are scoping type reviews, because they cover broad topics for which it is not feasible to dive deep into details. Therefore, the qualitative data that can be accessed from these reviews, are designed to make any further data-extraction easier by providing pre-screened, and filterable records.  Subsets of records from these reviews could be used for a systematic meta-analysis, with further specific data extraction, or as a method of selecting the best available data for parameterising broader ecosystem models."),
+                    h2("Fishing Impacts on Key Species and Habitats"),
+                    p("The purpose of this systematic review was to identify which ecological impacts of fishing are key and what is known about them."),
+                    p("The downloaded file from this tab contains bibliographic information for each record, the common fields that were extracted by each of the different reviews, as well as a raft of other information regarding the details of different pressures that are derived from fisheries and their impacts on different ecosystem componenets."),
+                    p("The filters and displays on this page include the spatio-temporal ones seen on the front page as well as a few example filters selected from all of the possible variables extracted from these records.  This list of filters is a work in progress and your feedback will be used to ensure they are developed to be useful and appropriate."),
+                    plotOutput("wp4TS"),
+                    plotOutput("wp4CSTS")
                 )
             )
         ),
@@ -429,12 +497,13 @@ ui <- fluidPage(
                 # Introduce the tab and show a plot of the records being retained by the filters in the main panel
                 mainPanel(
                     h1("SEAwise Systematic Reviews"),
-                    p(paste0("This app. provides access to the results from the range of SEAwise systematic reviews, with the themes ", paste(labels(allRev), collapse = ", "), ".")),
-                    h2("Socio-economic Interactions with Fishing"),
-                    p("This tab ......"),
-                    p("The downloaded file from this tab contains bibliographic information for each record, the common fields that were extracted by each of the different reviews, as well as a series of binary information fields specific to WP2, i.e. the socio-economic interactions with fisheries."),
-                    p("The filters and displays on this page include the spatio-temporal ones seen on the front page as well as a few example filters selected from all of the possible variables extracted from these records.  This list of filters is a work in progress and your feedback will be used to ensure they developed to be useful and appropriate."),
-                    plotOutput("wp5TS")
+                    p(paste0("This app. provides access to the results from the range of SEAwise systematic reviews, with the themes ", paste(labels(allRev), collapse = ", "), "."), " These  are scoping type reviews, because they cover broad topics for which it is not feasible to dive deep into details. Therefore, the qualitative data that can be accessed from these reviews, are designed to make any further data-extraction easier by providing pre-screened, and filterable records.  Subsets of records from these reviews could be used for a systematic meta-analysis, with further specific data extraction, or as a method of selecting the best available data for parameterising broader ecosystem models."),
+                    h2("Drivers and Impacts of Changes in Spatial Distribution of Fish and Fisheries"),
+                    p("The purpose of this systematic review was to identify and quantify the key drivers and pressures behind the changes occurring in commercial fish stocks and fisheries distribution that have a spatially explicit content and to map the relevant existing scientific knowledge and provide input to the subsequent WP5 tasks"),
+                    p("The downloaded file from this tab contains bibliographic information for each record, the common fields that were extracted by each of the different reviews, as well as a raft of other information regarding the details of different drivers investigated and the stocks and fleets that were impacted or interacting.  All records in this review utilise spatially explicit analyses."),
+                    p("The filters and displays on this page include the spatio-temporal ones seen on the front page as well as a few example filters selected from all of the possible variables extracted from these records.  This list of filters is a work in progress and your feedback will be used to ensure they are developed to be useful and appropriate."),
+                    plotOutput("wp5TS"),
+                    plotOutput("wp5CSTS")
                 )
             )
         )
@@ -442,7 +511,9 @@ ui <- fluidPage(
 )
 #====
 
+#===
 # Define server ----
+#===
 server <- function(input, output) {
     
     #===
@@ -464,7 +535,7 @@ server <- function(input, output) {
               by="PublicationYear",
               all = TRUE)
     })
-    # draw bar plot of records by area with a moving average of totals
+    # draw bar plot of records by WorkPackage with a moving average of totals
     output$combTS <- renderPlot({
         req(combData(), tsComb())
         ggplot() +
@@ -476,7 +547,25 @@ server <- function(input, output) {
                     mapping = aes(x = `PublicationYear`, y = TotalRecords),
                     ma_fun = SMA, n = 5, color = swCols[1], linetype = 1, size = 1) +
             scale_x_continuous(n.breaks = ((max(combData()$Year, na.rm = T)-min(combData()$Year, na.rm = T))/5)) +
-            scale_fill_manual(values = swCols[1:length(unique(combData()$WP))]) +
+            scale_fill_manual(values = swCols[1:length(unique(combData()$WP))], name = "SEAwise Theme") +
+            labs(caption = "Number of records reviewed per SEAwise work-package (bars), which may be duplicated across workpackages. \n The line is a 5-year moving average of the total number of unique records (no duplicates), which may disappear when the number of records is too small.") +
+            theme_few()+
+            theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+                  legend.position = "bottom")
+    })
+    # draw bar plot of records by area
+    output$combCSTS <- renderPlot({
+        req(combData(), tsComb())
+        ggplot() +
+            geom_bar(data = combData(),
+                     mapping = aes(x = Year,
+                                   fill = Regions),
+                     position = position_dodge(preserve = "single")) +
+            scale_x_continuous(n.breaks = ((max(combData()$Year, na.rm = T)-min(combData()$Year, na.rm = T))/5)) +
+            # scale_fill_manual(values = swCols[1:length(unique(combData()$WP))]) +
+            scale_fill_csCols(name = "SEAwise Case Study Regions") +
+            ylab("No. of Unique Articles Reviewed") +
+            labs(caption = "Number of unique articles reveiwed per SEAwise case study region.") +
             theme_few()+
             theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
                   legend.position = "bottom")
@@ -526,6 +615,7 @@ server <- function(input, output) {
                          position = position_dodge(preserve = "single")) +
                 scale_x_continuous(n.breaks = ((max(wp2Data()$Year, na.rm = T)-min(wp2Data()$Year, na.rm = T))/5)) +
                 scale_fill_manual(values = swCols[1:length(unique(wp2Data()$WP))]) +
+                labs(caption = "Number of records reviewed in WP2 (bars), which may be duplicated where multiple circumstances are extracted from an individual paper.") +
                 theme_few()+
                 theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
                       legend.position = "bottom") +
@@ -540,12 +630,30 @@ server <- function(input, output) {
                     ma_fun = SMA, n = 5, color = swCols[2], linetype = 1, size = 1) +
             scale_x_continuous(n.breaks = ((max(wp2Data()$Year, na.rm = T)-min(wp2Data()$Year, na.rm = T))/5)) +
             scale_fill_manual(values = swCols[1:length(unique(wp2Data()$WP))]) +
+            labs(caption = "Number of records reviewed in WP2 (bars), which may be duplicated where multiple circumstances are extracted from an individual paper. \n The line is a 5-year moving average of the total number of unique records (no duplicates), which may disappear when the number of records is too small.") +
             theme_few()+
             theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
                   legend.position = "bottom") +
             guides(fill = "none")
         }
         wp2TSplot
+    })
+    # draw bar plot of records by area
+    output$wp2CSTS <- renderPlot({
+        req(wp2Data())
+        ggplot() +
+            geom_bar(data = wp2Data(),
+                     mapping = aes(x = Year,
+                                   fill = Regions),
+                     position = position_dodge(preserve = "single")) +
+            scale_x_continuous(n.breaks = ((max(wp2Data()$Year, na.rm = T)-min(wp2Data()$Year, na.rm = T))/5)) +
+            # scale_fill_manual(values = swCols[1:length(unique(combData()$WP))]) +
+            scale_fill_csCols(name = "SEAwise Case Study Regions") +
+            ylab("No. of Unique Articles Reviewed") +
+            labs(caption = "Number of unique articles reveiwed per SEAwise case study region.") +
+            theme_few()+
+            theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+                  legend.position = "bottom")
     })
     # Create downloadable csv product
     output$wp2Download <- downloadHandler(filename = function(){
@@ -596,6 +704,7 @@ server <- function(input, output) {
                          position = position_dodge(preserve = "single")) +
                 scale_x_continuous(n.breaks = ((max(wp3Data()$Year, na.rm = T)-min(wp3Data()$Year, na.rm = T))/5)) +
                 scale_fill_manual(values = swCols[1:length(unique(wp3Data()$WP))]) +
+                labs(caption = "Number of records reviewed in WP3 (bars), which may be duplicated where multiple circumstances are extracted from an individual paper.") +
                 theme_few()+
                 theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
                       legend.position = "bottom") +
@@ -610,12 +719,30 @@ server <- function(input, output) {
                     ma_fun = SMA, n = 5, color = swCols[2], linetype = 1, size = 1) +
             scale_x_continuous(n.breaks = ((max(wp3Data()$Year, na.rm = T)-min(wp3Data()$Year, na.rm = T))/5)) +
             scale_fill_manual(values = swCols[1:length(unique(wp3Data()$WP))]) +
+            labs(caption = "Number of records reviewed in WP3 (bars), which may be duplicated where multiple circumstances are extracted from an individual paper. \n The line is a 5-year moving average of the total number of unique records (no duplicates), which may disappear when the number of records is too small.") +
             theme_few()+
             theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
                   legend.position = "bottom") +
             guides(fill = "none")
         }
         wp3TSplot
+    })
+    # draw bar plot of records by area
+    output$wp3CSTS <- renderPlot({
+        req(wp3Data())
+        ggplot() +
+            geom_bar(data = wp3Data(),
+                     mapping = aes(x = Year,
+                                   fill = Regions),
+                     position = position_dodge(preserve = "single")) +
+            scale_x_continuous(n.breaks = ((max(wp3Data()$Year, na.rm = T)-min(wp3Data()$Year, na.rm = T))/5)) +
+            # scale_fill_manual(values = swCols[1:length(unique(combData()$WP))]) +
+            scale_fill_csCols(name = "SEAwise Case Study Regions") +
+            ylab("No. of Unique Articles Reviewed") +
+            labs(caption = "Number of unique articles reveiwed per SEAwise case study region.") +
+            theme_few()+
+            theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+                  legend.position = "bottom")
     })
     # Create downloadable csv product
     output$wp3Download <- downloadHandler(filename = function(){
@@ -672,6 +799,7 @@ server <- function(input, output) {
                          position = position_dodge(preserve = "single")) +
                 scale_x_continuous(n.breaks = ((max(wp4Data()$Year, na.rm = T)-min(wp4Data()$Year, na.rm = T))/5)) +
                 scale_fill_manual(values = swCols[1:length(unique(wp4Data()$WP))]) +
+                labs(caption = "Number of records reviewed in WP4 (bars), which may be duplicated where multiple circumstances are extracted from an individual paper.") +
                 theme_few()+
                 theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
                       legend.position = "bottom") +
@@ -686,6 +814,7 @@ server <- function(input, output) {
                     ma_fun = SMA, n = 5, color = swCols[2], linetype = 1, size = 1) +
             scale_x_continuous(n.breaks = ((max(wp4Data()$Year, na.rm = T)-min(wp4Data()$Year, na.rm = T))/5)) +
             scale_fill_manual(values = swCols[1:length(unique(wp4Data()$WP))]) +
+            labs(caption = "Number of records reviewed in WP4 (bars), which may be duplicated where multiple circumstances are extracted from an individual paper. \n The line is a 5-year moving average of the total number of unique records (no duplicates), which may disappear when the number of records is too small.") +
             theme_few()+
             theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
                   legend.position = "bottom") +
@@ -757,6 +886,7 @@ server <- function(input, output) {
                          position = position_dodge(preserve = "single")) +
                 scale_x_continuous(n.breaks = ((max(wp5Data()$Year, na.rm = T)-min(wp5Data()$Year, na.rm = T))/5)) +
                 scale_fill_manual(values = swCols[1:length(unique(wp5Data()$WP))]) +
+                labs(caption = "Number of records reviewed in WP5 (bars), which may be duplicated where multiple circumstances are extracted from an individual paper.") +
                 theme_few()+
                 theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
                       legend.position = "bottom") +
@@ -771,6 +901,7 @@ server <- function(input, output) {
                     ma_fun = SMA, n = 5, color = swCols[2], linetype = 1, size = 1) +
             scale_x_continuous(n.breaks = ((max(wp5Data()$Year, na.rm = T)-min(wp5Data()$Year, na.rm = T))/5)) +
             scale_fill_manual(values = swCols[1:length(unique(wp5Data()$WP))]) +
+            labs(caption = "Number of records reviewed in WP5 (bars), which may be duplicated where multiple circumstances are extracted from an individual paper. \n The line is a 5-year moving average of the total number of unique records (no duplicates), which may disappear when the number of records is too small.") +
             theme_few()+
             theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
                   legend.position = "bottom") +
