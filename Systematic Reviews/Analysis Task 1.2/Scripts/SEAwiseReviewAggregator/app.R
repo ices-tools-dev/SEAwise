@@ -165,7 +165,6 @@ csCols <- c("Baltic Sea" = "#037184",
             "North Sea" = "#00B292",
             "Western Waters" = "#00B262",
             "Mediterranean Sea" = "#86C64E")
-setNames(c("#037184", "#00B292", "#00B262", "#86C64E"),c("Baltic Sea", "North Sea", "Western Waters", "Mediterranean Sea"))
 scale_fill_csCols <- function(...){
     ggplot2:::manual_scale(
         'fill',
@@ -206,10 +205,10 @@ ui <- fluidPage(
                          success = "#00B262",
                          info = "#86C64E",
                          danger = "#C6E83E"
-                         ),
+        ),
         # Application title
         title = div(img(src="SEAwise_Logo_Multicolour.png", height = '70px', width = '50px'), "SEAwise Review Aggregator"),
-    #====
+        #====
         # First Tab ----
         tabPanel(
             title = "Reviews Combined",
@@ -499,7 +498,7 @@ ui <- fluidPage(
                     h1("SEAwise Systematic Reviews"),
                     p(paste0("This app. provides access to the results from the range of SEAwise systematic reviews, with the themes ", paste(labels(allRev), collapse = ", "), "."), " These  are scoping type reviews, because they cover broad topics for which it is not feasible to dive deep into details. Therefore, the qualitative data that can be accessed from these reviews, are designed to make any further data-extraction easier by providing pre-screened, and filterable records.  Subsets of records from these reviews could be used for a systematic meta-analysis, with further specific data extraction, or as a method of selecting the best available data for parameterising broader ecosystem models."),
                     h2("Drivers and Impacts of Changes in Spatial Distribution of Fish and Fisheries"),
-                    p("The purpose of this systematic review was to identify and quantify the key drivers and pressures behind the changes occurring in commercial fish stocks and fisheries distribution that have a spatially explicit content and to map the relevant existing scientific knowledge and provide input to the subsequent WP5 tasks"),
+                    p("The purpose of this systematic review was to identify and quantify the key drivers and pressures behind the changes occurring in commercial fish stocks and fisheries distributions.  This focusses on studies that have a spatially explicit analyses.  The review's primary output is to map the relevant existing scientific knowledge and provide input to the subsequent WP5 tasks."),
                     p("The downloaded file from this tab contains bibliographic information for each record, the common fields that were extracted by each of the different reviews, as well as a raft of other information regarding the details of different drivers investigated and the stocks and fleets that were impacted or interacting.  All records in this review utilise spatially explicit analyses."),
                     p("The filters and displays on this page include the spatio-temporal ones seen on the front page as well as a few example filters selected from all of the possible variables extracted from these records.  This list of filters is a work in progress and your feedback will be used to ensure they are developed to be useful and appropriate."),
                     plotOutput("wp5TS"),
@@ -548,7 +547,7 @@ server <- function(input, output) {
             geom_ma(data = tsComb(),
                     mapping = aes(x = `PublicationYear`, y = TotalRecords),
                     ma_fun = SMA, n = 5, color = swCols[1], linetype = 1, size = 1) +
-            scale_x_continuous(n.breaks = ((max(combData()$Year, na.rm = T)-min(combData()$Year, na.rm = T))/5)) +
+            scale_x_continuous(n.breaks = round(((max(combData()$Year, na.rm = T)-min(combData()$Year, na.rm = T))/5), 0)) +
             scale_fill_manual(values = swCols[1:length(unique(combData()$WP))], name = "SEAwise Theme") +
             labs(caption = "Number of records reviewed per SEAwise work-package (bars), which may be duplicated across workpackages. \n The line is a 5-year moving average of the total number of unique records (no duplicates), which may disappear when the number of records is too small.") +
             theme_few()+
@@ -563,7 +562,7 @@ server <- function(input, output) {
                      mapping = aes(x = Year,
                                    fill = Regions),
                      position = position_dodge(preserve = "single")) +
-            scale_x_continuous(n.breaks = ((max(combData()$Year, na.rm = T)-min(combData()$Year, na.rm = T))/5)) +
+            scale_x_continuous(n.breaks = round(((max(combData()$Year, na.rm = T)-min(combData()$Year, na.rm = T))/5), 0)) +
             # scale_fill_manual(values = swCols[1:length(unique(combData()$WP))]) +
             scale_fill_csCols(name = "SEAwise Case Study Regions") +
             ylab("No. of Unique Articles Reviewed") +
@@ -615,7 +614,7 @@ server <- function(input, output) {
                          mapping = aes(x = Year,
                                        fill = WP),
                          position = position_dodge(preserve = "single")) +
-                scale_x_continuous(n.breaks = ((max(wp2Data()$Year, na.rm = T)-min(wp2Data()$Year, na.rm = T))/5)) +
+                scale_x_continuous(n.breaks = round(((max(wp2Data()$Year, na.rm = T)-min(wp2Data()$Year, na.rm = T))/2), 0)) +
                 scale_fill_manual(values = swCols[1:length(unique(wp2Data()$WP))]) +
                 labs(caption = "Number of records reviewed in WP2 (bars), which may be duplicated where multiple circumstances are extracted from an individual paper.") +
                 theme_few()+
@@ -630,7 +629,7 @@ server <- function(input, output) {
             geom_ma(data = tsWp2(),
                     mapping = aes(x = `PublicationYear`, y = TotalRecords),
                     ma_fun = SMA, n = 5, color = swCols[2], linetype = 1, size = 1) +
-            scale_x_continuous(n.breaks = ((max(wp2Data()$Year, na.rm = T)-min(wp2Data()$Year, na.rm = T))/5)) +
+            scale_x_continuous(n.breaks = round(((max(wp2Data()$Year, na.rm = T)-min(wp2Data()$Year, na.rm = T))/2), 0)) +
             scale_fill_manual(values = swCols[1:length(unique(wp2Data()$WP))]) +
             labs(caption = "Number of records reviewed in WP2 (bars), which may be duplicated where multiple circumstances are extracted from an individual paper. \n The line is a 5-year moving average of the total number of unique records (no duplicates), which may disappear when the number of records is too small.") +
             theme_few()+
@@ -648,7 +647,7 @@ server <- function(input, output) {
                      mapping = aes(x = Year,
                                    fill = Regions),
                      position = position_dodge(preserve = "single")) +
-            scale_x_continuous(n.breaks = ((max(wp2Data()$Year, na.rm = T)-min(wp2Data()$Year, na.rm = T))/5)) +
+            scale_x_continuous(n.breaks = round(((max(wp2Data()$Year, na.rm = T)-min(wp2Data()$Year, na.rm = T))/2), 0)) +
             # scale_fill_manual(values = swCols[1:length(unique(combData()$WP))]) +
             scale_fill_csCols(name = "SEAwise Case Study Regions") +
             ylab("No. of Unique Articles Reviewed") +
@@ -704,7 +703,7 @@ server <- function(input, output) {
                          mapping = aes(x = Year,
                                        fill = WP),
                          position = position_dodge(preserve = "single")) +
-                scale_x_continuous(n.breaks = ((max(wp3Data()$Year, na.rm = T)-min(wp3Data()$Year, na.rm = T))/5)) +
+                scale_x_continuous(n.breaks = round(((max(wp3Data()$Year, na.rm = T)-min(wp3Data()$Year, na.rm = T))/5), 0)) +
                 scale_fill_manual(values = swCols[1:length(unique(wp3Data()$WP))]) +
                 labs(caption = "Number of records reviewed in WP3 (bars), which may be duplicated where multiple circumstances are extracted from an individual paper.") +
                 theme_few()+
@@ -719,7 +718,7 @@ server <- function(input, output) {
             geom_ma(data = tsWp3(),
                     mapping = aes(x = `PublicationYear`, y = TotalRecords),
                     ma_fun = SMA, n = 5, color = swCols[2], linetype = 1, size = 1) +
-            scale_x_continuous(n.breaks = ((max(wp3Data()$Year, na.rm = T)-min(wp3Data()$Year, na.rm = T))/5)) +
+            scale_x_continuous(n.breaks = round(((max(wp3Data()$Year, na.rm = T)-min(wp3Data()$Year, na.rm = T))/5), 0)) +
             scale_fill_manual(values = swCols[1:length(unique(wp3Data()$WP))]) +
             labs(caption = "Number of records reviewed in WP3 (bars), which may be duplicated where multiple circumstances are extracted from an individual paper. \n The line is a 5-year moving average of the total number of unique records (no duplicates), which may disappear when the number of records is too small.") +
             theme_few()+
@@ -737,7 +736,7 @@ server <- function(input, output) {
                      mapping = aes(x = Year,
                                    fill = Regions),
                      position = position_dodge(preserve = "single")) +
-            scale_x_continuous(n.breaks = ((max(wp3Data()$Year, na.rm = T)-min(wp3Data()$Year, na.rm = T))/5)) +
+            scale_x_continuous(n.breaks = round(((max(wp3Data()$Year, na.rm = T)-min(wp3Data()$Year, na.rm = T))/5), 0)) +
             # scale_fill_manual(values = swCols[1:length(unique(combData()$WP))]) +
             scale_fill_csCols(name = "SEAwise Case Study Regions") +
             ylab("No. of Unique Articles Reviewed") +
@@ -799,7 +798,7 @@ server <- function(input, output) {
                          mapping = aes(x = Year,
                                        fill = WP),
                          position = position_dodge(preserve = "single")) +
-                scale_x_continuous(n.breaks = ((max(wp4Data()$Year, na.rm = T)-min(wp4Data()$Year, na.rm = T))/5)) +
+                scale_x_continuous(n.breaks = round(((max(wp4Data()$Year, na.rm = T)-min(wp4Data()$Year, na.rm = T))/5), 0)) +
                 scale_fill_manual(values = swCols[1:length(unique(wp4Data()$WP))]) +
                 labs(caption = "Number of records reviewed in WP4 (bars), which may be duplicated where multiple circumstances are extracted from an individual paper.") +
                 theme_few()+
@@ -814,7 +813,7 @@ server <- function(input, output) {
             geom_ma(data = tsWp4(),
                     mapping = aes(x = `PublicationYear`, y = TotalRecords),
                     ma_fun = SMA, n = 5, color = swCols[2], linetype = 1, size = 1) +
-            scale_x_continuous(n.breaks = ((max(wp4Data()$Year, na.rm = T)-min(wp4Data()$Year, na.rm = T))/5)) +
+            scale_x_continuous(n.breaks = round(((max(wp4Data()$Year, na.rm = T)-min(wp4Data()$Year, na.rm = T))/5), 0)) +
             scale_fill_manual(values = swCols[1:length(unique(wp4Data()$WP))]) +
             labs(caption = "Number of records reviewed in WP4 (bars), which may be duplicated where multiple circumstances are extracted from an individual paper. \n The line is a 5-year moving average of the total number of unique records (no duplicates), which may disappear when the number of records is too small.") +
             theme_few()+
@@ -823,6 +822,23 @@ server <- function(input, output) {
             guides(fill = "none")
         }
         wp4TSplot
+    })
+    # draw bar plot of records by area
+    output$wp4CSTS <- renderPlot({
+        req(wp4Data())
+        ggplot() +
+            geom_bar(data = wp4Data(),
+                     mapping = aes(x = Year,
+                                   fill = Regions),
+                     position = position_dodge(preserve = "single")) +
+            scale_x_continuous(n.breaks = round(((max(wp4Data()$Year, na.rm = T)-min(wp4Data()$Year, na.rm = T))/5), 0)) +
+            # scale_fill_manual(values = swCols[1:length(unique(combData()$WP))]) +
+            scale_fill_csCols(name = "SEAwise Case Study Regions") +
+            ylab("No. of Unique Articles Reviewed") +
+            labs(caption = "Number of unique articles reveiwed per SEAwise case study region.") +
+            theme_few()+
+            theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+                  legend.position = "bottom")
     })
     # Create downloadable csv product
     output$wp4Download <- downloadHandler(filename = function(){
@@ -886,7 +902,7 @@ server <- function(input, output) {
                          mapping = aes(x = Year,
                                        fill = WP),
                          position = position_dodge(preserve = "single")) +
-                scale_x_continuous(n.breaks = ((max(wp5Data()$Year, na.rm = T)-min(wp5Data()$Year, na.rm = T))/5)) +
+                scale_x_continuous(n.breaks = round(((max(wp5Data()$Year, na.rm = T)-min(wp5Data()$Year, na.rm = T))/5), 0)) +
                 scale_fill_manual(values = swCols[1:length(unique(wp5Data()$WP))]) +
                 labs(caption = "Number of records reviewed in WP5 (bars), which may be duplicated where multiple circumstances are extracted from an individual paper.") +
                 theme_few()+
@@ -901,7 +917,7 @@ server <- function(input, output) {
             geom_ma(data = tsWp5(),
                     mapping = aes(x = `PublicationYear`, y = TotalRecords),
                     ma_fun = SMA, n = 5, color = swCols[2], linetype = 1, size = 1) +
-            scale_x_continuous(n.breaks = ((max(wp5Data()$Year, na.rm = T)-min(wp5Data()$Year, na.rm = T))/5)) +
+            scale_x_continuous(n.breaks = round(((max(wp5Data()$Year, na.rm = T)-min(wp5Data()$Year, na.rm = T))/5), 0)) +
             scale_fill_manual(values = swCols[1:length(unique(wp5Data()$WP))]) +
             labs(caption = "Number of records reviewed in WP5 (bars), which may be duplicated where multiple circumstances are extracted from an individual paper. \n The line is a 5-year moving average of the total number of unique records (no duplicates), which may disappear when the number of records is too small.") +
             theme_few()+
@@ -910,6 +926,23 @@ server <- function(input, output) {
             guides(fill = "none")
         }
         wp5TSplot
+    })
+    # draw bar plot of records by area
+    output$wp5CSTS <- renderPlot({
+        req(wp5Data())
+        ggplot() +
+            geom_bar(data = wp5Data(),
+                     mapping = aes(x = Year,
+                                   fill = Regions),
+                     position = position_dodge(preserve = "single")) +
+            scale_x_continuous(n.breaks = round(((max(wp5Data()$Year, na.rm = T)-min(wp5Data()$Year, na.rm = T))/5), 0)) +
+            # scale_fill_manual(values = swCols[1:length(unique(combData()$WP))]) +
+            scale_fill_csCols(name = "SEAwise Case Study Regions") +
+            ylab("No. of Unique Articles Reviewed") +
+            labs(caption = "Number of unique articles reveiwed per SEAwise case study region.") +
+            theme_few()+
+            theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+                  legend.position = "bottom")
     })
     # Create downloadable csv product
     output$wp5Download <- downloadHandler(filename = function(){
