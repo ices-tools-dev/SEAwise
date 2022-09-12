@@ -43,6 +43,8 @@ wp4$Sampling.Method.used.for.data.collection <- ifelse(wp4$Sampling.Method.used.
 wp4$Description.Other.Sampling.Method <- NULL
 wp4$Study.type <- ifelse(is.na(wp4$Study.type), "Other", wp4$Study.type)
 wp4$Study.type <- ifelse(wp4$Study.type == "combination of field surveys, byctach and over many decades", "Other", wp4$Study.type)
+wp4$Study.type <- ifelse(wp4$Study.type == "Modelling/simulation", "Modelling or simulation", wp4$Study.type)
+
 # wp4$Pressure_level <- ifelse(is.na(wp4$Pressure_level), "Not specified", wp4$Pressure_level)
 
 
