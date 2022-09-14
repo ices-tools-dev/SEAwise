@@ -175,6 +175,8 @@ for(iCtr in c("BE","DE","DK","GB","IE","NL","EE")){
 	prodT55s[[iCtr]] <- prodT55
 	rm(prodT42,prodT43,prodT45,prodT53,prodT55)
 }
+load(file.path(outPath,"aggregatedProducts43DE.RData")
+prodT43s[["DE"]] <- prodT43
 	
 prodT42c 	<- do.call(rbind,prodT42s)
 aggBy 		<- c("Year","Month","C-square","MetierL4","VesselLengthRange")
@@ -188,6 +190,7 @@ aggBy 		<- c("Year","Month","C-square","MetierL6")
 aggVar 		<- c("SweptArea")
 orderBy(~country,data=cbind(country=c("BE","DE","DK","GB","IE","NL","EE"),do.call(rbind,lapply(prodT43s,function(x){range(x$x)}))))
 prodT43all 	<- aggregate(prodT43c[,aggVar],by=as.list(prodT43c[,aggBy]),FUN=sum,na.rm=T) 
+colnames(prodT43all)[ncol(prodT43all)] <- aggVar
 
 prodT45c 	<- do.call(rbind,prodT45s)
 colnames(prodT45c)[ncol(prodT45c)] <- "FishingHour"
@@ -195,6 +198,7 @@ aggBy 		<- c("Year","Month","Rect","MetierL4","VesselLengthRange")
 aggVar 		<- c("FishingHour")
 orderBy(~country,data=cbind(country=c("BE","DE","DK","GB","IE","NL","EE"),do.call(rbind,lapply(prodT45s,function(x){range(x$x)}))))
 prodT45all 	<- aggregate(prodT45c[,aggVar],by=as.list(prodT45c[,aggBy]),FUN=sum,na.rm=T) 
+colnames(prodT45all)[ncol(prodT45all)] <- aggVar
 
 prodT53c 	<- do.call(rbind,prodT53s)
 aggBy 		<- c("Year","Month","C-square","MetierL6","VesselLengthRange")
