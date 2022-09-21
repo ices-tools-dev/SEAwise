@@ -230,6 +230,8 @@ ggplotly(ggplot(ggww_cod) +
            scale_fill_viridis_c(option = "viridis",na.value="white")+
            labs(x="Process",y="Environmental drivers"))
 
+grepl("rindorf",tolower(paste0(dbraw$Authors,collapse="%%"))) # TRUE, Rindorf is an author in the list
+grepl("sguotti",tolower(paste0(dbraw$Authors,collapse="%%"))) # FALSE, Sguotti is not an author in the list
 
 ```
 
