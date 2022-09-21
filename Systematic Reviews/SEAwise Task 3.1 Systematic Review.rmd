@@ -209,9 +209,9 @@ ww <- dbraw[dbraw$Region %in% c("Western Waters - CS","Western Waters - non CS")
 #===
 # Studies on cod
 #====
-
 # names(ww)
 # unique(ww$Species)
+# ww_cod <- dbraw[dbraw$Species %in% c("Gadus morhua"),] # to check in all regions
 ww_cod <- ww[ww$Species %in% c("Gadus morhua"),]
 unique(ww_cod$Authors)
 table(ww_cod$Process)
