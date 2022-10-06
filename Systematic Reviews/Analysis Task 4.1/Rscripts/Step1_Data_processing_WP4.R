@@ -112,7 +112,7 @@ GISpath                               <- "Systematic Reviews/Analysis Task 4.1/G
 tab                                   <- readRDS(paste0(outPath, "tab.rds"))
 tab                                   <- as.data.table(tab)
 tab$ROWID                             <- c(1:nrow(tab))
-write.csv(tab, paste0(outPath, "tab.csv"))
+# write.csv(tab, paste0(outPath, "tab.csv"))
 
 ## check if all rows have a SW.ID
 table(is.na(tab$SW.ID))
@@ -156,7 +156,7 @@ data                                  <- tab[SW.ID %in% retained,,]
 #rm(tab, contributors, retained, excluded)
 
 ## For easyness, skip the long-text columns.
-data                                  <- data[,c(1, 5, 19:29, 32:49, 51:52)]
+#data                                  <- data[,c(1, 5, 19:29, 32:49, 51:52)]
 
 ## Check the regions (all fine)
 table(is.na(data$Region))
@@ -262,6 +262,10 @@ data                                 <- rbindlist(list(data, a, b), use.names=TR
 ## Check what pressure variables are commonly mentioned
 length(unique(data$Pressure_variable)) # 400 unique input... Let's skip for now.
 
+## Remove sediment information (Ecosystem.component_benthos_sediment) when Ecosystem component != "Benthos"
+data$Ecosystem.component_benthos_sediment <- ifelse(data$Ecosystem.component_level1 == "Benthos" & is.na(data$Ecosystem.component_benthos_sediment) == TRUE, "Unknown", 
+                                                    ifelse(data$Ecosystem.component_level1 == "Benthos", data$Ecosystem.component_benthos_sediment, NA))
+data$Ecosystem.component_benthos_sediment <- ifelse(data$Ecosystem.component_benthos_sediment == "sand", "Sand", data$Ecosystem.component_benthos_sediment)
 
 #-----------------------------------------------
 
@@ -272,7 +276,7 @@ length(unique(data$Pressure_variable)) # 400 unique input... Let's skip for now.
 #-----------------------------------------------
 saveRDS(data, file=paste0(outPath, "data.rds"))
 
-## Paste back excluded papers and save -> make sure you first uncheck dropping columns in data and removing tab and retained
+## Paste back excluded papers and save -> make sure you first undo dropping columns in data and removing tab and retained
 data_allScreened                     <- rbind(data, tab[!SW.ID %in% retained,])
 saveRDS(data_allScreened, file=paste0(outPath, "data_allScreened.rds"))
 
