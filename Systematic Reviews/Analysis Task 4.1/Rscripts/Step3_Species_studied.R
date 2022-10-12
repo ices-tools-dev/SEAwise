@@ -23,23 +23,23 @@ library(viridis)
 library(stringr)
 library(worms)
 
-outPath                               <- "Systematic Reviews/Analysis Task 4.1/Routput/"
+datPath                              <- "Systematic Reviews/Analysis Task 4.1/Routput/"
+outPath                              <- "Systematic Reviews/Analysis Task 4.1/Routput/Manuscript/"
 
 #-----------------------------------------------
 # Read in data
 #
 #  info: This step is dependent on step 1.
 #-----------------------------------------------
-data                                  <- readRDS(data, file=paste0(outPath, "data.rds"))
-
+data                                 <- readRDS(data, file=paste0(datPath, "data.rds"))
 
 #-----------------------------------------------
-# Split species input to individual rows
+# Split species input to individual rows 
 #-----------------------------------------------
 specs                                <- tstrsplit(data$Species.taxonomic.group.s., split="_")
 dat1                                 <- data
 dat1$Species.taxonomic.group.s.      <- specs[[1]] 
-length(unique(dat1$Species.taxonomic.group.s.)) # 394 unique records
+length(unique(dat1$Species.taxonomic.group.s.)) # 397 unique records
 for(iL in c(2:length(specs))){
   dat2                               <- data
   dat2$Species.taxonomic.group.s.    <- specs[[iL]]
@@ -47,119 +47,186 @@ for(iL in c(2:length(specs))){
   dat1                               <- rbind(dat1, dat2)
   rm(dat2)
 }# end iL loop. 
-length(unique(dat1$Species.taxonomic.group.s.)) # 883 unique records
+length(unique(dat1$Species.taxonomic.group.s.)) # 886 unique records
 
-dat1$Species.taxonomic.group.s.      <- str_trim(dat1$Species.taxonomic.group.s., side="both"); length(unique(dat1$Species.taxonomic.group.s.)) # 661 unique records
-dat1$Species.taxonomic.group.s.      <- str_to_lower(dat1$Species.taxonomic.group.s.); length(unique(dat1$Species.taxonomic.group.s.)) # 638 unique records
-dat1$Species.taxonomic.group.s.      <- ifelse(dat1$Species.taxonomic.group.s. %in% c("", "unknown"), NA, dat1$Species.taxonomic.group.s.); length(unique(dat1$Species.taxonomic.group.s.)) # 636 unique records
+dat1$Species.taxonomic.group.s.      <- str_trim(dat1$Species.taxonomic.group.s., side="both"); length(unique(dat1$Species.taxonomic.group.s.)) # 664 unique records
+dat1$Species.taxonomic.group.s.      <- str_to_lower(dat1$Species.taxonomic.group.s.); length(unique(dat1$Species.taxonomic.group.s.)) # 641 unique records
+dat1$Species.taxonomic.group.s.      <- ifelse(dat1$Species.taxonomic.group.s. %in% c("", "unknown"), NA, dat1$Species.taxonomic.group.s.); length(unique(dat1$Species.taxonomic.group.s.)) # 639 unique records
+
+saveRDS(dat1, file=paste(outPath, "dat1a.rds"))
 
 #-----------------------------------------------
-# Run species over worms-database
+# Run species over worms-database 
 #-----------------------------------------------
 specs                                <- data.table(Spec = unique(dat1$Species.taxonomic.group.s.))
 specs                                <- specs[!is.na(Spec)==T,,]
 
 specs2                               <- wormsbynames(specs$Spec)
-
 specs$valid_name                     <- specs2$valid_name
 specs$family                         <- specs2$family
 specs$order                          <- specs2$order
 specs$class                          <- specs2$class
 specs$rank                           <- specs2$rank
 specs$valid_AphiaID                  <- specs2$valid_AphiaID
+specsIDed                            <- specs[is.na(valid_name) == FALSE,,]
 
+## save matched/identified species
+saveRDS(specsIDed, file=paste0(outPath, "specsIDed1.rds"))
 
 #-----------------------------------------------
-# Manually correct non-matches in excel and read in
+# Manually correct non-matches in excel and read in 
 #-----------------------------------------------
 ## Write non-matches to excel for easy manual correction and later worms check
 nospecs                              <- data.table(Spec = unique(subset(specs, is.na(valid_name) == T)$Spec))
 write.table(nospecs, file=paste0(outPath, "nospecs.csv"), col.names=TRUE, row.names=FALSE)
 
-## Read in manually corrected table - NEEDS TO BE RE-DONE, as last time was for the deliverable -> no make new version for publishing
-## Current 'nospecs.csv' file is already with the newest list, but the 'nospec2.csv' file contains still the old list with corrected names.
-# nospecs2                              <- read.table(paste0(outPath, "nospecs2.csv"), header=T, sep=";")
-# nospecs                              <- data.table(nospecs)
-# nospecs$Taxon                        <- str_to_lower(nospecs$Taxon)
-# nospecs$Taxon                        <- str_trim(nospecs$Taxon, side="both")
-# 
-# #-----------------------------------------------
-# # Run non-matches again over worms-database
-# #-----------------------------------------------
-# # Exclude 'species/records' that are not in worms
-# nospecs2                             <- nospecs[!Taxon %in% c("benthos", "habitat", "fish", "unknown", "benthos_epifauna",
-#                                                               "pelagic fish", "benthic fish", "community", "plankton",
-#                                                               "benthic community", "benthos_infauna", "mergini",
-#                                                               "gulosus aristotelis", "algae", "fulica atra", "rhodolith",
-#                                                               "ichthyaetus audouinii", "larus marinus",
-#                                                               "alcidae"),,]
-# nospecs2$group                       <- c(rep(1:14, each=10) , rep(15, nrow(nospecs2)-140))
-# nospecs3                             <- wormsbymatchnames(subset(nospecs2, group==1)$Taxon)
-# for(iGr in 2:15){
-#   print(iGr)
-#   nospecs4                           <- wormsbymatchnames(subset(nospecs2, group==iGr)$Taxon)
-#   nospecs3                           <- rbind(nospecs3, nospecs4)
-#   rm(nospecs4)
-# }
-# nospecs2$valid_name                  <- nospecs3$valid_name
-# nospecs2$family                      <- nospecs3$family
-# nospecs2$order                       <- nospecs3$order
-# nospecs2$class                       <- nospecs3$class
-# nospecs2$rank                        <- nospecs3$rank
-# nospecs2$valid_AphiaID               <- nospecs3$valid_AphiaID
-# nospecs2$Taxon                       <- NULL
-# 
-# species                              <- rbind(specs, nospecs2)
-# stillnospecs                         <- nospecs[Taxon %in% c("benthos", "habitat", "fish", "unknown", "benthos_epifauna",
-#                                                              "pelagic fish", "benthic fish", "community", "plankton",
-#                                                              "benthic community", "benthos_infauna", "mergini",
-#                                                              "gulosus aristotelis", "algae", "fulica atra", "rhodolith",
-#                                                              "ichthyaetus audouinii", "larus marinus",
-#                                                              "alcidae"),,]                             
-# rm(nospecs2, nospecs3, specs2, specs, nospecs)
-# 
-# #-----------------------------------------------
-# # Create taxonomic data for non-worms records and merge all
-# #-----------------------------------------------
-# specinfocreated                      <- data.table(Taxon = c("benthos", "habitat", "fish", "unknown", "benthos_epifauna",
-#                                                              "pelagic fish", "benthic fish", "community", "plankton",
-#                                                              "benthic community", "benthos_infauna", "mergini",
-#                                                              "gulosus aristotelis", "algae", "fulica atra", "rhodolith",
-#                                                              "ichthyaetus audouinii", "larus marinus", "alcidae"),
-#                                                    valid_name = c("Benthos", "Habitat", "Fish", "Unknown", "Benthos_epifauna",
-#                                                                   "Fish_pelagic", "Fish_benthic", "Unknown", "Plankton",
-#                                                                   "Benthic community", "Benthos_infauna", "Anatidae",
-#                                                                   "Gulosus aristotelis", "Algae", "Fulica atra", "Rhodoliths",
-#                                                                   "Ichthyaetus audouinii", "Larus marinus", "Alcidae"),
-#                                                    family = c("Benthos", "Habitat", "Fish", "Unknown", "Benthos",
-#                                                               "Fish", "Fish", "Unknown", "Plankton",
-#                                                               "Benthic community", "Benthos", "Anatidae",
-#                                                               "Phalacrocoracidae", "Algae", "Rallidae", "Algae",
-#                                                               "Laridae", "Laridae","Alcidae"),
-#                                                    order = c("Benthos", "Habitat", "Fish", "Unknown", "Benthos",
-#                                                              "Fish", "Fish", "Unknown", "Plankton",
-#                                                              "Benthic community", "Benthos", "Anseriformes",
-#                                                              "Suliformes", "Algae", "Gruiformes", "Algae",
-#                                                              "Charadriiformes", "Charadriiformes", "Charadriiformes"),
-#                                                    class = c("Benthos", "Habitat", "Fish", "Unknown", "Benthos",
-#                                                              "Fish", "Fish", "Unknown", "Plankton",
-#                                                              "Benthic community", "Benthos", "Aves", 
-#                                                              "Aves", "Algae", "Aves", "Algae",
-#                                                              "Aves", "Aves", "Aves"),
-#                                                    rank = c(rep(NA, 11), "Subfamily", "Species", NA, "Species", NA,
-#                                                             "Species", "Species", "Family"),
-#                                                    valid_AphiaID = c(rep(NA, 19)))
-# stillnospecs                         <- merge(stillnospecs, specinfocreated, by="Taxon", all=T)
-# stillnospecs$Taxon                   <- NULL
-# species$group                        <- NULL
-# species                              <- rbind(species, stillnospecs)       
-# species$Species.taxonomic.group.s.   <- species$Spec
-# species$Spec                         <- NULL
-# species$class                        <- ifelse(species$order == "Testudines", "Reptilia", species$class)
-# dat1                                 <- merge(dat1, species, by="Species.taxonomic.group.s.", all=TRUE)                                                   
-# dat1$class                           <- ifelse(is.na(dat1$class)==T, "not specified", dat1$class)
-# 
-# #-----------------------------------------------
-# # save dat1
-# #-----------------------------------------------
-# saveRDS(dat1, paste0(outPath, "dat1.rds"))
+## Read in manually corrected table 
+nospecs2                             <- read.table(paste0(outPath, "nospecs_identified.csv"), header=T, sep=";")
+nospecs                              <- data.table(nospecs2)
+nospecs$Taxon                        <- str_to_lower(nospecs$Taxon)
+nospecs$Taxon                        <- str_trim(nospecs$Taxon, side="both")
+
+#-----------------------------------------------
+# Run non-matches again over worms-database 
+#-----------------------------------------------
+nospecs3                             <- data.table(Taxon = sort(unique(nospecs$Taxon))) # 133 rows
+nospecs3                             <- nospecs3[!Taxon %in% c("algae", "benthic community", "benthic fish", "benthos", "benthos_epifauna", "benthos_infauna", "fish", "fulica atra",
+                                                               "gulosus aristotelis", "habitat", "ichthyaetus audouinii", "larus", 
+                                                               "larus marinus", "mergini", "pelagic fish", "plankton", "rhodolith", "unknown")]
+nospecs3$group                       <- c(rep(1:11, each=10) , rep(12, nrow(nospecs3)-110))
+nospecs4                             <- wormsbymatchnames(subset(nospecs3, group==1)$Taxon)
+for(iGr in 2:max(nospecs3$group)){
+  print(iGr)
+  nospecs5                           <- wormsbymatchnames(subset(nospecs3, group==iGr)$Taxon)
+  nospecs4                           <- rbind(nospecs4, nospecs5)
+  rm(nospecs5)
+}
+nospecs3$valid_name                  <- nospecs4$valid_name
+nospecs3$family                      <- nospecs4$family
+nospecs3$order                       <- nospecs4$order
+nospecs3$class                       <- nospecs4$class
+nospecs3$rank                        <- nospecs4$rank
+nospecs3$valid_AphiaID               <- nospecs4$valid_AphiaID
+
+## Add Worms-info to nospecs
+nospecs$valid_name                   <- nospecs3$valid_name [match(nospecs$Taxon, nospecs3$Taxon)]
+nospecs$family                       <- nospecs3$family [match(nospecs$Taxon, nospecs3$Taxon)]
+nospecs$order                        <- nospecs3$order [match(nospecs$Taxon, nospecs3$Taxon)]
+nospecs$class                        <- nospecs3$class [match(nospecs$Taxon, nospecs3$Taxon)]
+nospecs$rank                         <- nospecs3$rank [match(nospecs$Taxon, nospecs3$Taxon)]
+nospecs$valid_AphiaID                <- nospecs3$valid_AphiaID [match(nospecs$Taxon, nospecs3$Taxon)]
+
+## Merge identified species to specsIDed
+specsIDed2                           <- nospecs[is.na(valid_name) == FALSE,,]
+specsIDed2$Taxon                     <- NULL
+specsIDed                            <- rbind(specsIDed, specsIDed2)
+saveRDS(specsIDed, file=paste0(outPath, "specsIDed2.rds"))
+
+## Keep overview with non-identified species
+stillnospecs                         <- data.table(Spec  = subset(nospecs, is.na(nospecs$valid_name) == TRUE)$Spec,
+                                                   Taxon = subset(nospecs, is.na(nospecs$valid_name) == TRUE)$Taxon)
+
+#-----------------------------------------------
+# Create taxonomic data for non-worms records and merge to specsIDed 
+#-----------------------------------------------
+specinfocreated                      <- data.table(Taxon         = sort(unique(stillnospecs$Taxon)),
+                                                   valid_name    = c("Algae", "Benthic community", "Fish_benthic", "Benthos", "Benthos_epifauna",
+                                                                     "Benthos_infauna", "Fish", "Fulica atra", "Phalacrocorax aristotelis", "Habitat", 
+                                                                     "Larus audouinii", "Larus marinus", "Larus", "Anatidae", "Fish_pelagic", 
+                                                                     "Plankton", "Rhodoliths", "Unknown"),
+                                                   family        = c("Algae", "Benthic community", "Fish", "Benthos", "Benthos", "Benthos", "Fish",
+                                                                     "Rallidae", "Phalacrocoracidae", "Habitat", "Laridae", "Laridae", "Laridae", 
+                                                                     "Anatidae", "Fish", "Plankton", "Algae", "Unknown"),
+                                                   order         = c("Algae", "Benthic community", "Fish", "Benthos", "Benthos", "Benthos", "Fish",
+                                                                     "Gruiformes", "Pelecaniformes", "Habitat", "Charadriiformes", "Charadriiformes",
+                                                                     "Charadriiformes", "Anseriformes", "Fish", "Plankton", "Algae", "Unknown"),
+                                                   class         = c("Algae", "Benthic community", "Fish", "Benthos", "Benthos", "Benthos", "Fish",
+                                                                     "Aves", "Aves", "Habitat", "Aves", "Aves", "Aves", "Aves", "Fish", "Plankton", 
+                                                                     "Algae", "Unknown"),
+                                                   rank          = c(rep(NA, 7), "Species", "Species", NA, "Species", "Species", "Genus", "Subfamily", rep(NA, 4)),
+                                                   valid_AphiaID = c(rep(NA, 7), 232054, 137178, NA, 137139, 137146, 137043, 136973, NA, NA, NA, NA))
+
+stillnospecs                         <- merge(stillnospecs, specinfocreated, by="Taxon", all=T)
+stillnospecs$Taxon                   <- NULL
+specsIDed                            <- rbind(specsIDed, stillnospecs)
+saveRDS(specsIDed, file=paste0(outPath, "specsIDed3.rds"))
+
+#-----------------------------------------------
+# Add (created) worms data to dat1.rds
+#-----------------------------------------------
+rm(list=ls())
+datPath                              <- "Systematic Reviews/Analysis Task 4.1/Routput/"
+outPath                              <- "Systematic Reviews/Analysis Task 4.1/Routput/Manuscript/"
+
+dat1                                 <- readRDS(paste(outPath, "dat1a.rds"))
+specsIDed                            <- readRDS(paste0(outPath, "specsIDed3.rds"))
+specsIDed$Species.taxonomic.group.s. <- specsIDed$Spec
+specsIDed$Spec                       <- NULL
+
+dat1                                 <- merge(dat1, specsIDed, by="Species.taxonomic.group.s.", all.x=TRUE)
+saveRDS(dat1,  paste0(outPath, "dat1b.rds"))
+
+#-----------------------------------------------
+# Check consistency between taxonomy and ecosystem component level: Benthos
+#-----------------------------------------------
+rm(list=ls())
+datPath                              <- "Systematic Reviews/Analysis Task 4.1/Routput/"
+outPath                              <- "Systematic Reviews/Analysis Task 4.1/Routput/Manuscript/"
+
+dat1                                 <- readRDS(paste0(outPath, "dat1b.rds"))
+dat2                                 <- dat1[,c("Species.taxonomic.group.s.", "Ecosystem.component_level1", 
+                                                "Ecosystem.component_level2", "Ecosystem.component_level3",
+                                                "valid_name", "ROWID")]
+
+
+## Is "Benthos" always benthos?
+benthos                              <- dat2[Ecosystem.component_level1 == "Benthos",,]
+## Interesting records in Species.taxonomic.group.s.: "fish", "fishery for (but not testing any effect on) solea solea"
+paperstocheck_benthos                <- dat1[Ecosystem.component_level1 == "Benthos" & Species.taxonomic.group.s. %in% c("fish", "fishery for (but not testing any effect on) solea solea")]  
+
+## Are "epifauna" en "infauna" (ECL2) always nested within "Benthos" (ECL1)? --> YES!
+table(is.na(dat1[Ecosystem.component_level2 == "Benthic_epifauna"]$Ecosystem.component_level1))
+unique(dat1[Ecosystem.component_level2 == "Benthic_epifauna"]$Ecosystem.component_level1)
+
+table(is.na(dat1[Ecosystem.component_level2 == "Benthic_infauna"]$Ecosystem.component_level1))
+unique(dat1[Ecosystem.component_level2 == "Benthic_infauna"]$Ecosystem.component_level1)
+
+## Do benthos_epifauna (valid name) and benthic_epifauna (ECL2) match?
+epibenthos                           <- dat1[Ecosystem.component_level2 == "Benthic_epifauna"]
+sort(unique(epibenthos$valid_name))
+# strange results: "Fish", "Benthos", "Benthos_infauna"
+paperstocheck_benthos                <- rbind(paperstocheck_benthos,
+                                              epibenthos[valid_name %in% c("Fish", "Benthos", "Benthos_infauna")])  
+
+
+## Do benthos_epifauna (valid name) and benthic_epifauna (ECL2) match?
+infauna                              <- dat1[Ecosystem.component_level2 == "Benthic_infauna"]
+sort(unique(infauna$valid_name))
+# strange results: "Habitat", "Benthos_epifauna", "Benthos"
+paperstocheck_benthos                <- rbind(paperstocheck_benthos,
+                                              infauna[valid_name %in% c("Habitat", "Benthos", "Benthos_epifauna")])  
+
+
+## Is there "benthos" when ECL1 != benthos?
+unique(dat1[Ecosystem.component_level1 != "Benthos"]$Ecosystem.component_level2) # This is all ok (but shows sediment types though!)
+sort(unique(dat1[Ecosystem.component_level1 != "Benthos"]$valid_name))  # Benthos and benthos_epifauna are listed
+paperstocheck_benthos                <- rbind(paperstocheck_benthos,
+                                              dat1[Ecosystem.component_level1 != "Benthos" & valid_name %in% c("Benthos", "Benthos_epifauna")])  
+
+saveRDS(paperstocheck_benthos, file=paste0(outPath, "paperstocheck_benthos.rds"))
+
+#-----------------------------------------------
+# Check consistency between taxonomy and ecosystem component level: Benthos
+#-----------------------------------------------
+rm(list=ls())
+datPath                              <- "Systematic Reviews/Analysis Task 4.1/Routput/"
+outPath                              <- "Systematic Reviews/Analysis Task 4.1/Routput/Manuscript/"
+
+dat1                                 <- readRDS(paste0(outPath, "dat1b.rds"))
+dat2                                 <- dat1[,c("Species.taxonomic.group.s.", "Ecosystem.component_level1", 
+                                                "Ecosystem.component_level2", "Ecosystem.component_level3",
+                                                "valid_name", "ROWID")]
+
+
+
+
