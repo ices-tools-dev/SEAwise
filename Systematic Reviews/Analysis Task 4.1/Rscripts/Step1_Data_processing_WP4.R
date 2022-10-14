@@ -260,12 +260,26 @@ data                                 <- rbindlist(list(data, a, b), use.names=TR
 
 
 ## Check what pressure variables are commonly mentioned
-length(unique(data$Pressure_variable)) # 400 unique input... Let's skip for now.
+length(unique(data$Pressure_variable)) # 401 unique input... Let's skip for now.
+
+## Check whether ECL2 contains only sediment information when ECL1 == Physical_habitat
+a                                    <- data[Ecosystem.component_level2 %in% c("Gravel", "Mixed", "Mud", "Sand", "Unknown")]
+table(a$Ecosystem.component_level1) ## All fine!
+
+## Change missing sediment info when ECL1 == Physical_habitats to "Unknown"
+data$Ecosystem.component_level2      <- ifelse(data$Ecosystem.component_level1 == "Physical_habitats" & is.na(data$Ecosystem.component_level2) == TRUE, "Unknown", data$Ecosystem.component_level2)
 
 ## Remove sediment information (Ecosystem.component_benthos_sediment) when Ecosystem component != "Benthos"
 data$Ecosystem.component_benthos_sediment <- ifelse(data$Ecosystem.component_level1 == "Benthos" & is.na(data$Ecosystem.component_benthos_sediment) == TRUE, "Unknown", 
                                                     ifelse(data$Ecosystem.component_level1 == "Benthos", data$Ecosystem.component_benthos_sediment, NA))
 data$Ecosystem.component_benthos_sediment <- ifelse(data$Ecosystem.component_benthos_sediment == "sand", "Sand", data$Ecosystem.component_benthos_sediment)
+
+## Correct input in Sampling.Method.used.for.data.collection to pre-chosen classes
+data$Sampling.Method.used.for.data.collection <- ifelse(data$Sampling.Method.used.for.data.collection %in% c("other", "Other - box corer"), "Other", data$Sampling.Method.used.for.data.collection)
+
+## Correct input in Study.type to pre-chosen classes
+data$Study.type                      <- ifelse(data$Study.type %in% c("combination of field surveys, byctach and over many decades"), "Other", 
+                                               ifelse(data$Study.type == "Fisheries Dependent Data", "Fisheries dependent survey", data$Study.type))
 
 #-----------------------------------------------
 

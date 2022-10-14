@@ -208,7 +208,7 @@ paperstocheck_benthos                <- rbind(paperstocheck_benthos,
 
 
 ## Is there "benthos" when ECL1 != benthos?
-unique(dat1[Ecosystem.component_level1 != "Benthos"]$Ecosystem.component_level2) # This is all ok (but shows sediment types though!)
+unique(dat1[Ecosystem.component_level1 != "Benthos"]$Ecosystem.component_level2) # This is all ok (but shows sediment types though! --> checked and correct)
 sort(unique(dat1[Ecosystem.component_level1 != "Benthos"]$valid_name))  # Benthos and benthos_epifauna are listed
 paperstocheck_benthos                <- rbind(paperstocheck_benthos,
                                               dat1[Ecosystem.component_level1 != "Benthos" & valid_name %in% c("Benthos", "Benthos_epifauna")])  
@@ -216,7 +216,7 @@ paperstocheck_benthos                <- rbind(paperstocheck_benthos,
 saveRDS(paperstocheck_benthos, file=paste0(outPath, "paperstocheck_benthos.rds"))
 
 #-----------------------------------------------
-# Check consistency between taxonomy and ecosystem component level: Benthos
+# Check consistency between taxonomy and ecosystem component level: focus on non-taxonomic descriptions
 #-----------------------------------------------
 rm(list=ls())
 datPath                              <- "Systematic Reviews/Analysis Task 4.1/Routput/"
@@ -226,7 +226,14 @@ dat1                                 <- readRDS(paste0(outPath, "dat1b.rds"))
 dat2                                 <- dat1[,c("Species.taxonomic.group.s.", "Ecosystem.component_level1", 
                                                 "Ecosystem.component_level2", "Ecosystem.component_level3",
                                                 "valid_name", "ROWID")]
+dat3                                 <- dat2[valid_name %in% c("Algae", "Benthic community", "Benthos", "Benthos_epifauna", "Benthos_infauna",
+                                                               "Fish", "Fish_benthic", "Fish_pelagic", "Habitat", "Plankton", "Rhodoliths", "Unknown")]
 
+dat3$Ecosystem.component_level2[is.na(dat3$Ecosystem.component_level2)] <- "Not_provided"
+table(dat3$Ecosystem.component_level1, dat3$Ecosystem.component_level2, dat3$valid_name)
 
-
-
+for(iVN in unique(dat3$valid_name)){
+  dat4                               <- dat3[valid_name == iVN,,]
+  print(iVN)
+  print(table(dat4$Ecosystem.component_level1, dat4$Ecosystem.component_level2))
+}
