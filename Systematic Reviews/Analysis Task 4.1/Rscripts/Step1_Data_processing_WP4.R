@@ -156,7 +156,7 @@ data                                  <- tab[SW.ID %in% retained,,]
 #rm(tab, contributors, retained, excluded)
 
 ## For easyness, skip the long-text columns.
-#data                                  <- data[,c(1, 5, 19:29, 32:49, 51:52)]
+data                                  <- data[,c(1, 5, 19:29, 32:49, 51:52)]
 
 ## Check the regions (all fine)
 table(is.na(data$Region))
@@ -280,6 +280,15 @@ data$Sampling.Method.used.for.data.collection <- ifelse(data$Sampling.Method.use
 ## Correct input in Study.type to pre-chosen classes
 data$Study.type                      <- ifelse(data$Study.type %in% c("combination of field surveys, byctach and over many decades"), "Other", 
                                                ifelse(data$Study.type == "Fisheries Dependent Data", "Fisheries dependent survey", data$Study.type))
+
+## Correct input in study type according to decisions from script 5a
+data$Study.type                      <- ifelse(data$SW.ID %in% c("SW4_0065", "SW4_1177") & data$Study.type == "Other", "Fisheries dependent survey",
+                                               ifelse(data$SW.ID %in% c("SW4_0368", "SW4_0915", "SW4_0153", "SW4_0409", "SW4_0624") & data$Study.type == "Other", "Modelling/simulation",
+                                               ifelse(data$SW.ID %in% c("SW4_0484", "SW4_0259", "SW4_0644", "SW4_0995", "SW4_1811", 
+                                                                        "SW4_0468", "SW4_0703", "SW4_0022", "SW4_0186", "SW4_0154", "SW4_0883") & data$Study.type == "Other", "Field experiment",
+                                                      ifelse(data$SW.ID %in% c("SW4_0199", "SW4_0330", "SW4_0565", "SW4_0693", "SW4_0738", "SW4_0772",
+                                                                               "SW4_0934", "SW4_1294", "SW4_1527", "SW4_1788"), "Questionnaire", data$Study.type))))
+data$Study.type                      <- ifelse(data$Study.type == "Field experiment", "Field experiment and observations", data$Study.type)
 
 #-----------------------------------------------
 

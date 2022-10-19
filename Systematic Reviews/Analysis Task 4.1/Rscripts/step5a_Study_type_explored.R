@@ -106,3 +106,66 @@ unique(Others$Abstract)
 #     Benthic community structure after MPA establishment (SW4_0883)
 
 
+
+##### Conclusions after meeting with Esther:
+## - "Field experiment" becomes "Field experiment and observations" (so papers here are merged)
+## - 'wrongfully' classified papers are assigned to the right study type
+## - we create a new type "Questionnaires", and look for more papers with this type in Description.Other.Sampling.Method
+## - corrections are performed in step 1; this script becomes superfluous.
+
+
+#-----------------------------------------------#
+# Identify papers for the study type "Questionnaires"
+#-----------------------------------------------#
+idx1                                  <- grep("uesti", data$Description.Other.Sampling.Method)   # questionnaire
+idx2                                  <- grep("ntervie", data$Description.Other.Sampling.Method) # interview
+idx3                                  <- grep("nowledg", data$Description.Other.Sampling.Method) # knowledge
+SW1                                   <- data$SW.ID[idx1]
+SW2                                   <- data$SW.ID[idx2]
+SW3                                   <- data$SW.ID[idx3]
+length(unique(c(SW1, SW2, SW3))) # 19 papers 
+Questpapers                           <- c(SW1, SW2, SW3)
+
+## Some of these papers may rely on multiple methods..
+Quest                                  <- data[SW.ID %in% Questpapers,]
+table(Quest$SW.ID, Quest$Study.type) # Most studies only have 1 study.type though (but this should potentially be changed to two study types?)
+
+## SW4_0007 - Anastasopoulou          ## Add new row (copy) with ST = "Q"
+## SW4_0075 - vdReijden               ## Change ST of row with "Fishery.Type == recreational fisheries" to "Q" + switch sampling method & description for both rows
+## SW4_0199 - Astarloa                ## Change ST to "Q" for all data
+## SW4_0275 - Romagnoni               ## Change ST of row with "Descr.Other.Sampl.Meth. == interviews with fishers" to "Q"
+## SW4_0330 - Romagnoni               ## Change ST to "Q" for all data
+## SW4_0481 - Lefkaditou_Chatzispyrou ## Change ST to "Q" for rows where "ST == Fisheries dependent survey" (+ I also think ST should be changed to Fisheries dependent survey when it now is Field experiment)
+## SW4_0565 - vdReijden               ## Change ST to "Q" for all data 
+## SW4_0644 - Romagnoni               ## Add new row with ST= "Q" (copy of the row where sampling method used = Visual analyses)
+## SW4_0670 - Altuna-Etxabe           ## Change ST to "Q" for 4 rows where "DescrSamplMeth == Questionaries". Change other 4 rows ST to Fisheries dependent survey (because it is not a meta-analysis!)
+## SW4_0693 - VanHoey                 ## Change ST to "Q" for all data
+## SW4_0738 - Thorpe                  ## Change ST to "Q" for all data
+## SW4_0772 - Romagnoni               ## Change ST to "Q" for all data
+## SW4_0934 - Girardin                ## Change ST to "Q" for all data
+## SW4_0976 - Altuna-Etxabe           ## Change ST to "Q" for all rows where "ST == Meta-analysis"
+## SW4_1294 - vdReijden               ## Change ST to "Q" for all data
+## SW4_1527 - Brown                   ## Change ST to "Q" for all data
+## SW4_1566 - Uhlmann_Reid            ## Add new row (copy) with ST == "Q"
+## SW4_1788 - Lefkaditou_Chatzispyrou ## Change ST to "Q" for all data
+
+data[SW.ID == "SW4_1788"]$Abstract
+data[SW.ID == "SW4_0565"]$Reader
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
