@@ -201,6 +201,40 @@ ggplotly(ggplot(bagg_temp) +
 ## North Sea
 
 ## Western Waters
+```{r WWDataWrangling}
+# unique(dbraw$Region)
+ww <- dbraw[dbraw$Region %in% c("Western Waters - CS","Western Waters - non CS"),]
+
+
+#===
+# Studies on cod
+#====
+# names(ww)
+# unique(ww$Species)
+# ww_cod <- dbraw[dbraw$Species %in% c("Gadus morhua"),] # to check in all regions
+ww_cod <- ww[ww$Species %in% c("Gadus morhua"),]
+unique(ww_cod$Authors)
+table(ww_cod$Process)
+unique(ww_cod[ww_cod$Process %in% c("Reproduction"),"Authors"])
+ggww_cod <- table(ww_cod$Process,ww_cod$EnvironmentalDrivers)
+ggww_cod
+ggww_cod <- as.data.frame(ggww_cod)
+ggww_cod$freq <- as.numeric(ifelse(ggww_cod$Freq==0,NA,ggww_cod$Freq))
+
+ggplotly(ggplot(ggww_cod) +
+           geom_tile(mapping = aes(x = Var1,
+                                   y = Var2,
+                                   fill = freq))+
+           theme_clean() +
+           theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))+
+           scale_fill_viridis_c(option = "viridis",na.value="white")+
+           labs(x="Process",y="Environmental drivers"))
+
+grepl("rindorf",tolower(paste0(dbraw$Authors,collapse="%%"))) # TRUE, Rindorf is an author in the list
+grepl("sguotti",tolower(paste0(dbraw$Authors,collapse="%%"))) # FALSE, Sguotti is not an author in the list
+
+```
+
 
 ## Mediterranean Sea
 

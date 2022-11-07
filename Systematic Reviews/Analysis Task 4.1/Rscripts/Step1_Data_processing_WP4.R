@@ -112,7 +112,7 @@ GISpath                               <- "Systematic Reviews/Analysis Task 4.1/G
 tab                                   <- readRDS(paste0(outPath, "tab.rds"))
 tab                                   <- as.data.table(tab)
 tab$ROWID                             <- c(1:nrow(tab))
-write.csv(tab, paste0(outPath, "tab.csv"))
+# write.csv(tab, paste0(outPath, "tab.csv"))
 
 ## check if all rows have a SW.ID
 table(is.na(tab$SW.ID))
@@ -209,7 +209,7 @@ table(is.na(data$Ecosystem.component_level1)) #no NAs
 
 ## Check the ecosystem component level 2
 table(is.na(subset(data, Ecosystem.component_level1 %in% c("Fish_teleost", "Benthos", "Marine_mammals", "Fish_cartilaginous",
-                                                     "Physical_habitats", "Plankton", "Plants", "Reptiles"))$Ecosystem.component_level2)==T) #301 NAs
+                                                     "Physical_habitats", "Plankton", "Plants", "Reptiles"))$Ecosystem.component_level2)==T) #305 NAs
 table(data$Ecosystem.component_level2)
 
 
@@ -239,7 +239,7 @@ data$Direction.of.relationship       <- ifelse(data$Direction.of.relationship ==
 data$Direction.of.relationship[is.na(data$Direction.of.relationship)] <- "Not specified"
 
 ## Check what species are commonly mentioned
-length(unique(data$Species.taxonomic.group.s.)) # 461 unique input... Let's try to group/categorize these in a separate script (step 3)
+length(unique(data$Species.taxonomic.group.s.)) # 462 unique input... Let's try to group/categorize these in a separate script (step 3)
 
 ## fix some rows with double input
 a                                    <- data[Species.taxonomic.group.s. == "other fish (9) and mollusca (2)",,]
@@ -260,8 +260,36 @@ data                                 <- rbindlist(list(data, a, b), use.names=TR
 
 
 ## Check what pressure variables are commonly mentioned
-length(unique(data$Pressure_variable)) # 400 unique input... Let's skip for now.
+length(unique(data$Pressure_variable)) # 403 unique input... Let's skip for now.
 
+## Check whether ECL2 contains only sediment information when ECL1 == Physical_habitat
+a                                    <- data[Ecosystem.component_level2 %in% c("Gravel", "Mixed", "Mud", "Sand", "Unknown")]
+table(a$Ecosystem.component_level1) ## All fine!
+
+## Change missing sediment info when ECL1 == Physical_habitats to "Unknown"
+data$Ecosystem.component_level2      <- ifelse(data$Ecosystem.component_level1 == "Physical_habitats" & is.na(data$Ecosystem.component_level2) == TRUE, "Unknown", data$Ecosystem.component_level2)
+
+## Remove sediment information (Ecosystem.component_benthos_sediment) when Ecosystem component != "Benthos"
+data$Ecosystem.component_benthos_sediment <- ifelse(data$Ecosystem.component_level1 == "Benthos" & is.na(data$Ecosystem.component_benthos_sediment) == TRUE, "Unknown", 
+                                                    ifelse(data$Ecosystem.component_level1 == "Benthos", data$Ecosystem.component_benthos_sediment, NA))
+data$Ecosystem.component_benthos_sediment <- ifelse(data$Ecosystem.component_benthos_sediment == "sand", "Sand", data$Ecosystem.component_benthos_sediment)
+
+## Correct input in Sampling.Method.used.for.data.collection to pre-chosen classes
+data$Sampling.Method.used.for.data.collection <- ifelse(data$Sampling.Method.used.for.data.collection %in% c("other", "Other - box corer"), "Other", data$Sampling.Method.used.for.data.collection)
+
+## Correct input in Study.type to pre-chosen classes
+data$Study.type                      <- ifelse(data$Study.type %in% c("combination of field surveys, byctach and over many decades"), "Other", 
+                                               ifelse(data$Study.type == "Fisheries Dependent Data", "Fisheries dependent survey", data$Study.type))
+
+## Correct input in study type according to decisions from script 5a
+data$Study.type                      <- ifelse(data$SW.ID %in% c("SW4_0065", "SW4_1177") & data$Study.type == "Other", "Fisheries dependent survey",
+                                               ifelse(data$SW.ID %in% c("SW4_0368", "SW4_0915", "SW4_0153", "SW4_0409", "SW4_0624") & data$Study.type == "Other", "Modelling/simulation",
+                                               ifelse(data$SW.ID %in% c("SW4_0484", "SW4_0259", "SW4_0644", "SW4_0995", "SW4_1811", 
+                                                                        "SW4_0468", "SW4_0703", "SW4_0022", "SW4_0186", "SW4_0154", "SW4_0883") & data$Study.type == "Other", "Field experiment",
+                                                      ifelse(data$SW.ID %in% c("SW4_0199", "SW4_0330", "SW4_0565", "SW4_0693", "SW4_0738", "SW4_0772",
+                                                                               "SW4_0934", "SW4_1294", "SW4_1527", "SW4_1788"), "Questionnaire", data$Study.type))))
+data$Study.type                      <- ifelse(data$Study.type == "Field experiment", "Field experiment/observations", data$Study.type)
+data$Study.type                      <- ifelse(data$Study.type == "Questionnaire", "Questionnaire/interview", data$Study.type)
 
 #-----------------------------------------------
 
@@ -272,7 +300,7 @@ length(unique(data$Pressure_variable)) # 400 unique input... Let's skip for now.
 #-----------------------------------------------
 saveRDS(data, file=paste0(outPath, "data.rds"))
 
-## Paste back excluded papers and save -> make sure you first uncheck dropping columns in data and removing tab and retained
+## Paste back excluded papers and save -> make sure you first undo dropping columns in data and removing tab and retained
 data_allScreened                     <- rbind(data, tab[!SW.ID %in% retained,])
 saveRDS(data_allScreened, file=paste0(outPath, "data_allScreened.rds"))
 
