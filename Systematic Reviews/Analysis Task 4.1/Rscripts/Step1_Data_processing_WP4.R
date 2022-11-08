@@ -209,7 +209,7 @@ table(is.na(data$Ecosystem.component_level1)) #no NAs
 
 ## Check the ecosystem component level 2
 table(is.na(subset(data, Ecosystem.component_level1 %in% c("Fish_teleost", "Benthos", "Marine_mammals", "Fish_cartilaginous",
-                                                     "Physical_habitats", "Plankton", "Plants", "Reptiles"))$Ecosystem.component_level2)==T) #301 NAs
+                                                     "Physical_habitats", "Plankton", "Plants", "Reptiles"))$Ecosystem.component_level2)==T) #305 NAs
 table(data$Ecosystem.component_level2)
 
 
@@ -239,7 +239,7 @@ data$Direction.of.relationship       <- ifelse(data$Direction.of.relationship ==
 data$Direction.of.relationship[is.na(data$Direction.of.relationship)] <- "Not specified"
 
 ## Check what species are commonly mentioned
-length(unique(data$Species.taxonomic.group.s.)) # 461 unique input... Let's try to group/categorize these in a separate script (step 3)
+length(unique(data$Species.taxonomic.group.s.)) # 462 unique input... Let's try to group/categorize these in a separate script (step 3)
 
 ## fix some rows with double input
 a                                    <- data[Species.taxonomic.group.s. == "other fish (9) and mollusca (2)",,]
@@ -260,7 +260,7 @@ data                                 <- rbindlist(list(data, a, b), use.names=TR
 
 
 ## Check what pressure variables are commonly mentioned
-length(unique(data$Pressure_variable)) # 401 unique input... Let's skip for now.
+length(unique(data$Pressure_variable)) # 403 unique input... Let's skip for now.
 
 ## Check whether ECL2 contains only sediment information when ECL1 == Physical_habitat
 a                                    <- data[Ecosystem.component_level2 %in% c("Gravel", "Mixed", "Mud", "Sand", "Unknown")]
@@ -288,7 +288,8 @@ data$Study.type                      <- ifelse(data$SW.ID %in% c("SW4_0065", "SW
                                                                         "SW4_0468", "SW4_0703", "SW4_0022", "SW4_0186", "SW4_0154", "SW4_0883") & data$Study.type == "Other", "Field experiment",
                                                       ifelse(data$SW.ID %in% c("SW4_0199", "SW4_0330", "SW4_0565", "SW4_0693", "SW4_0738", "SW4_0772",
                                                                                "SW4_0934", "SW4_1294", "SW4_1527", "SW4_1788"), "Questionnaire", data$Study.type))))
-data$Study.type                      <- ifelse(data$Study.type == "Field experiment", "Field experiment and observations", data$Study.type)
+data$Study.type                      <- ifelse(data$Study.type == "Field experiment", "Field experiment/observations", data$Study.type)
+data$Study.type                      <- ifelse(data$Study.type == "Questionnaire", "Questionnaire/interview", data$Study.type)
 
 #-----------------------------------------------
 
