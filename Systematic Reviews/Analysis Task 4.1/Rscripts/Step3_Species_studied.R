@@ -78,11 +78,12 @@ saveRDS(specsIDed, file=paste0(outPath, "specsIDed1.rds"))
 #-----------------------------------------------
 ## Write non-matches to excel for easy manual correction and later worms check
 nospecs                              <- data.table(Spec = unique(subset(specs, is.na(valid_name) == T)$Spec))
-write.table(nospecs, file=paste0(outPath, "nospecs.csv"), col.names=TRUE, row.names=FALSE)
+write.table(nospecs, file=paste0(outPath, "nospecs_2.csv"), col.names=TRUE, row.names=FALSE)
 
 ## Read in manually corrected table 
 nospecs2                             <- read.table(paste0(outPath, "nospecs_identified.csv"), header=T, sep=";")
-nospecs                              <- data.table(nospecs2)
+nospecs2                             <- data.table(nospecs2)
+nospecs                              <- nospecs2[Spec %in% nospecs$Spec,,]
 nospecs$Taxon                        <- str_to_lower(nospecs$Taxon)
 nospecs$Taxon                        <- str_trim(nospecs$Taxon, side="both")
 
@@ -165,6 +166,7 @@ specsIDed$Spec                       <- NULL
 
 dat1                                 <- merge(dat1, specsIDed, by="Species.taxonomic.group.s.", all.x=TRUE)
 saveRDS(dat1,  paste0(outPath, "dat1b.rds"))
+
 
 #-----------------------------------------------
 # Check consistency between taxonomy and ecosystem component level: Benthos
@@ -289,3 +291,52 @@ ReadAbstract22                       <- unique(data[SW.ID %in% RA20$SW.ID]$Abstr
 # SW4_0851: This classification of Physical_habitats" should be changed to "Benthos - Benthic_epifauna - Corals" manually. Also taxonomic info should be added.
 
 
+
+#-----------------------------------------------
+# Update November 8 2022: Correct taxonomic descriptions in original dataset; remove non-taxonomic descriptions.
+#-----------------------------------------------
+rm(list=ls())
+datPath                              <- "Systematic Reviews/Analysis Task 4.1/Routput/"
+outPath                              <- "Systematic Reviews/Analysis Task 4.1/Routput/Manuscript/"
+
+# load original dataset
+data                                 <- readRDS(file=paste0(datPath, "data.rds"))
+dat1                                 <- readRDS(file=paste(outPath, "dat1a.rds"))
+
+# load list of correct taxonomic descriptions
+specsIDed                           <- readRDS(file=paste0(outPath, "specsIDed3.rds"))
+specsIDed                           <- specsIDed[is.na(valid_AphiaID) == F,,]
+
+# Merge correct name to description; remove non-taxonomic descriptions
+dat1$Valid_name                     <- specsIDed$valid_name [match(dat1$Species.taxonomic.group.s., specsIDed$Spec)]
+dat1                                <- dat1[is.na(Valid_name)==F,,]
+dat1                                <- dat1[order(dat1$ROWID),]
+
+# Determine single and multiple species descriptions rows
+Nrows                               <- dat1[, .N, by="ROWID"]
+dat1$Nrows                          <- Nrows$N [match(dat1$ROWID, Nrows$ROWID)]
+dat1sub                             <- dat1[Nrows > 1,,]
+
+# first create datatable for rows with single-species descriptions
+dt_taxondescr                       <- dat1[Nrows == 1,,]
+dt_taxondescr                       <- dt_taxondescr[,c("ROWID", "Valid_name"),]
+
+# Add pasted info for rows describing multiple species
+for (iRow in unique(dat1sub$ROWID)){
+  subdat                            <- subset(dat1sub, ROWID==iRow)
+  dt                                <- data.table(ROWID  = iRow,
+                                                  Valid_name = paste(unique(subdat$Valid_name), collapse = " _ "))
+  dt_taxondescr                     <- rbind(dt_taxondescr, dt)
+} # end iRow-loop
+
+# format dt_taxondescr
+dt_taxondescr                       <- dt_taxondescr[order(dt_taxondescr$ROWID),,]
+
+## Double-check the 'missing' descriptions
+a                                   <- setdiff(unique(data$ROWID), unique(dt_taxondescr$ROWID))
+checks                              <- data[ROWID %in% a,] # Looks fine!
+
+data$Species.taxonomic.group.s.     <- dt_taxondescr$Valid_name [match(data$ROWID, dt_taxondescr$ROWID)]
+data$Species.taxonomic.group.s.[is.na(data$Species.taxonomic.group.s.)] <- ""
+
+saveRDS(data, file=paste0(datPath, "data_correctTaxa.rds"))
