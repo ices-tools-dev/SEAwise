@@ -28,7 +28,7 @@ datPath                               <- "Systematic Reviews/Analysis Task 4.1/R
 data                                  <- readRDS(file=paste0(datPath, "data_correctTaxa.rds"))
 data_allScreened                      <- readRDS(file=paste0(datPath, "data_allScreened_correctTaxa.rds"))
 
-data                                  <- data_allScreened #in case you'd like to run with the entire dataset (incl. all columns)
+# data                                  <- data_allScreened #in case you'd like to run with the entire dataset (incl. all columns)
 
 
 #-----------------------------------------------#
@@ -149,7 +149,6 @@ datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(grepl("mech
 
 PV_catch                                  <- subset(datPressvar, Pressure.variable_category %in% "Catch")
 
-#CHECK whether 0081, 0633, 1296 are included
 
 
 ## Bycatch ----
@@ -371,6 +370,14 @@ datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(grepl("abra
                                                                        SW.ID %in% c("SW4_1684","SW4_1723"),
                                                                      "Fishing effort",Pressure.variable_category))
 
+sort(unique(datPressvar[which(grepl("density", datPressvar$Pressure_variable) & is.na(datPressvar$Pressure.variable_category)),]$Pressure_variable)) #almost all
+sort(unique(datPressvar[which(grepl("Density", datPressvar$Pressure_variable) & is.na(datPressvar$Pressure.variable_category)),]$Pressure_variable)) #all
+datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(Pressure_variable %in% c("Density of bottom trawl vessels",
+                                                                                              "Density of trawl marks",
+                                                                                              "Trawl mark density",
+                                                                                              "Trawling tracks density"),
+                                                                     "Fishing effort",Pressure.variable_category))
+
 # Add papers manually after having checked papers in detail
 datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(grepl("fishing activity", datPressvar$Pressure_variable) & is.na(datPressvar$Pressure.variable_category) &
                                                                        SW.ID %in% c("SW4_0543","SW4_0596","SW4_0120","SW4_0024",
@@ -398,17 +405,26 @@ datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(grepl("Bott
                                                                        SW.ID %in% "SW4_1960",
                                                                      "Fishing effort",Pressure.variable_category))
 
+datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(grepl("Demersal fishing disturbance", datPressvar$Pressure_variable) & is.na(datPressvar$Pressure.variable_category) &
+                                                                       SW.ID %in% "SW4_0919",
+                                                                     "Fishing effort",Pressure.variable_category))
+
+datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(grepl("direct and indirect impact of fishing treating them as predatorse", datPressvar$Pressure_variable) & is.na(datPressvar$Pressure.variable_category) &
+                                                                       SW.ID %in% "SW4_1069",
+                                                                     "Fishing effort",Pressure.variable_category))
+
 PV_fishingEffort                          <- subset(datPressvar, Pressure.variable_category %in% "Fishing effort")
 
-## CHECK whether SW4_0111, SW4_0153, SW4_1960 is included?
+
+#CHECK: SW4_1069 has been added
 
 
 ## Presence of fishing activity ----
 sort(unique(datPressvar[which(grepl("presence", datPressvar$Pressure_variable) & is.na(datPressvar$Pressure.variable_category)),]$Pressure_variable)) #all
-sort(unique(datPressvar[which(grepl("Presence", datPressvar$Pressure_variable) & is.na(datPressvar$Pressure.variable_category)),]$Pressure_variable)) #all
+sort(unique(datPressvar[which(grepl("Presence", datPressvar$Pressure_variable) & is.na(datPressvar$Pressure.variable_category)),]$Pressure_variable)) #almost all
 datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(grepl("presence", datPressvar$Pressure_variable),
                                                                      "Presence of fishing activity",Pressure.variable_category))
-datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(grepl("Presence", datPressvar$Pressure_variable),
+datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(grepl("Presence", datPressvar$Pressure_variable) & !SW.ID %in% "SW4_1034",
                                                                      "Presence of fishing activity",Pressure.variable_category))
 
 
@@ -416,20 +432,31 @@ sort(unique(datPressvar[which(grepl("activity", datPressvar$Pressure_variable) &
 datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(grepl("activity", datPressvar$Pressure_variable) & 
                                                                        SW.ID %in% c("SW4_0717","SW4_1833","SW4_1724"),
                                                                      "Presence of fishing activity",Pressure.variable_category))
-#CHECK whether SW4_0619 'Presence of trawl marks', SW4_1724 'Fishing activity' is included
 
 # 'before and after' paper SW4_1209 should be checked together with other before/after papers -> likely put under Fishing effort
-
 
 # Some manual additions
 datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(SW.ID %in% c("SW4_1485","SW4_1727","SW4_0359","SW4_0383") & is.na(Pressure.variable_category),
                                                                      "Presence of fishing activity",Pressure.variable_category))
 
+datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(grepl("Damage from fishing", datPressvar$Pressure_variable) 
+                                                                     & SW.ID %in% "SW4_1034",
+                                                                     "Presence of fishing activity",Pressure.variable_category))
+
+datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(grepl("Trawled area (in comparison to untrawled area)", datPressvar$Pressure_variable) 
+                                                                     & SW.ID %in% "SW4_1374",
+                                                                     "Presence of fishing activity",Pressure.variable_category))
+
+datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(grepl("direct impact of mechanised clam dedging", datPressvar$Pressure_variable) 
+                                                                     & SW.ID %in% "SW4_0077",
+                                                                     "Presence of fishing activity",Pressure.variable_category))
 
 
+#
 
 PV_activity                          <- subset(datPressvar, Pressure.variable_category %in% "Presence of fishing activity")
 
+#CHECK: SW4_1034 'Damage from fishing' but not 'Presence of...', SW4_1374, SW¤_0077
 
 
 ## Fleet capacity ----
@@ -531,7 +558,6 @@ datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(grepl("bar 
 PV_bycatchRedSel                         <- subset(datPressvar, Pressure.variable_category %in% "Bycatch reduction & selectivity")
 
 
-
 ## Discarding ----
 sort(unique(datPressvar[which(grepl("discard", datPressvar$Pressure_variable) & is.na(datPressvar$Pressure.variable_category)),]$Pressure_variable)) #all
 datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(grepl("discard", datPressvar$Pressure_variable) & is.na(datPressvar$Pressure.variable_category),
@@ -582,6 +608,7 @@ datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(grepl("lost
 PV_litter                        <- subset(datPressvar, Pressure.variable_category %in% "Litter")
 
 
+
 ######### Check papers still left to categorize
 table(datPressvar$Pressure.variable_category, useNA = "always")
 
@@ -589,12 +616,7 @@ papers                                <- datPressvar[is.na(datPressvar$Pressure.
 sort(unique(papers$Pressure_variable))
 
 
-
-#SW4_0619: removed one row where impact of litter or trawling was not directly studied by the paper itself (Pressure variable 'Anthropogenic disturbance (Trawling and litter)')
-# -> check whether this is excluded next time
-# 'Pressure variable 'Trawling impact': have changed to 'Presence of trawl marks' -> can go under PResence of fishing activity
-
-
+# - SW4_0304: 'decrease in number of fishing days' considered under closure/ban? Otherwise Fishing effort, but then Dir of rel has to be adapted
 # - use of FADs (SW4_1758)?
 # - 'low pressure jet' -> more general category: Improving selectivity & reducing ecological impact of gear?
 # - What to do with 'disturbance'?
@@ -668,10 +690,11 @@ saveRDS(data_collapsed, paste0(datPath,"data_correctTaxa_PressVar.rds"))
 write.xlsx(data_collapsed, file=paste0(datPath, "data_correctTaxa_PressVar.xlsx"))
 
 
-# In case you're running it with the entire dataset (incl. all columns)
-data_collapsed <- cbind(data_collapsed[,c(1:41)], data_collapsed[,53], data_collapsed[,c(42:52)])
-saveRDS(data_collapsed, paste0(datPath,"data_AllScreened_correctTaxa_PressVar.rds"))
-write.xlsx(data_collapsed, file=paste0(datPath,"data_AllScreened_correctTaxa_PressVar.xlsx"))
+# # In case you're running it with the entire dataset (incl. all columns)
+# data_collapsed <- cbind(data_collapsed[,c(1:41)], data_collapsed[,53], data_collapsed[,c(42:52)])
+# saveRDS(data_collapsed, paste0(datPath,"data_AllScreened_correctTaxa_PressVar.rds"))
+# write.xlsx(data_collapsed, file=paste0(datPath,"data_AllScreened_correctTaxa_PressVar.xlsx"))
+
 
 
 #####################################################################################################################-
@@ -693,6 +716,7 @@ wordings <- c("Absence of fishing effort",
               "fishery/no fishery area",
               "Fishing activity presence",
               "Fishing ban",
+              "Fishing density (individuals/400 m)" #SW4_1692: studies MPA and effect of spearfishing, seems to have been filled it in as 'effect of fishing' 
               "Fishing effort decline",
               "fishing presence",
               "Fishing presence ",
@@ -724,6 +748,7 @@ wordings <- c("Absence of fishing effort",
               "Trawling presence ",
               "Trawling Presence _ pre and post fishing ban",
               "Trawling vs. Trawler Moratorium",
+              "Trawled area (in comparison to untrawled area)" #SW4_1374: already included under 'Presence of fishing activity'
               "Untrawled area")
 
 # Check studies using such wordings
