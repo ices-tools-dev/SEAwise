@@ -54,11 +54,11 @@ length(unique(tab$SW.ID))
 ## Check who did how many papers
 contributors                          <- tab[,.(Papers_read = length(unique(SW.ID))), by="Reader"]
 
-## how many papers retained : 540 papers
+## how many papers retained : 535 papers
 retained                              <- unique(subset(tab, is.na(Exclusion.Criteria)==TRUE)$SW.ID)
 length(retained)
 
-## how many rejected : 191 papers
+## how many rejected : 196 papers
 excluded                              <- unique(subset(tab, !is.na(Exclusion.Criteria) == TRUE)$SW.ID)
 length(excluded)
 
@@ -94,12 +94,12 @@ tobechecked                           <- data[is.na(Region)==T,,]
 data                                  <- data[is.na(Region)==F,,]
 
 ## Check the spatial scale and resolution, and correct for input mistakes
-table(is.na(data$Scale...Spatial..m.)) # There are 17 NAs
+table(is.na(data$Scale...Spatial..m.)) # There are 19 NAs
 table(data$Scale...Spatial..m.)
 data$Scale...Spatial..m.              <- ifelse(data$Scale...Spatial..m. %in% c("50,000-100,001",  "50,000-100,002",  "50,000-100,003"), "50,000-100,000",
                                                 ifelse(data$Scale...Spatial..m. == "100-501", "100-500", 
                                                        ifelse(data$Scale...Spatial..m. == "50-101", "50-100", data$Scale...Spatial..m.)))
-table(is.na(data$Resolution...Spatial..m.)) # There are 82 NAs
+table(is.na(data$Resolution...Spatial..m.)) # There are 84 NAs
 table(data$Resolution...Spatial..m.)
 data$Resolution...Spatial..m.         <- ifelse(data$Resolution...Spatial..m. %in% c("50,000-100,001",  "50,000-100,002",  "50,000-100,003"), "50,000-100,000",
                                                 ifelse(data$Resolution...Spatial..m. == "50-101", "50-100", 
@@ -125,7 +125,7 @@ data$Response.variable_category       <- ifelse(data$Response.variable_category 
 table(is.na(data$Pressure.type)) ## all fine 
 
 ## Check the Pressure types (level 2)
-table(is.na(subset(data, Pressure.type == "Catch_and_bycatch")$Pressure_level)) # There are 96 NAs (for rows where non-NA was expected). These are set to "non specified".
+table(is.na(subset(data, Pressure.type == "Catch_and_bycatch")$Pressure_level)) # There are 100 NAs (for rows where non-NA was expected). These are set to "non specified".
 
 table(data$Pressure_level)
 data$Pressure_level                  <- ifelse(data$Pressure_level == "target", "Target", data$Pressure_level)
@@ -137,7 +137,7 @@ table(is.na(data$Ecosystem.component_level1)) #no NAs
 
 ## Check the ecosystem component level 2
 table(is.na(subset(data, Ecosystem.component_level1 %in% c("Fish_teleost", "Benthos", "Marine_mammals", "Fish_cartilaginous",
-                                                     "Physical_habitats", "Plankton", "Plants", "Reptiles"))$Ecosystem.component_level2)==T) #307 NAs
+                                                     "Physical_habitats", "Plankton", "Plants", "Reptiles"))$Ecosystem.component_level2)==T) #314 NAs
 table(data$Ecosystem.component_level2)
 
 
@@ -162,12 +162,12 @@ data$WP4.task                        <- ifelse(data$WP4.task == "none", "None",
 
 ## Check what relationships have been reported
 table(data$Direction.of.relationship, useNA = "always")
-table(is.na(data$Direction.of.relationship)) # 41 NA's --> classify those as not specified
+table(is.na(data$Direction.of.relationship)) # 23 NA's --> classify those as not specified
 data$Direction.of.relationship       <- ifelse(data$Direction.of.relationship == "negative", "Negative", data$Direction.of.relationship)
 data$Direction.of.relationship[is.na(data$Direction.of.relationship)] <- "Not specified"
 
 ## Check what species are commonly mentioned
-length(unique(data$Species.taxonomic.group.s.)) # 467 unique input... Let's try to group/categorize these in a separate script (step 3)
+length(unique(data$Species.taxonomic.group.s.)) # 465 unique input... Let's try to group/categorize these in a separate script (step 3)
 
 ## fix some rows with double input
 a                                    <- data[Species.taxonomic.group.s. == "other fish (9) and mollusca (2)",,]
@@ -188,7 +188,7 @@ data                                 <- rbindlist(list(data, a, b), use.names=TR
 
 
 ## Check what pressure variables are commonly mentioned
-length(unique(data$Pressure_variable)) # 399 unique input... Let's skip for now.
+length(unique(data$Pressure_variable)) # 390 unique input... Let's skip for now.
 
 ## Check whether ECL2 contains only sediment information when ECL1 == Physical_habitat
 a                                    <- data[Ecosystem.component_level2 %in% c("Gravel", "Mixed", "Mud", "Sand", "Unknown")]
@@ -218,6 +218,19 @@ data$Study.type                      <- ifelse(data$SW.ID %in% c("SW4_0065", "SW
                                                                                "SW4_0934", "SW4_1294", "SW4_1527", "SW4_1788"), "Questionnaire", data$Study.type))))
 data$Study.type                      <- ifelse(data$Study.type == "Field experiment", "Field experiment/observations", data$Study.type)
 data$Study.type                      <- ifelse(data$Study.type == "Questionnaire", "Questionnaire/interview", data$Study.type)
+
+## Correct some misspellings
+
+### Pressure variable
+data$Pressure_variable    <- with(data,ifelse(grepl("distrubance event compared to control", Pressure_variable), 
+                                              "disturbance event compared to control", Pressure_variable))
+
+data$Pressure_variable    <- with(data,ifelse(grepl("daily mechanical shaking simulated distrurbance", Pressure_variable), 
+                                              "daily mechanical shaking simulated disturbance", Pressure_variable))
+
+data$Pressure_variable    <- with(data,ifelse(grepl("Exposure to electical pulse", Pressure_variable), 
+                                              "Exposure to electrical pulse", Pressure_variable))
+
 
 
 #-----------------------------------------------

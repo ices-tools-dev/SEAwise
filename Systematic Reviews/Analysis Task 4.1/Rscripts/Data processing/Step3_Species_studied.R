@@ -28,7 +28,7 @@ outPath                              <- "Systematic Reviews/Analysis Task 4.1/Ro
 #-----------------------------------------------
 # Read in data
 #
-#  info: This step is dependent on step 1.
+#  info: This step is dependent on step 1 and step 2.
 #-----------------------------------------------
 data                                 <- readRDS(data, file=paste0(datPath, "data.rds"))
 # data                                 <- readRDS(data, file=paste0(datPath, "data_AllScreened.rds"))
@@ -39,7 +39,7 @@ data                                 <- readRDS(data, file=paste0(datPath, "data
 specs                                <- tstrsplit(data$Species.taxonomic.group.s., split="_")
 dat1                                 <- data
 dat1$Species.taxonomic.group.s.      <- specs[[1]] 
-length(unique(dat1$Species.taxonomic.group.s.)) # 401 unique records
+length(unique(dat1$Species.taxonomic.group.s.)) # 399 unique records
 for(iL in c(2:length(specs))){
   dat2                               <- data
   dat2$Species.taxonomic.group.s.    <- specs[[iL]]
@@ -47,11 +47,11 @@ for(iL in c(2:length(specs))){
   dat1                               <- rbind(dat1, dat2)
   rm(dat2)
 }# end iL loop. 
-length(unique(dat1$Species.taxonomic.group.s.)) # 892 unique records
+length(unique(dat1$Species.taxonomic.group.s.)) # 895 unique records
 
 dat1$Species.taxonomic.group.s.      <- str_trim(dat1$Species.taxonomic.group.s., side="both"); length(unique(dat1$Species.taxonomic.group.s.)) # 668 unique records
-dat1$Species.taxonomic.group.s.      <- str_to_lower(dat1$Species.taxonomic.group.s.); length(unique(dat1$Species.taxonomic.group.s.)) # 645 unique records
-dat1$Species.taxonomic.group.s.      <- ifelse(dat1$Species.taxonomic.group.s. %in% c("", "unknown"), NA, dat1$Species.taxonomic.group.s.); length(unique(dat1$Species.taxonomic.group.s.)) # 643 unique records
+dat1$Species.taxonomic.group.s.      <- str_to_lower(dat1$Species.taxonomic.group.s.); length(unique(dat1$Species.taxonomic.group.s.)) # 646 unique records
+dat1$Species.taxonomic.group.s.      <- ifelse(dat1$Species.taxonomic.group.s. %in% c("", "unknown"), NA, dat1$Species.taxonomic.group.s.); length(unique(dat1$Species.taxonomic.group.s.)) # 644 unique records
 
 saveRDS(dat1, file=paste0(outPath, "dat1a.rds"))
 
@@ -78,20 +78,20 @@ saveRDS(specsIDed, file=paste0(outPath, "specsIDed1.rds"))
 #-----------------------------------------------
 ## Write non-matches to excel for easy manual correction and later worms check
 nospecs                              <- data.table(Spec = unique(subset(specs, is.na(valid_name) == T)$Spec))
-# write.table(nospecs, file=paste0(outPath, "nospecs_2.csv"), col.names=TRUE, row.names=FALSE)
+# write.table(nospecs, file=paste0(outPath, "nospecs_4.csv"), col.names=TRUE, row.names=FALSE)
 
 ## Read in manually corrected table 
-nospecs2                             <- read.table(paste0(outPath, "nospecs_identified.csv"), header=T, sep=";")
+nospecs2                             <- read.table(paste0(outPath, "nospecs_identified_3.csv"), header=T, sep=";")
 nospecs2                             <- data.table(nospecs2)
 nospecs                              <- nospecs2[Spec %in% nospecs$Spec,,]
 nospecs$Taxon                        <- str_to_lower(nospecs$Taxon)
 nospecs$Taxon                        <- str_trim(nospecs$Taxon, side="both")
-nospecs[21,2]                        <- "alcidae"
+nospecs[nospecs$Spec %in% "auks",2]  <- "alcidae"
 
 #-----------------------------------------------
 # Run non-matches again over worms-database 
 #-----------------------------------------------
-nospecs3                             <- data.table(Taxon = sort(unique(nospecs$Taxon))) # 133 rows
+nospecs3                             <- data.table(Taxon = sort(unique(nospecs$Taxon))) # 114 rows
 nospecs3                             <- nospecs3[!Taxon %in% c("algae", "benthic community", "benthic fish", "benthos", "benthos_epifauna", "benthos_infauna", "fish", "fulica atra",
                                                                "gulosus aristotelis", "habitat", "ichthyaetus audouinii", "larus", 
                                                                "larus marinus", "mergini", "pelagic fish", "plankton", "rhodolith", "unknown")]
@@ -160,7 +160,7 @@ rm(list=ls())
 datPath                              <- "Systematic Reviews/Analysis Task 4.1/Routput/"
 outPath                              <- "Systematic Reviews/Analysis Task 4.1/Routput/Manuscript/"
 
-dat1                                 <- readRDS(paste(outPath, "dat1a.rds"))
+dat1                                 <- readRDS(paste0(outPath, "dat1a.rds"))
 specsIDed                            <- readRDS(paste0(outPath, "specsIDed3.rds"))
 specsIDed$Species.taxonomic.group.s. <- specsIDed$Spec
 specsIDed$Spec                       <- NULL
@@ -302,7 +302,7 @@ outPath                              <- "Systematic Reviews/Analysis Task 4.1/Ro
 
 # load original dataset
 data                                 <- readRDS(file=paste0(datPath, "data.rds"))
-dat1                                 <- readRDS(file=paste(outPath, "dat1a.rds"))
+dat1                                 <- readRDS(file=paste0(outPath, "dat1a.rds"))
 
 # load list of correct taxonomic descriptions
 specsIDed                           <- readRDS(file=paste0(outPath, "specsIDed3.rds"))
