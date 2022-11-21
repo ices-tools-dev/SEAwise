@@ -49,7 +49,7 @@ for(iL in c(2:length(specs))){
 }# end iL loop. 
 length(unique(dat1$Species.taxonomic.group.s.)) # 895 unique records
 
-dat1$Species.taxonomic.group.s.      <- str_trim(dat1$Species.taxonomic.group.s., side="both"); length(unique(dat1$Species.taxonomic.group.s.)) # 668 unique records
+dat1$Species.taxonomic.group.s.      <- str_trim(dat1$Species.taxonomic.group.s., side="both"); length(unique(dat1$Species.taxonomic.group.s.)) # 667 unique records
 dat1$Species.taxonomic.group.s.      <- str_to_lower(dat1$Species.taxonomic.group.s.); length(unique(dat1$Species.taxonomic.group.s.)) # 646 unique records
 dat1$Species.taxonomic.group.s.      <- ifelse(dat1$Species.taxonomic.group.s. %in% c("", "unknown"), NA, dat1$Species.taxonomic.group.s.); length(unique(dat1$Species.taxonomic.group.s.)) # 644 unique records
 
@@ -91,7 +91,7 @@ nospecs[nospecs$Spec %in% "auks",2]  <- "alcidae"
 #-----------------------------------------------
 # Run non-matches again over worms-database 
 #-----------------------------------------------
-nospecs3                             <- data.table(Taxon = sort(unique(nospecs$Taxon))) # 114 rows
+nospecs3                             <- data.table(Taxon = sort(unique(nospecs$Taxon))) # 131 rows
 nospecs3                             <- nospecs3[!Taxon %in% c("algae", "benthic community", "benthic fish", "benthos", "benthos_epifauna", "benthos_infauna", "fish", "fulica atra",
                                                                "gulosus aristotelis", "habitat", "ichthyaetus audouinii", "larus", 
                                                                "larus marinus", "mergini", "pelagic fish", "plankton", "rhodolith", "unknown")]

@@ -54,11 +54,11 @@ length(unique(tab$SW.ID))
 ## Check who did how many papers
 contributors                          <- tab[,.(Papers_read = length(unique(SW.ID))), by="Reader"]
 
-## how many papers retained : 535 papers
+## how many papers retained : 534 papers
 retained                              <- unique(subset(tab, is.na(Exclusion.Criteria)==TRUE)$SW.ID)
 length(retained)
 
-## how many rejected : 196 papers
+## how many rejected : 197 papers
 excluded                              <- unique(subset(tab, !is.na(Exclusion.Criteria) == TRUE)$SW.ID)
 length(excluded)
 
@@ -162,12 +162,12 @@ data$WP4.task                        <- ifelse(data$WP4.task == "none", "None",
 
 ## Check what relationships have been reported
 table(data$Direction.of.relationship, useNA = "always")
-table(is.na(data$Direction.of.relationship)) # 23 NA's --> classify those as not specified
+table(is.na(data$Direction.of.relationship)) # 24 NA's --> classify those as not specified
 data$Direction.of.relationship       <- ifelse(data$Direction.of.relationship == "negative", "Negative", data$Direction.of.relationship)
 data$Direction.of.relationship[is.na(data$Direction.of.relationship)] <- "Not specified"
 
 ## Check what species are commonly mentioned
-length(unique(data$Species.taxonomic.group.s.)) # 465 unique input... Let's try to group/categorize these in a separate script (step 3)
+length(unique(data$Species.taxonomic.group.s.)) # 466 unique input... Let's try to group/categorize these in a separate script (step 3)
 
 ## fix some rows with double input
 a                                    <- data[Species.taxonomic.group.s. == "other fish (9) and mollusca (2)",,]
@@ -215,7 +215,7 @@ data$Study.type                      <- ifelse(data$SW.ID %in% c("SW4_0065", "SW
                                                ifelse(data$SW.ID %in% c("SW4_0484", "SW4_0259", "SW4_0644", "SW4_0995", "SW4_1811", 
                                                                         "SW4_0468", "SW4_0703", "SW4_0022", "SW4_0186", "SW4_0154", "SW4_0883") & data$Study.type == "Other", "Field experiment",
                                                       ifelse(data$SW.ID %in% c("SW4_0199", "SW4_0330", "SW4_0565", "SW4_0693", "SW4_0738", "SW4_0772",
-                                                                               "SW4_0934", "SW4_1294", "SW4_1527", "SW4_1788"), "Questionnaire", data$Study.type))))
+                                                                               "SW4_0934", "SW4_1294", "SW4_1527", "SW4_1788", "SW4_1354"), "Questionnaire", data$Study.type))))
 data$Study.type                      <- ifelse(data$Study.type == "Field experiment", "Field experiment/observations", data$Study.type)
 data$Study.type                      <- ifelse(data$Study.type == "Questionnaire", "Questionnaire/interview", data$Study.type)
 
