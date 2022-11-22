@@ -99,7 +99,7 @@ table(data$Scale...Spatial..m.)
 data$Scale...Spatial..m.              <- ifelse(data$Scale...Spatial..m. %in% c("50,000-100,001",  "50,000-100,002",  "50,000-100,003"), "50,000-100,000",
                                                 ifelse(data$Scale...Spatial..m. == "100-501", "100-500", 
                                                        ifelse(data$Scale...Spatial..m. == "50-101", "50-100", data$Scale...Spatial..m.)))
-table(is.na(data$Resolution...Spatial..m.)) # There are 84 NAs
+table(is.na(data$Resolution...Spatial..m.)) # There are 102 NAs
 table(data$Resolution...Spatial..m.)
 data$Resolution...Spatial..m.         <- ifelse(data$Resolution...Spatial..m. %in% c("50,000-100,001",  "50,000-100,002",  "50,000-100,003"), "50,000-100,000",
                                                 ifelse(data$Resolution...Spatial..m. == "50-101", "50-100", 
@@ -110,7 +110,7 @@ data$Resolution...Spatial..m.         <- ifelse(data$Resolution...Spatial..m. %i
 table(data$Scale...Temporal)
 table(data$Resolution...Temporal)
 table(is.na(data$Scale...Temporal)) # There are 16 NAs
-table(is.na(data$Resolution...Temporal)) # There are 45 NAs
+table(is.na(data$Resolution...Temporal)) # There are 63 NAs
 
 ## Check the Response variable category
 table(is.na(data$Response.variable_category)) #no NAs
@@ -162,12 +162,12 @@ data$WP4.task                        <- ifelse(data$WP4.task == "none", "None",
 
 ## Check what relationships have been reported
 table(data$Direction.of.relationship, useNA = "always")
-table(is.na(data$Direction.of.relationship)) # 24 NA's --> classify those as not specified
+table(is.na(data$Direction.of.relationship)) # 23 NA's --> classify those as not specified
 data$Direction.of.relationship       <- ifelse(data$Direction.of.relationship == "negative", "Negative", data$Direction.of.relationship)
 data$Direction.of.relationship[is.na(data$Direction.of.relationship)] <- "Not specified"
 
 ## Check what species are commonly mentioned
-length(unique(data$Species.taxonomic.group.s.)) # 466 unique input... Let's try to group/categorize these in a separate script (step 3)
+length(unique(data$Species.taxonomic.group.s.)) # 473 unique input... Let's try to group/categorize these in a separate script (step 3)
 
 ## fix some rows with double input
 a                                    <- data[Species.taxonomic.group.s. == "other fish (9) and mollusca (2)",,]
@@ -188,7 +188,7 @@ data                                 <- rbindlist(list(data, a, b), use.names=TR
 
 
 ## Check what pressure variables are commonly mentioned
-length(unique(data$Pressure_variable)) # 390 unique input... Let's skip for now.
+length(unique(data$Pressure_variable)) # 389 unique input... Let's skip for now.
 
 ## Check whether ECL2 contains only sediment information when ECL1 == Physical_habitat
 a                                    <- data[Ecosystem.component_level2 %in% c("Gravel", "Mixed", "Mud", "Sand", "Unknown")]
