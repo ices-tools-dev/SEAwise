@@ -55,6 +55,9 @@ data_allScreened                      <- readRDS(file=paste0(datPath, "data_allS
 
 # To do: try to classify each paper under one of the categories as 'PV_xxx'
 
+# Check whether there are any double spaces (as this may give issues when doing the splitting)
+table(grepl("  ", data$Pressure_variable)) #only one case, does not give issues
+
 # Split when multiple pressure variables are reported in one row into multiple rows
 datPressvar                               <- cSplit(data, "Pressure_variable", " _ ", "long")
 datPressvar$Pressure.variable_category    <- NA
@@ -654,8 +657,11 @@ datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(Pressure_va
 datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(Pressure_variable %in% "trawling" & 
                                                                        SW.ID %in% "SW4_1637", "Presence of fishing activity",Pressure.variable_category))
 
+datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(Pressure_variable %in% "Trawled vs. untrawled" & 
+                                                                       SW.ID %in% "SW4_0251", "Presence of fishing activity",Pressure.variable_category))
+
 PV_activity                          <- subset(datPressvar, Pressure.variable_category %in% "Presence of fishing activity")
-#CHECK: SW4_1487, SW4_1489, SW4_1637
+#CHECK SW4_0251
 
 
 ## Fleet capacity ----
@@ -777,8 +783,11 @@ datPressvar$Pressure.variable_category    <- with(datPressvar, ifelse(Pressure_v
                                                                                                "Habitat credit system") & is.na(Pressure.variable_category) &
                                                                         SW.ID %in% "SW4_0445", "Closure",Pressure.variable_category))
 
-PV_closure                         <- subset(datPressvar, Pressure.variable_category %in% "Closure")
+datPressvar$Pressure.variable_category    <- with(datPressvar, ifelse(Pressure_variable %in% "No trawling to estimate recovery" & is.na(Pressure.variable_category) &
+                                                                        SW.ID %in% "SW4_1707", "Closure",Pressure.variable_category))
 
+PV_closure                         <- subset(datPressvar, Pressure.variable_category %in% "Closure")
+#CHECK SW4_1707
 
 
 ## Bycatch reduction & selectivity ----
@@ -898,7 +907,7 @@ datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(Pressure_va
                                                                      "Litter",Pressure.variable_category))
 
 PV_litter                        <- subset(datPressvar, Pressure.variable_category %in% "Litter")
-#CHECK SW4_0014
+
 
 
 ## Electromagnetic input ----
@@ -969,7 +978,7 @@ sort(unique(papers$Pressure_variable))
 
 
 #-----------------------------------------------#
-# Temporarily save dataset ----
+# Save dataset ----
 #-----------------------------------------------#
 
 # Convert dataPressvar back into multiple pressure variables per row. Consideration is needed when a row has been split
@@ -979,7 +988,7 @@ sort(unique(papers$Pressure_variable))
 # Add pasted info for rows with multiple pressure variable categories
 data_collapsed <- datPressvar[0,]
 
-for (iRow in unique(datPressvar$ROWID)){
+for(iRow in unique(datPressvar$ROWID)){
   subdat                            <- subset(datPressvar, ROWID %in% iRow)
   
   # If there's only one pressure variable, add row
@@ -1039,80 +1048,4 @@ write.xlsx(data_collapsed, file=paste0(datPath, "data_correctTaxa_PressVar.xlsx"
 # data_collapsed <- cbind(data_collapsed[,c(1:41)], data_collapsed[,53], data_collapsed[,c(42:52)])
 # saveRDS(data_collapsed, paste0(datPath,"data_AllScreened_correctTaxa_PressVar.rds"))
 # write.xlsx(data_collapsed, file=paste0(datPath,"data_AllScreened_correctTaxa_PressVar.xlsx"))
-
-
-
-#####################################################################################################################-
-#####################################################################################################################-
-#-----------------------------------------------#
-# Check studies on MPAs, closures and bans ----
-#-----------------------------------------------#
-
-# Check for possible wordings in pressure variable that could refer to this
-sort(unique(data$Pressure_variable))
-
-wordings <- c("Absence of fishing effort", 
-              "Closed area", #SW4_1531, DONE
-              "close nursery areas",
-              "closed area vs unclosed area ",
-              "Decrease on number of fishing days", #SW4_0304, DONE
-              "Effect of a fishery closure - Plaice box",
-              "effort_mpa", #SW3_0794: changed this to MPA only. Table filled in as effect of trawling, in comparison no trawling - DONE
-              "fishery closures",
-              "fishery/no fishery area",
-              "Fishing activity presence",
-              "Fishing ban",
-              "Fishing density (individuals/400 m)", #SW4_1692, DONE
-              "Fishing effort decline",
-              "fishing presence",
-              "Fishing presence ",
-              "fishing pressure (MPA)",
-              "Fishing pressure: trawled vs. Non trawled areas", #SW4_0574 Astarloa, DONE
-              "Fishing restriction", #SW4_0362 Astarloa, DONE
-              "Marine protected area",
-              "MPA",
-              "MPA BACI",
-              "No pressure variable (presence of cuttlefish traps)",
-              "None",
-              "Outcomes inside and outside MPAs",
-              "pre and post fishing ban", #SW4_1293 Binch, DONE
-              "presence of fishing vessels",
-              "presence of gillnets",
-              "presence of trawling",
-              "Presence of trawling activity",
-              "presence/absence of trawling",
-              "Protection level", #SW4_0403 VanHoey, DONE
-              "Regulatory ban on capelin",
-              "reserve protection level", #SW4_0760 Altuna-Etxabe, DONE
-              "duration of protection", #SW4_0760 Altuna-Etxabe, DONE
-              "Spawning closures for plaice, sole, and place and sole combined.",
-              "spearfishing prohibition", #SW4_1072 Altuna-Etxabe, DONE
-              "trawl ban",
-              "trawl ban ",
-              "Trawl ban",
-              "trawling ban",
-              "Trawling presence",
-              "Trawling presence ",
-              "Trawling Presence _ pre and post fishing ban",
-              "Trawling vs. Trawler Moratorium",
-              "trawled vs untrawled area", #SW4_0885 MacMillan: already included under 'Presence of fishing activity' - DONE
-              "Trawled area (in comparison to untrawled area)", #SW4_1374: already included under 'Presence of fishing activity' - DONE
-              "Untrawled area")
-
-# Check studies using such wordings
-studies                            <- subset(data_allScreened, Pressure_variable %in% wordings)
-length(unique(studies$SW.ID)) #51 studies
-
-# Check the direction of relationship
-studiesDeDup                       <- studies[!duplicated(studies[,c("SW.ID","Ecosystem.component_level1","Response.variable_category","Direction.of.relationship")])]
-table(studiesDeDup$Direction.of.relationship) #mostly positive
-
-# For studies with 'positive' effect, what's the pressure variable?
-table(studiesDeDup$Pressure_variable[studiesDeDup$Direction.of.relationship %in% "Positive"])
-length(unique(studiesDeDup$Pressure_variable[studiesDeDup$Direction.of.relationship %in% "Positive"])) #24 pressure variables out of the 43 wordings
-
-# Go through the papers and mark those which report on the effect of the MPA/ban/closure/absence of fishing
-# NOTE: papers for which reporting has been done reversely should not be included (e.g. they studied ban on fishing, but reported then the opposite,
-# so that the table would be read as 'increase in )
-studiesClosure    <- c("SW4_1042","SW4_1136")
 
