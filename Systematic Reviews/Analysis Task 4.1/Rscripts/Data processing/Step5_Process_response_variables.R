@@ -28,8 +28,8 @@ datPath                               <- "Systematic Reviews/Analysis Task 4.1/R
 data                                  <- readRDS(file=paste0(datPath, "data_correctTaxa_PressVar.rds"))
 data_allScreened                      <- readRDS(file=paste0(datPath, "data_allScreened_correctTaxa_PressVar.rds"))
 
-# Remove some columns to improve viewing the data frame
-data_allScreened$SearchID <- data_allScreened$Open.Access <- NULL
+# # Remove some columns to improve viewing the data frame
+# data_allScreened$SearchID <- data_allScreened$Open.Access <- NULL
 
 # data                                  <- data_allScreened #in case you'd like to run with the entire dataset (incl. all columns)
 
@@ -115,6 +115,7 @@ table(datDeDupl$Pressure.variable_category[datDeDupl$Response.variable_category 
 # 
 # SurvToMort$Response.variable_category <- "Mortality"
 
+rm(biodiv,comcom,datDeDupl)
 
 
 #-----------------------------------------------#
@@ -123,7 +124,7 @@ table(datDeDupl$Pressure.variable_category[datDeDupl$Response.variable_category 
 
 # Create subset of data classified as Other
 other      <- subset(datRespvar, Response.variable_category %in% 'Other')
-length(unique(other$SW.ID)) #69 papers
+length(unique(other$SW.ID)) #61 papers
 
 # Check Ecosystem component
 table(other$Ecosystem.component_level1) #mostly physical habitats, followed by benthos
@@ -187,7 +188,10 @@ datRespvar$Response.variable_category    <- with(datRespvar,ifelse(grepl("susp",
                                                                    "Sediment & physical properties", Response.variable_category))
 
 sort(unique(datRespvar[which(grepl("seafloor", datRespvar$Response.variable_paper) & datRespvar$Response.variable_category %in% "Other"),]$Response.variable_paper)) #all
+sort(unique(datRespvar[which(grepl("Seafloor", datRespvar$Response.variable_paper) & datRespvar$Response.variable_category %in% "Other"),]$Response.variable_paper)) #all (only one)
 datRespvar$Response.variable_category    <- with(datRespvar,ifelse(grepl("seafloor", datRespvar$Response.variable_paper),
+                                                                   "Sediment & physical properties", Response.variable_category))
+datRespvar$Response.variable_category    <- with(datRespvar,ifelse(grepl("Seafloor", datRespvar$Response.variable_paper),
                                                                    "Sediment & physical properties", Response.variable_category))
 
 sort(unique(datRespvar[which(grepl("Area", datRespvar$Response.variable_paper) & datRespvar$Response.variable_category %in% "Other"),]$Response.variable_paper)) #all
@@ -225,14 +229,14 @@ datRespvar$Response.variable_category    <- with(datRespvar,ifelse(Response.vari
                                                                                                   "Recoverability after physical disturbance",
                                                                                                   "Sensitivity to physical disturbance",
                                                                                                   "Vulnerability to physical disturbance",
-                                                                                                  "Various types of seabed substrate disturbance"),
+                                                                                                  "Various types of seabed substrate disturbance",
+                                                                                                  "effort displacement"),
                                                                    "Sediment & physical properties", Response.variable_category))
 
 datRespvar$Response.variable_category    <- with(datRespvar,ifelse(Response.variable_paper %in% "Bottom contact" & Ecosystem.component_level1 %in% "Physical_habitats",
                                                                    "Sediment & physical properties", Response.variable_category))
 
 RV_sediment <- subset(datRespvar, Response.variable_category %in% "Sediment & physical properties")
-#CHECK SW4_0133
 
 
 
@@ -264,7 +268,8 @@ datRespvar$Response.variable_category    <- with(datRespvar,ifelse(Response.vari
                                                                                                   "scars on shells",
                                                                                                   "Mud cover",
                                                                                                   "Fragility",
-                                                                                                  "Frequency of deep-hooking"),
+                                                                                                  "Frequency of deep-hooking",
+                                                                                                  "Covering"),
                                                                    "Damage & entanglement", Response.variable_category))
 
 datRespvar$Response.variable_category    <- with(datRespvar,ifelse(Response.variable_paper %in% "Bottom contact" & Ecosystem.component_level1 %in% "Plants",
@@ -273,9 +278,208 @@ datRespvar$Response.variable_category    <- with(datRespvar,ifelse(Response.vari
 RV_damage <- subset(datRespvar, Response.variable_category %in% "Damage & entanglement")
 
 
+
+### Adding to/changing existing categories ----
+
+# Papers on recovery rate
+datRespvar$Response.variable_category <- with(datRespvar, ifelse(Response.variable_paper %in% c("Fished seabed habitat recovery as a function of time between disturbance",
+                                                                                                "Habitat-specific recoverability estimate"),
+                                                                 "Growth", Response.variable_category)) #SW4_1162, SW4_1386
+
+# Paper on injury
+datRespvar$Response.variable_category <- with(datRespvar, ifelse(Response.variable_paper %in% "Injury", "Damage & entanglement", Response.variable_category)) #SW4_0115
+
+# Papers on Mixed Trophic Impact: make sure they are marked as Trophic structure
+datRespvar$Response.variable_category[datRespvar$Response.variable_paper %in% c("Mixed Trophic Impact","mixed trophic impact","Mixed trophic impact")] <- "Trophic structure"
+
+# Paper on trawl mark density
+datRespvar$Response.variable_category[datRespvar$Response.variable_paper %in% "Trawl mark density"] <- "Sediment & physical properties" #SW4_0442
+
+# Papers having biodiversity metric as response variable but not categorized as Biodiversity
+papersBioDiv    <- subset(datRespvar, grepl("diversity", datRespvar$Response.variable_paper) & !Response.variable_category %in% "Biodiversity")
+papersBioDiv    <- rbind(papersBioDiv, subset(datRespvar, grepl("richness", datRespvar$Response.variable_paper) & !Response.variable_category %in% "Biodiversity"))
+papersBioDiv    <- papersBioDiv[!duplicated(papersBioDiv),]
+
+## For the following papers, replace category by Biodiversity
+datRespvar$Response.variable_category[datRespvar$SW.ID %in% c("SW4_0955","SW4_0537","SW4_1826","SW4_0311","SW4_0968","SW4_1448","SW4_1826") & 
+                                        (grepl("diversity", datRespvar$Response.variable_paper) | grepl("richness", datRespvar$Response.variable_paper))] <- "Biodiversity"
+datRespvar$Response.variable_category[datRespvar$SW.ID %in% "SW4_0208" & 
+                                        datRespvar$Response.variable_paper %in% "Macrofaunal indicators (inc.functional richness, functional dispersion)"] <- "Biodiversity"
+
+## For SW4_0208 and SW4_0973, duplicate rows and replace category by Biodiversity
+papersBioDiv    <- subset(datRespvar, grepl("diversity", datRespvar$Response.variable_paper) & !Response.variable_category %in% "Biodiversity")
+papersBioDiv    <- rbind(papersBioDiv, subset(datRespvar, grepl("richness", datRespvar$Response.variable_paper) & !Response.variable_category %in% "Biodiversity"))
+papersBioDiv    <- papersBioDiv[!duplicated(papersBioDiv),]
+
+papersDupl                              <- subset(papersBioDiv, SW.ID %in% c("SW4_0208","SW4_0973"))
+papersDupl$Response.variable_category   <- "Biodiversity"
+
+datRespvar                              <- rbind(datRespvar, papersDupl)
+datRespvar                              <- datRespvar[order(datRespvar$SW.ID),]
+
+rm(papersBioDiv, papersDupl)
+
+
+### List all reported Response variables to have a final check ----
+sort(unique(datRespvar$Response.variable_paper))
+
+#Corrected some misspellings and excluded a paper (directly in data extraction files on the Sharepoint)
+
+
+### Check which papers still classified as 'Other' ----
 papers                                   <- datRespvar[datRespvar$Response.variable_category %in% "Other",]
 sort(unique(papers$Response.variable_paper))
-#CHECK: 'density' in 'Other'
+#Two unclassified left - best to keep as 'Other'
 
 
-### List all reported Response variables just to have a check
+
+#-----------------------------------------------#
+# Direction of relationship ----
+#-----------------------------------------------#
+
+### Check missing values ----
+datNotSpec        <- subset(datRespvar, Direction.of.relationship %in% "Not specified")
+datNotSpec[,c(1,33)]
+#Have checked them and made changes in the data extraction files on the Sharepoint.
+
+
+
+#-----------------------------------------------#
+# Magnitude of relationship ----
+#-----------------------------------------------#
+
+#!NOTE; can only be checked when running code above on data_allScreened
+
+### Check missing values ----
+datMagnNA        <- subset(datRespvar, is.na(Magnitude.of.relationship) & is.na(Exclusion.Criteria))
+
+# How many papers?
+length(unique(datMagnNA$SW.ID)) #37 papers
+
+# Check for each Ecosystem component the number of papers with NA for magnitude of relationship
+ecoComp     <- unique(datRespvar$Ecosystem.component_level1)
+ecoComp     <- ecoComp[-is.na(ecoComp)]
+ecoMagn     <- data.frame(Ecosystem.component_level1 = ecoComp, NoPapersNoMagn = NA, PercPapersNoMagn = NA)
+
+for(iEco in 1:length(ecoComp)){
+  
+  subdat   <- subset(datRespvar, Ecosystem.component_level1 %in% ecoComp[iEco])
+  
+  magNA    <- length(unique(subdat$SW.ID[is.na(subdat$Magnitude.of.relationship)]))
+  noPapers <- length(unique(subdat$SW.ID))
+  
+  ecoMagn[iEco,2] <- magNA
+  ecoMagn[iEco,3] <- round(magNA / noPapers * 100,1)
+  
+}
+
+# Check for each Response variable category the number of papers with NA for magnitude of relationship
+respVar     <- unique(datRespvar$Response.variable_category)
+respVar     <- respVar[-is.na(respVar)]
+respMagn    <- data.frame(Response.variable_category = respVar, NoPapersNoMagn = NA, PercPapersNoMagn = NA)
+
+for(iRes in 1:length(respVar)){
+  
+  subdat   <- subset(datRespvar, Response.variable_category %in% respVar[iRes])
+  
+  magNA    <- length(unique(subdat$SW.ID[is.na(subdat$Magnitude.of.relationship)]))
+  noPapers <- length(unique(subdat$SW.ID))
+  
+  respMagn[iRes,2] <- magNA
+  respMagn[iRes,3] <- round(magNA / noPapers * 100,1)
+  
+}
+
+# Check for each Pressure variable category the number of papers with NA for magnitude of relationship
+pressVar     <- unique(datRespvar$Pressure.variable_category)
+pressVar     <- pressVar[-is.na(pressVar)]
+pressMagn    <- data.frame(Pressure.variable_category = pressVar, NoPapersNoMagn = NA, PercPapersNoMagn = NA)
+
+for(iPre in 1:length(pressVar)){
+  
+  subdat   <- subset(datRespvar, Pressure.variable_category %in% pressVar[iPre])
+  
+  magNA    <- length(unique(subdat$SW.ID[is.na(subdat$Magnitude.of.relationship)]))
+  noPapers <- length(unique(subdat$SW.ID))
+  
+  pressMagn[iPre,2] <- magNA
+  pressMagn[iPre,3] <- round(magNA / noPapers * 100,1)
+  
+}
+
+
+
+#-----------------------------------------------#
+# Save dataset ----
+#-----------------------------------------------#
+
+# Convert datRespvar back into multiple response variables per row. Consideration is needed when a row has been split
+# into multiple ones. If all split rows got assigned the same Response variable category, then all can be merged into
+# one row again. If split rows got assigned different Response variable categories, then they have to remain split.
+
+# Add pasted info for rows with multiple pressure variable categories
+data_collapsed <- datRespvar[0,]
+
+for(iRow in unique(datRespvar$ROWID)){
+  subdat                            <- subset(datRespvar, ROWID %in% iRow)
+  
+  # If there's only one pressure variable, add row
+  if(nrow(subdat) == 1){
+    
+    data_collapsed <- rbind(data_collapsed, subdat)
+    
+  }
+  # If there's more than one response variable but all have assigned the same category, collapse and add as one row
+  if(nrow(subdat) > 1 & 
+     length(unique(subdat$Response.variable_category)) == 1){
+    
+    subdat$Response.variable_paper <- paste(subdat$Response.variable_paper, collapse = " _ ")
+    data_collapsed <- rbind(data_collapsed, subdat[1,])
+    
+  }
+  # If there's more than one response variable but not all have assigned the same category and they are all unique, add all rows
+  if(nrow(subdat) > 1 &
+     length(unique(subdat$Response.variable_category)) > 1 &
+     length(unique(subdat$Response.variable_category)) == nrow(subdat)){
+    
+    data_collapsed <- rbind(data_collapsed, subdat)
+  }
+  # If there's more than one response variable but not all have assigned the same category but they are not all unique, combine the above options
+  if(nrow(subdat) > 1 &
+     length(unique(subdat$Response.variable_category)) > 1 &
+     !length(unique(subdat$Response.variable_category)) == nrow(subdat)){
+    
+    for(iCat in unique(subdat$Response.variable_category)){
+      subsubdat <- subset(subdat, Response.variable_category %in% iCat)
+      
+      if(nrow(subsubdat) == 1){
+        
+        data_collapsed <- rbind(data_collapsed, subsubdat)
+      }
+      
+      if(nrow(subsubdat) > 1){
+        
+        subsubdat$Response.variable_paper <- paste(subsubdat$Response.variable_paper, collapse = " _ ")
+        data_collapsed <- rbind(data_collapsed, subsubdat[1,])
+      }
+    }
+    
+  }
+  
+}
+
+
+# Check duplicated ROWID
+rowIDdupl               <- data_collapsed$ROWID[duplicated(data_collapsed$ROWID)]
+datDupl                 <- subset(data_collapsed, ROWID %in% rowIDdupl) #this is because rows were split or duplicated and got a new response variable category
+data_collapsed$ROWID    <- c(1:nrow(data_collapsed)) #give new unique row ID
+
+
+# Save
+saveRDS(data_collapsed, paste0(datPath,"data_correctTaxa_PressVar_RespVar.rds"))
+write.xlsx(data_collapsed, file=paste0(datPath, "data_correctTaxa_PressVar_RespVar.xlsx"))
+
+# # In case you're running it with the entire dataset (incl. all columns)
+# saveRDS(data_collapsed, paste0(datPath,"data_AllScreened_correctTaxa_PressVar_RespVar.rds"))
+# write.xlsx(data_collapsed, file=paste0(datPath,"data_AllScreened_correctTaxa_PressVar_RespVar.xlsx"))
+

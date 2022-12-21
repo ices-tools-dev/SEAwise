@@ -14,11 +14,6 @@ rm(list = ls())
 # Load libraries and set Paths.
 #-----------------------------------------------
 library(data.table)
-library(RColorBrewer)
-library(raster)
-library(plotrix)
-library(sf)
-library(viridis)
 library(stringr)
 library(worms)
 
@@ -39,7 +34,7 @@ data                                 <- readRDS(data, file=paste0(datPath, "data
 specs                                <- tstrsplit(data$Species.taxonomic.group.s., split="_")
 dat1                                 <- data
 dat1$Species.taxonomic.group.s.      <- specs[[1]] 
-length(unique(dat1$Species.taxonomic.group.s.)) # 402 unique records
+length(unique(dat1$Species.taxonomic.group.s.)) # 398 unique records
 for(iL in c(2:length(specs))){
   dat2                               <- data
   dat2$Species.taxonomic.group.s.    <- specs[[iL]]
@@ -47,11 +42,11 @@ for(iL in c(2:length(specs))){
   dat1                               <- rbind(dat1, dat2)
   rm(dat2)
 }# end iL loop. 
-length(unique(dat1$Species.taxonomic.group.s.)) # 901 unique records
+length(unique(dat1$Species.taxonomic.group.s.)) # 898 unique records
 
-dat1$Species.taxonomic.group.s.      <- str_trim(dat1$Species.taxonomic.group.s., side="both"); length(unique(dat1$Species.taxonomic.group.s.)) # 667 unique records
-dat1$Species.taxonomic.group.s.      <- str_to_lower(dat1$Species.taxonomic.group.s.); length(unique(dat1$Species.taxonomic.group.s.)) # 647 unique records
-dat1$Species.taxonomic.group.s.      <- ifelse(dat1$Species.taxonomic.group.s. %in% c("", "unknown"), NA, dat1$Species.taxonomic.group.s.); length(unique(dat1$Species.taxonomic.group.s.)) # 645 unique records
+dat1$Species.taxonomic.group.s.      <- str_trim(dat1$Species.taxonomic.group.s., side="both"); length(unique(dat1$Species.taxonomic.group.s.)) # 664 unique records
+dat1$Species.taxonomic.group.s.      <- str_to_lower(dat1$Species.taxonomic.group.s.); length(unique(dat1$Species.taxonomic.group.s.)) # 644 unique records
+dat1$Species.taxonomic.group.s.      <- ifelse(dat1$Species.taxonomic.group.s. %in% c("", "unknown"), NA, dat1$Species.taxonomic.group.s.); length(unique(dat1$Species.taxonomic.group.s.)) # 642 unique records
 
 saveRDS(dat1, file=paste0(outPath, "dat1a.rds"))
 

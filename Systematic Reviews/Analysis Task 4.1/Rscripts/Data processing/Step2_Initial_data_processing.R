@@ -15,13 +15,13 @@ rm(list = ls())
 # Load libraries and set Paths.
 #-----------------------------------------------
 library(data.table)
-library(RColorBrewer)
-library(raster)
-library(plotrix)
-library(sf)
-library(viridis)
-library(stringr)
-library(worms)
+# library(RColorBrewer)
+# library(raster)
+# library(plotrix)
+# library(sf)
+# library(viridis)
+# library(stringr)
+# library(worms)
 
 outPath                               <- "Systematic Reviews/Analysis Task 4.1/Routput/"
 GISpath                               <- "Systematic Reviews/Analysis Task 4.1/GIS"
@@ -54,11 +54,11 @@ length(unique(tab$SW.ID))
 ## Check who did how many papers
 contributors                          <- tab[,.(Papers_read = length(unique(SW.ID))), by="Reader"]
 
-## how many papers retained : 531 papers
+## how many papers retained : 528 papers
 retained                              <- unique(subset(tab, is.na(Exclusion.Criteria)==TRUE)$SW.ID)
 length(retained)
 
-## how many rejected : 200 papers
+## how many rejected : 203 papers
 excluded                              <- unique(subset(tab, !is.na(Exclusion.Criteria) == TRUE)$SW.ID)
 length(excluded)
 
@@ -94,12 +94,12 @@ tobechecked                           <- data[is.na(Region)==T,,]
 data                                  <- data[is.na(Region)==F,,]
 
 ## Check the spatial scale and resolution, and correct for input mistakes
-table(is.na(data$Scale...Spatial..m.)) # There are 19 NAs
+table(is.na(data$Scale...Spatial..m.)) # There are 22 NAs
 table(data$Scale...Spatial..m.)
 data$Scale...Spatial..m.              <- ifelse(data$Scale...Spatial..m. %in% c("50,000-100,001",  "50,000-100,002",  "50,000-100,003"), "50,000-100,000",
                                                 ifelse(data$Scale...Spatial..m. == "100-501", "100-500", 
                                                        ifelse(data$Scale...Spatial..m. == "50-101", "50-100", data$Scale...Spatial..m.)))
-table(is.na(data$Resolution...Spatial..m.)) # There are 103 NAs
+table(is.na(data$Resolution...Spatial..m.)) # There are 106 NAs
 table(data$Resolution...Spatial..m.)
 data$Resolution...Spatial..m.         <- ifelse(data$Resolution...Spatial..m. %in% c("50,000-100,001",  "50,000-100,002",  "50,000-100,003"), "50,000-100,000",
                                                 ifelse(data$Resolution...Spatial..m. == "50-101", "50-100", 
@@ -125,7 +125,7 @@ data$Response.variable_category       <- ifelse(data$Response.variable_category 
 table(is.na(data$Pressure.type)) ## all fine 
 
 ## Check the Pressure types (level 2)
-table(is.na(subset(data, Pressure.type == "Catch_and_bycatch")$Pressure_level)) # There are 100 NAs (for rows where non-NA was expected). These are set to "non specified".
+table(is.na(subset(data, Pressure.type == "Catch_and_bycatch")$Pressure_level)) # There are 115 NAs (for rows where non-NA was expected). These are set to "non specified".
 
 table(data$Pressure_level)
 data$Pressure_level                  <- ifelse(data$Pressure_level == "target", "Target", data$Pressure_level)
@@ -137,7 +137,7 @@ table(is.na(data$Ecosystem.component_level1)) #no NAs
 
 ## Check the ecosystem component level 2
 table(is.na(subset(data, Ecosystem.component_level1 %in% c("Fish_teleost", "Benthos", "Marine_mammals", "Fish_cartilaginous",
-                                                     "Physical_habitats", "Plankton", "Plants", "Reptiles"))$Ecosystem.component_level2)==T) #326 NAs
+                                                     "Physical_habitats", "Plankton", "Plants", "Reptiles"))$Ecosystem.component_level2)==T) #327 NAs
 table(data$Ecosystem.component_level2)
 
 
@@ -167,17 +167,9 @@ data$Direction.of.relationship       <- ifelse(data$Direction.of.relationship ==
 data$Direction.of.relationship[is.na(data$Direction.of.relationship)] <- "Not specified"
 
 ## Check what species are commonly mentioned
-length(unique(data$Species.taxonomic.group.s.)) # 470 unique input... Let's try to group/categorize these in a separate script (step 3)
+length(unique(data$Species.taxonomic.group.s.)) # 465 unique input... Let's try to group/categorize these in a separate script (step 3)
 
 ## fix some rows with double input
-a                                    <- data[Species.taxonomic.group.s. == "other fish (9) and mollusca (2)",,]
-a$Species.taxonomic.group.s.         <- "Fish"
-b                                    <- a
-b$Species.taxonomic.group.s.         <- "Mollusca"
-b$ROWID                              <- max(data$ROWID)+1
-data                                 <- data[!ROWID == a$ROWID,,]
-data                                 <- rbindlist(list(data, a, b), use.names=TRUE)
-rm(a, b)
 a                                    <- data[Species.taxonomic.group.s. == "asteroids and lamp shells",,]
 a$Species.taxonomic.group.s.         <- "Asteroidea"
 b                                    <- a
@@ -188,7 +180,7 @@ data                                 <- rbindlist(list(data, a, b), use.names=TR
 
 
 ## Check what pressure variables are commonly mentioned
-length(unique(data$Pressure_variable)) # 385 unique input... Let's skip for now.
+length(unique(data$Pressure_variable)) # 384 unique input... Let's skip for now.
 
 ## Check whether ECL2 contains only sediment information when ECL1 == Physical_habitat
 a                                    <- data[Ecosystem.component_level2 %in% c("Gravel", "Mixed", "Mud", "Sand", "Unknown")]

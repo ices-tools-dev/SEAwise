@@ -15,6 +15,7 @@ rm(list = ls())
 #-----------------------------------------------#
 library(data.table)
 library(splitstackshape)
+library(openxlsx)
 
 datPath                               <- "Systematic Reviews/Analysis Task 4.1/Routput/"
 
@@ -183,6 +184,10 @@ datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(Pressure_va
 datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(Pressure_variable %in% "total prey biomass removed" & is.na(datPressvar$Pressure.variable_category) &
                                                                        SW.ID %in% "SW4_1315", "Catch",Pressure.variable_category))
 
+# Add paper on that studies prey biomass removal on dolphins
+datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(Pressure_variable %in% "landings" & is.na(datPressvar$Pressure.variable_category) &
+                                                                       SW.ID %in% "SW4_1952", "Catch",Pressure.variable_category))
+
 PV_catch                                  <- subset(datPressvar, Pressure.variable_category %in% "Catch")
 
 
@@ -243,6 +248,17 @@ sort(unique(datPressvar[which(grepl("capture", datPressvar$Pressure_variable) &
 datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(grepl("capture", datPressvar$Pressure_variable) &
                                                                        datPressvar$Pressure_level %in% c("Bycatch","Non-target"),
                                                                      "Bycatch",Pressure.variable_category))
+
+# Add papers on entanglement where Pressure type is NOT Input of litter but Catch_and_bycatch
+sort(unique(datPressvar[which(grepl("entangl", datPressvar$Pressure_variable) & is.na(datPressvar$Pressure.variable_category) &
+                                datPressvar$Pressure_level %in% c("Bycatch","Non-target")),]$Pressure_variable)) #all
+sort(unique(datPressvar[which(grepl("Entangl", datPressvar$Pressure_variable) & is.na(datPressvar$Pressure.variable_category) &
+                                datPressvar$Pressure_level %in% c("Bycatch","Non-target")),]$Pressure_variable)) #all (only one)
+datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(grepl("entangle", datPressvar$Pressure_variable) & datPressvar$Pressure_level %in% c("Bycatch","Non-target"),
+                                                                     "Bycatch",Pressure.variable_category))
+datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(grepl("Entangle", datPressvar$Pressure_variable) & datPressvar$Pressure_level %in% c("Bycatch","Non-target"),
+                                                                     "Bycatch",Pressure.variable_category))
+
 # Some manual additions
 datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(Pressure_variable %in% "Fishing activity" & SW.ID %in% "SW4_0350",
                                                                      "Bycatch", Pressure.variable_category))
@@ -317,9 +333,9 @@ PV_bycatch                                  <- subset(datPressvar, Pressure.vari
 
 
 ## Fishing effort ----
-sort(unique(datPressvar[which(grepl("fishing effort", datPressvar$Pressure_variable)),]$Pressure_variable)) #add all, except one
+sort(unique(datPressvar[which(grepl("fishing effort", datPressvar$Pressure_variable)),]$Pressure_variable)) #add all, except twp
 datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(grepl("fishing effort", datPressvar$Pressure_variable) &
-                                                                       !(Pressure_variable %in% "Absence of fishing effort"),
+                                                                       !(Pressure_variable %in% c("Absence of fishing effort","reduction in fishing effort")),
                                                                      "Fishing effort",Pressure.variable_category))
 
 sort(unique(datPressvar[which(grepl("Fishing effort", datPressvar$Pressure_variable)),]$Pressure_variable)) #add all
@@ -660,8 +676,11 @@ datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(Pressure_va
 datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(Pressure_variable %in% "Trawled vs. untrawled" & 
                                                                        SW.ID %in% "SW4_0251", "Presence of fishing activity",Pressure.variable_category))
 
+datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(Pressure_variable %in% "Trawling" & 
+                                                                       SW.ID %in% "SW4_1722", "Presence of fishing activity",Pressure.variable_category))
+
 PV_activity                          <- subset(datPressvar, Pressure.variable_category %in% "Presence of fishing activity")
-#CHECK SW4_0251
+
 
 
 ## Fleet capacity ----
@@ -689,9 +708,15 @@ PV_capacity                          <- subset(datPressvar, Pressure.variable_ca
 
 
 ## Mortality ----
-sort(unique(datPressvar[which(grepl("mortality", datPressvar$Pressure_variable) & is.na(datPressvar$Pressure.variable_category)),]$Pressure_variable)) #all
-sort(unique(datPressvar[which(grepl("Mortality", datPressvar$Pressure_variable) & is.na(datPressvar$Pressure.variable_category)),]$Pressure_variable)) #all
-datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse((grepl("mortality", datPressvar$Pressure_variable) | grepl("Mortality", datPressvar$Pressure_variable)) 
+sort(unique(datPressvar[which(grepl("mortality", datPressvar$Pressure_variable) & is.na(datPressvar$Pressure.variable_category)),]$Pressure_variable)) #all but one
+sort(unique(datPressvar[which(grepl("Mortality", datPressvar$Pressure_variable) & is.na(datPressvar$Pressure.variable_category)),]$Pressure_variable)) #all (only one)
+datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(Pressure_variable %in% c("fishing mortality",
+                                                                                              "Fishing mortality",
+                                                                                              "Fishing mortality and exploitation rate",
+                                                                                              "Gear-specific fishing mortality",
+                                                                                              "mortality",
+                                                                                              "Total fishing mortality",
+                                                                                              "Mortality")
                                                                      & is.na(datPressvar$Pressure.variable_category),
                                                                      "Mortality",Pressure.variable_category))
 
@@ -759,8 +784,14 @@ datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(Pressure_va
 
 sort(unique(datPressvar[which(grepl("area", datPressvar$Pressure_variable) & is.na(datPressvar$Pressure.variable_category)),]$Pressure_variable)) #all 
 datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(Pressure_variable %in% c("fishery/no fishery area",
-                                                                                              "Fishing pressure: trawled vs. Non trawled areas",
+                                                                                              "Fishing pressure: untrawled vs. trawled areas",
                                                                                               "Untrawled area"),
+                                                                     "Closure",Pressure.variable_category))
+
+sort(unique(datPressvar[which(grepl("reduc", datPressvar$Pressure_variable) & is.na(datPressvar$Pressure.variable_category)),]$Pressure_variable)) #all but one
+datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(Pressure_variable %in% c("Fishing mortality reduction",
+                                                                                              "reduction in fishing effort",
+                                                                                              "reduction in fishing mortality"),
                                                                      "Closure",Pressure.variable_category))
 # Some manual additions
 datPressvar$Pressure.variable_category    <- with(datPressvar, ifelse(Pressure_variable %in% "Decrease on number of fishing days" & is.na(Pressure.variable_category) & 
@@ -787,7 +818,7 @@ datPressvar$Pressure.variable_category    <- with(datPressvar, ifelse(Pressure_v
                                                                         SW.ID %in% "SW4_1707", "Closure",Pressure.variable_category))
 
 PV_closure                         <- subset(datPressvar, Pressure.variable_category %in% "Closure")
-#CHECK SW4_1707
+
 
 
 ## Bycatch reduction & selectivity ----
@@ -880,7 +911,7 @@ sort(unique(datPressvar[which(grepl("entang", datPressvar$Pressure_variable) & i
 datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(grepl("entang", datPressvar$Pressure_variable) & is.na(datPressvar$Pressure.variable_category),
                                                                      "Litter",Pressure.variable_category))
 
-sort(unique(datPressvar[which(grepl("Entang", datPressvar$Pressure_variable) & is.na(datPressvar$Pressure.variable_category)),]$Pressure_variable)) #all
+sort(unique(datPressvar[which(grepl("Entang", datPressvar$Pressure_variable) & is.na(datPressvar$Pressure.variable_category)),]$Pressure_variable)) #only one
 datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(grepl("Entang", datPressvar$Pressure_variable) & is.na(datPressvar$Pressure.variable_category),
                                                                      "Litter",Pressure.variable_category))
 
@@ -937,7 +968,9 @@ datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(Pressure_va
                                                                                               "Hydrodynamic drag of pulse trawl vs. beam trawl",                              
                                                                                               "pulse trawl vs beam trawl",                                                    
                                                                                               "pulse trawl vs. beam trawl",                                                   
-                                                                                              "shrimp bait vs. worm bait"),
+                                                                                              "shrimp bait vs. worm bait",
+                                                                                              "pot vs. traditional trammel net",
+                                                                                              "Otter trawl vs. beam trawl"),
                                                                      "Gear comparison",Pressure.variable_category))
 # Some manual additions
 datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(Pressure_variable %in% "change from trawling to creeling" & 

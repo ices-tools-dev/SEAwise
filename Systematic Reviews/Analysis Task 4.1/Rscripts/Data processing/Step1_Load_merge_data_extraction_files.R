@@ -16,14 +16,7 @@ rm(list = ls())
 #-----------------------------------------------
 library(xlsx) 
 library(openxlsx)
-library(data.table)
-library(RColorBrewer)
-library(raster)
-library(plotrix)
-library(sf)
-library(viridis)
-library(stringr)
-library(worms)
+
 
 datPath                               <- "Systematic Reviews/Analysis Task 4.1/Data_Extraction_Files/" 
 outPath                               <- "Systematic Reviews/Analysis Task 4.1/Routput/"
