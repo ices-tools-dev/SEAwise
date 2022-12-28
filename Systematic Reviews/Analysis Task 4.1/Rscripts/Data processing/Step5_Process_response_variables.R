@@ -150,25 +150,24 @@ sort(other_ben$Response.variable_paper) #some overlap, maybe due to ECL being mo
 # Categorization ----
 #-----------------------------------------------#
 
-## Below new categories are created ##
-
-### Sediment, seabed & physical properties ----
+### NEW: Sediment, seabed & physical properties ----
 sort(unique(datRespvar[which(grepl("sedim", datRespvar$Response.variable_paper) & datRespvar$Response.variable_category %in% "Other"),]$Response.variable_paper)) #all
 sort(unique(datRespvar[which(grepl("Sedim", datRespvar$Response.variable_paper) & datRespvar$Response.variable_category %in% "Other"),]$Response.variable_paper)) #all
-datRespvar$Response.variable_category    <- with(datRespvar,ifelse(grepl("sedim", datRespvar$Response.variable_paper),
+datRespvar$Response.variable_category    <- with(datRespvar,ifelse(grepl("sedim", datRespvar$Response.variable_paper) & Response.variable_category %in% "Other",
                                                                      "Sediment & physical properties", Response.variable_category))
 datRespvar$Response.variable_category    <- with(datRespvar,ifelse(grepl("Sedim", datRespvar$Response.variable_paper),
                                                                    "Sediment & physical properties", Response.variable_category))
 
-sort(unique(datRespvar[which(grepl("grain", datRespvar$Response.variable_paper) & datRespvar$Response.variable_category %in% "Other"),]$Response.variable_paper)) #all (only one)
-sort(unique(datRespvar[which(grepl("Grain", datRespvar$Response.variable_paper) & datRespvar$Response.variable_category %in% "Other"),]$Response.variable_paper)) #all (only one)
-datRespvar$Response.variable_category    <- with(datRespvar,ifelse(Response.variable_paper %in% c("median grain size (Q50)",
-                                                                                                  "Grain size"),
+sort(unique(datRespvar[which(grepl("grain", datRespvar$Response.variable_paper)),]$Response.variable_paper)) #all (one already categorized)
+sort(unique(datRespvar[which(grepl("Grain", datRespvar$Response.variable_paper)),]$Response.variable_paper)) #all (only one)
+datRespvar$Response.variable_category    <- with(datRespvar,ifelse(Response.variable_paper %in% c("grain structure",
+                                                                                                  "median grain size (Q50)",
+                                                                                                  "Grain size") & Response.variable_category %in% "Other",
                                                                    "Sediment & physical properties", Response.variable_category))
 
-sort(unique(datRespvar[which(grepl("organic", datRespvar$Response.variable_paper) & datRespvar$Response.variable_category %in% "Other"),]$Response.variable_paper)) #all
-sort(unique(datRespvar[which(grepl("Organic", datRespvar$Response.variable_paper) & datRespvar$Response.variable_category %in% "Other"),]$Response.variable_paper)) #empty
-datRespvar$Response.variable_category    <- with(datRespvar,ifelse(grepl("organic", datRespvar$Response.variable_paper),
+sort(unique(datRespvar[which(grepl("organic", datRespvar$Response.variable_paper)),]$Response.variable_paper)) #all
+sort(unique(datRespvar[which(grepl("Organic", datRespvar$Response.variable_paper)),]$Response.variable_paper)) #empty
+datRespvar$Response.variable_category    <- with(datRespvar,ifelse(grepl("organic", datRespvar$Response.variable_paper), 
                                                                    "Sediment & physical properties", Response.variable_category))
 
 sort(unique(datRespvar[which(grepl("concentr", datRespvar$Response.variable_paper) & datRespvar$Response.variable_category %in% "Other"),]$Response.variable_paper)) #all
@@ -183,8 +182,8 @@ sort(unique(datRespvar[which(grepl("Flux", datRespvar$Response.variable_paper) &
 datRespvar$Response.variable_category    <- with(datRespvar,ifelse(grepl("flux", datRespvar$Response.variable_paper),
                                                                    "Sediment & physical properties", Response.variable_category))
 
-sort(unique(datRespvar[which(grepl("susp", datRespvar$Response.variable_paper) & datRespvar$Response.variable_category %in% "Other"),]$Response.variable_paper)) #all (only one)
-datRespvar$Response.variable_category    <- with(datRespvar,ifelse(grepl("susp", datRespvar$Response.variable_paper),
+sort(unique(datRespvar[which(grepl("susp", datRespvar$Response.variable_paper) & datRespvar$Response.variable_category %in% "Other"),]$Response.variable_paper)) #all but one
+datRespvar$Response.variable_category    <- with(datRespvar,ifelse(grepl("susp", datRespvar$Response.variable_paper) & datRespvar$Response.variable_category %in% "Other",
                                                                    "Sediment & physical properties", Response.variable_category))
 
 sort(unique(datRespvar[which(grepl("seafloor", datRespvar$Response.variable_paper) & datRespvar$Response.variable_category %in% "Other"),]$Response.variable_paper)) #all
@@ -195,10 +194,6 @@ datRespvar$Response.variable_category    <- with(datRespvar,ifelse(grepl("Seaflo
                                                                    "Sediment & physical properties", Response.variable_category))
 
 sort(unique(datRespvar[which(grepl("Area", datRespvar$Response.variable_paper) & datRespvar$Response.variable_category %in% "Other"),]$Response.variable_paper)) #all
-datRespvar$Response.variable_category    <- with(datRespvar,ifelse(grepl("seafloor", datRespvar$Response.variable_paper),
-                                                                   "Sediment & physical properties", Response.variable_category))
-
-sort(unique(datRespvar[which(grepl("scar", datRespvar$Response.variable_paper) & datRespvar$Response.variable_category %in% "Other"),]$Response.variable_paper)) #all
 datRespvar$Response.variable_category    <- with(datRespvar,ifelse(grepl("seafloor", datRespvar$Response.variable_paper),
                                                                    "Sediment & physical properties", Response.variable_category))
 
@@ -226,9 +221,6 @@ datRespvar$Response.variable_category    <- with(datRespvar,ifelse(Response.vari
                                                                                                   "habitat vulnerability",
                                                                                                   "Number of trawl marks",
                                                                                                   "Penetration",
-                                                                                                  "Recoverability after physical disturbance",
-                                                                                                  "Sensitivity to physical disturbance",
-                                                                                                  "Vulnerability to physical disturbance",
                                                                                                   "Various types of seabed substrate disturbance",
                                                                                                   "effort displacement"),
                                                                    "Sediment & physical properties", Response.variable_category))
@@ -239,8 +231,12 @@ datRespvar$Response.variable_category    <- with(datRespvar,ifelse(Response.vari
 RV_sediment <- subset(datRespvar, Response.variable_category %in% "Sediment & physical properties")
 
 
+# Now check whether some papers in this category have Benthos as ECL, and whether this is appropriate
+notPhysHabPapers           <- subset(RV_sediment, !Ecosystem.component_level1 %in% "Physical_habitats")
+##Have gone through them and made changes in script and/or in data extraction files
 
-### Damage & entanglement ----
+
+### NEW: Damage & entanglement ----
 
 ## Check also those that are already assigned to another category than Other, as they may also be put under this new category.
 
@@ -299,6 +295,12 @@ datRespvar$Response.variable_category[datRespvar$Response.variable_paper %in% "T
 papersBioDiv    <- subset(datRespvar, grepl("diversity", datRespvar$Response.variable_paper) & !Response.variable_category %in% "Biodiversity")
 papersBioDiv    <- rbind(papersBioDiv, subset(datRespvar, grepl("richness", datRespvar$Response.variable_paper) & !Response.variable_category %in% "Biodiversity"))
 papersBioDiv    <- papersBioDiv[!duplicated(papersBioDiv),]
+
+# Paper reporting trait-based community metric of benthos categorized as 'Other' -> assign to Community composition
+datRespvar$Response.variable_category <- with(datRespvar, ifelse(Response.variable_paper %in% c("Recoverability after physical disturbance",
+                                                                                                "Sensitivity to physical disturbance",
+                                                                                                "Vulnerability to physical disturbance"),
+                                                                 "Community composition", Response.variable_category)) #SW4_1960
 
 ## For the following papers, replace category by Biodiversity
 datRespvar$Response.variable_category[datRespvar$SW.ID %in% c("SW4_0955","SW4_0537","SW4_1826","SW4_0311","SW4_0968","SW4_1448","SW4_1826") & 

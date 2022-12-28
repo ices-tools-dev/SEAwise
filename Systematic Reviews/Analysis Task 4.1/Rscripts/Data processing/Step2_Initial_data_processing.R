@@ -15,13 +15,7 @@ rm(list = ls())
 # Load libraries and set Paths.
 #-----------------------------------------------
 library(data.table)
-# library(RColorBrewer)
-# library(raster)
-# library(plotrix)
-# library(sf)
-# library(viridis)
-# library(stringr)
-# library(worms)
+
 
 outPath                               <- "Systematic Reviews/Analysis Task 4.1/Routput/"
 GISpath                               <- "Systematic Reviews/Analysis Task 4.1/GIS"
@@ -137,7 +131,7 @@ table(is.na(data$Ecosystem.component_level1)) #no NAs
 
 ## Check the ecosystem component level 2
 table(is.na(subset(data, Ecosystem.component_level1 %in% c("Fish_teleost", "Benthos", "Marine_mammals", "Fish_cartilaginous",
-                                                     "Physical_habitats", "Plankton", "Plants", "Reptiles"))$Ecosystem.component_level2)==T) #327 NAs
+                                                     "Physical_habitats", "Plankton", "Plants", "Reptiles"))$Ecosystem.component_level2)==T) #324 NAs
 table(data$Ecosystem.component_level2)
 
 
@@ -180,7 +174,7 @@ data                                 <- rbindlist(list(data, a, b), use.names=TR
 
 
 ## Check what pressure variables are commonly mentioned
-length(unique(data$Pressure_variable)) # 384 unique input... Let's skip for now.
+length(unique(data$Pressure_variable)) # 385 unique input... Let's skip for now.
 
 ## Check whether ECL2 contains only sediment information when ECL1 == Physical_habitat
 a                                    <- data[Ecosystem.component_level2 %in% c("Gravel", "Mixed", "Mud", "Sand", "Unknown")]
