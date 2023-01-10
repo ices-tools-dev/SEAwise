@@ -352,60 +352,74 @@ datNotSpec[,c(1,33)]
 
 #!NOTE; can only be checked when running code above on data_allScreened
 
-### Check missing values ----
-datMagnNA        <- subset(datRespvar, is.na(Magnitude.of.relationship) & is.na(Exclusion.Criteria))
-
-# How many papers?
-length(unique(datMagnNA$SW.ID)) #37 papers
-
-# Check for each Ecosystem component the number of papers with NA for magnitude of relationship
-ecoComp     <- unique(datRespvar$Ecosystem.component_level1)
-ecoComp     <- ecoComp[-is.na(ecoComp)]
-ecoMagn     <- data.frame(Ecosystem.component_level1 = ecoComp, NoPapersNoMagn = NA, PercPapersNoMagn = NA)
-
-for(iEco in 1:length(ecoComp)){
+if(ncol(datRespvar) > 50){
   
-  subdat   <- subset(datRespvar, Ecosystem.component_level1 %in% ecoComp[iEco])
+  ### Check missing values ----
+  datMagnNA        <- subset(datRespvar, is.na(Magnitude.of.relationship) & is.na(Exclusion.Criteria))
   
-  magNA    <- length(unique(subdat$SW.ID[is.na(subdat$Magnitude.of.relationship)]))
-  noPapers <- length(unique(subdat$SW.ID))
+  # How many papers?
+  length(unique(datMagnNA$SW.ID)) #37 papers
   
-  ecoMagn[iEco,2] <- magNA
-  ecoMagn[iEco,3] <- round(magNA / noPapers * 100,1)
+  # Check for each Ecosystem component the number of papers with NA for magnitude of relationship
+  ecoComp     <- unique(datRespvar$Ecosystem.component_level1)
+  ecoComp     <- ecoComp[-is.na(ecoComp)]
+  ecoMagn     <- data.frame(Ecosystem.component_level1 = ecoComp, NoPapersNoMagn = NA, PercPapersNoMagn = NA)
   
-}
-
-# Check for each Response variable category the number of papers with NA for magnitude of relationship
-respVar     <- unique(datRespvar$Response.variable_category)
-respVar     <- respVar[-is.na(respVar)]
-respMagn    <- data.frame(Response.variable_category = respVar, NoPapersNoMagn = NA, PercPapersNoMagn = NA)
-
-for(iRes in 1:length(respVar)){
+  for(iEco in 1:length(ecoComp)){
+    
+    subdat   <- subset(datRespvar, Ecosystem.component_level1 %in% ecoComp[iEco])
+    
+    magNA    <- length(unique(subdat$SW.ID[is.na(subdat$Magnitude.of.relationship)]))
+    noPapers <- length(unique(subdat$SW.ID))
+    
+    ecoMagn[iEco,2] <- magNA
+    ecoMagn[iEco,3] <- round(magNA / noPapers * 100,1)
+    
+  }
   
-  subdat   <- subset(datRespvar, Response.variable_category %in% respVar[iRes])
+  # Check for each Response variable category the number of papers with NA for magnitude of relationship
+  respVar     <- unique(datRespvar$Response.variable_category)
+  respVar     <- respVar[-is.na(respVar)]
+  respMagn    <- data.frame(Response.variable_category = respVar, NoPapersNoMagn = NA, PercPapersNoMagn = NA)
   
-  magNA    <- length(unique(subdat$SW.ID[is.na(subdat$Magnitude.of.relationship)]))
-  noPapers <- length(unique(subdat$SW.ID))
+  for(iRes in 1:length(respVar)){
+    
+    subdat   <- subset(datRespvar, Response.variable_category %in% respVar[iRes])
+    
+    magNA    <- length(unique(subdat$SW.ID[is.na(subdat$Magnitude.of.relationship)]))
+    noPapers <- length(unique(subdat$SW.ID))
+    
+    respMagn[iRes,2] <- magNA
+    respMagn[iRes,3] <- round(magNA / noPapers * 100,1)
+    
+  }
   
-  respMagn[iRes,2] <- magNA
-  respMagn[iRes,3] <- round(magNA / noPapers * 100,1)
+  # Check for each Pressure variable category the number of papers with NA for magnitude of relationship
+  pressVar     <- unique(datRespvar$Pressure.variable_category)
+  pressVar     <- pressVar[-is.na(pressVar)]
+  pressMagn    <- data.frame(Pressure.variable_category = pressVar, NoPapersNoMagn = NA, PercPapersNoMagn = NA)
   
-}
-
-# Check for each Pressure variable category the number of papers with NA for magnitude of relationship
-pressVar     <- unique(datRespvar$Pressure.variable_category)
-pressVar     <- pressVar[-is.na(pressVar)]
-pressMagn    <- data.frame(Pressure.variable_category = pressVar, NoPapersNoMagn = NA, PercPapersNoMagn = NA)
-
-for(iPre in 1:length(pressVar)){
+  for(iPre in 1:length(pressVar)){
+    
+    subdat   <- subset(datRespvar, Pressure.variable_category %in% pressVar[iPre])
+    
+    magNA    <- length(unique(subdat$SW.ID[is.na(subdat$Magnitude.of.relationship)]))
+    noPapers <- length(unique(subdat$SW.ID))
+    
+    pressMagn[iPre,2] <- magNA
+    pressMagn[iPre,3] <- round(magNA / noPapers * 100,1)
+    
+  }
   
-  subdat   <- subset(datRespvar, Pressure.variable_category %in% pressVar[iPre])
   
-  magNA    <- length(unique(subdat$SW.ID[is.na(subdat$Magnitude.of.relationship)]))
-  noPapers <- length(unique(subdat$SW.ID))
+  ### Check text, spaces, underscores and clean ---
   
-  pressMagn[iPre,2] <- magNA
-  pressMagn[iPre,3] <- round(magNA / noPapers * 100,1)
+  # Remove new lines
+  datRespvar$Magnitude.of.relationship <- str_replace_all(datRespvar$Magnitude.of.relationship, "[\r\n]" , "")
+  
+  # Remove weird codes
+  datRespvar$Magnitude.of.relationship <- str_replace_all(datRespvar$Magnitude.of.relationship, "_x0002_" , "")
+  datRespvar$Magnitude.of.relationship <- str_replace_all(datRespvar$Magnitude.of.relationship, "_x0001_" , "")
   
 }
 

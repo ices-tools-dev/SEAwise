@@ -15,11 +15,11 @@ rm(list = ls())
 # Load libraries and set Paths.
 #-----------------------------------------------
 library(data.table)
+library(stringr)
 
 
 outPath                               <- "Systematic Reviews/Analysis Task 4.1/Routput/"
 GISpath                               <- "Systematic Reviews/Analysis Task 4.1/GIS"
-
 
 
 ################################################
@@ -156,7 +156,7 @@ data$WP4.task                        <- ifelse(data$WP4.task == "none", "None",
 
 ## Check what relationships have been reported
 table(data$Direction.of.relationship, useNA = "always")
-table(is.na(data$Direction.of.relationship)) # 20 NA's --> classify those as not specified
+table(is.na(data$Direction.of.relationship)) # 4 NA's --> classify those as not specified
 data$Direction.of.relationship       <- ifelse(data$Direction.of.relationship == "negative", "Negative", data$Direction.of.relationship)
 data$Direction.of.relationship[is.na(data$Direction.of.relationship)] <- "Not specified"
 
@@ -174,7 +174,7 @@ data                                 <- rbindlist(list(data, a, b), use.names=TR
 
 
 ## Check what pressure variables are commonly mentioned
-length(unique(data$Pressure_variable)) # 385 unique input... Let's skip for now.
+length(unique(data$Pressure_variable)) # 386 unique input... Let's skip for now.
 
 ## Check whether ECL2 contains only sediment information when ECL1 == Physical_habitat
 a                                    <- data[Ecosystem.component_level2 %in% c("Gravel", "Mixed", "Mud", "Sand", "Unknown")]
@@ -216,6 +216,20 @@ data$Pressure_variable    <- with(data,ifelse(grepl("daily mechanical shaking si
 
 data$Pressure_variable    <- with(data,ifelse(grepl("Exposure to electical pulse", Pressure_variable), 
                                               "Exposure to electrical pulse", Pressure_variable))
+
+#only to be run when 'data' is based on 'data_allScreened'
+if(ncol(data) > 50){
+  ## Remove some weird codes in Concluding remarks
+  data$Concluding.statement.or.quotable.quote <- str_replace_all(data$Concluding.statement.or.quotable.quote, "_x0002_" , "")
+  data$Concluding.statement.or.quotable.quote <- str_replace_all(data$Concluding.statement.or.quotable.quote, "~" , "i")
+  
+  ## And remove new lines
+  data$Concluding.statement.or.quotable.quote <- str_replace_all(data$Concluding.statement.or.quotable.quote, "[\r\n]" , "")
+  
+  ## Remove quotation marks in Concluding statement and in Magnitude of relationship by Potier
+  data$Concluding.statement.or.quotable.quote <- str_replace_all(data$Concluding.statement.or.quotable.quote, '"' , '')
+  data$Magnitude.of.relationship[data$Reader %in% "Potier"] <- str_replace_all(data$Magnitude.of.relationship[data$Reader %in% "Potier"], '"' , '')
+}
 
 
 

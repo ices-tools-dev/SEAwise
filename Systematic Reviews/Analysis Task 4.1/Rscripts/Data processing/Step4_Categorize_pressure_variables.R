@@ -817,6 +817,9 @@ datPressvar$Pressure.variable_category    <- with(datPressvar, ifelse(Pressure_v
 datPressvar$Pressure.variable_category    <- with(datPressvar, ifelse(Pressure_variable %in% "No trawling to estimate recovery" & is.na(Pressure.variable_category) &
                                                                         SW.ID %in% "SW4_1707", "Closure",Pressure.variable_category))
 
+datPressvar$Pressure.variable_category    <- with(datPressvar, ifelse(Pressure_variable %in% "Effort reduction" & is.na(Pressure.variable_category) &
+                                                                        SW.ID %in% "SW4_1455", "Closure",Pressure.variable_category))
+
 PV_closure                         <- subset(datPressvar, Pressure.variable_category %in% "Closure")
 
 
