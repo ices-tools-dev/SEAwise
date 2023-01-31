@@ -1,0 +1,27 @@
+Type_of_cost;Fleet_segment;Explanatory_variable; Coefficient ;Option
+fuel_costs;DTS_VL1218;Effort;14.43;1
+fuel_costs;DTS_VL1218;OTB_DEF_>=40_0_0;10165.81;1
+fuel_costs;DTS_VL1218;OTB_MDD_>=40_0_0;11687.258;1
+labour_costs;DTS_VL1218;Lab_expl_var;3.00E-01;3
+maintenance_costs;DTS_VL1218;Effort;4.17;3
+other_costs;DTS_VL1218;Effort;8.4;3
+fuel_costs;DTS_VL1824;Effort;25.351;1
+fuel_costs;DTS_VL1824;OTB_DEF_>=40_0_0;26058.897;1
+fuel_costs;DTS_VL1824;OTB_MDD_>=40_0_0;14401.118;1
+labour_costs;DTS_VL1824;Lab_expl_var;3.00E-01;3
+maintenance_costs;DTS_VL1824;Effort;4.4;3
+other_costs;DTS_VL1824;Effort;12.9;3
+fuel_costs;DTS_VL2440;Effort;23.474;1
+fuel_costs;DTS_VL2440;OTB_DEF_>=40_0_0;42976.9;1
+fuel_costs;DTS_VL2440;OTB_DWS_>=40_0_0;57601.444;1
+fuel_costs;DTS_VL2440;OTB_MDD_>=40_0_0;49291.2;1
+labour_costs;DTS_VL2440;Lab_expl_var;2.97E-01;1
+labour_costs;DTS_VL2440;OTB_DEF_>=40_0_0;-5.94E+04;1
+labour_costs;DTS_VL2440;OTB_DWS_>=40_0_0;-5.78E+04;1
+labour_costs;DTS_VL2440;OTB_MDD_>=40_0_0;-4.87E+04;1
+maintenance_costs;DTS_VL2440;Effort;10.15;3
+other_costs;DTS_VL2440;Effort;11.483;3
+labour_costs;HOK_VL1218;Lab_expl_var;3.56E-01;1
+labour_costs;HOK_VL1218;LLD_LPF_0_0_0;-1.10E+04;1
+labour_costs;HOK_VL1218;LLS_DEF_0_0_0;-1.28E+04;1
+other_costs;HOK_VL1218;Effort;13;3
