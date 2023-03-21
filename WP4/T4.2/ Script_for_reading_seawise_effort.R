@@ -79,7 +79,7 @@ unique(df_all$MetierL4)
 
 
 
-#abbreviations of the métiers
+#abbreviations of the mÃ©tiers
 #https://datacollection.jrc.ec.europa.eu/wordef/fishing-activity-metier
 #https://fish-commercial-names.ec.europa.eu/fish-names/fishing-gears_en
 
