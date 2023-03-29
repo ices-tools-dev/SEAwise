@@ -36,9 +36,9 @@ wp3$Exclusion.Criteria <- NULL
 
 # wp4 <- read.csv(file = "Systematic Reviews/Analysis Task 1.2/Databases/Database_4_20220829.csv", header = T) # Path when run manually
 wp4 <- read.csv(file = "../../Databases/Database_4_20220829.csv", header = T)
-wp4$X <- NULL
+# wp4 <- readRDS(file = "../../Databases/Database_4_20230131.rds")
+# wp4 <- wp4[is.na(wp4$Exclusion.Criteria),]
 wp4$Exclusion.Criteria <- NULL
-wp4o <- wp4
 wp4$Sampling.Method.used.for.data.collection <- ifelse(wp4$Sampling.Method.used.for.data.collection == "other", wp4$Description.Other.Sampling.Method, wp4$Sampling.Method.used.for.data.collection)
 wp4$Description.Other.Sampling.Method <- NULL
 wp4$Study.type <- ifelse(is.na(wp4$Study.type), "Other", wp4$Study.type)
