@@ -1,7 +1,10 @@
 #####################################################################################################################-
 #####################################################################################################################-
 #
-#     Script to explore and produce output for the manuscript.
+#     Script to explore and produce output for the general results section of the manuscript.
+#
+#     Note that this includes both output to be put in both the manuscript and the Supplement,
+#     with output for the latter linked to the general results section in the manuscript.
 #
 #     By Esther Beukhof, including code written by Karin van der Reijden and Elliot J. Brown
 #     June 2022
@@ -56,7 +59,7 @@ load(paste0(datPath, "FatePapers.Rdata"))
 #####################################################################################################################-
 #####################################################################################################################-
 #-----------------------------------------------#
-# General plots ----
+# General plots across all papers ----
 #-----------------------------------------------#
 
 #-----------------------------------------------#
@@ -90,72 +93,19 @@ write.csv(exclDat, paste0(outPath,"nr and prop papers excluded data extraction.c
 
 
 #-----------------------------------------------#
-## Time series of number of studies across all papers ----
+## Table number of papers per year ----
 #-----------------------------------------------#
 
-YearRet                              <- data[,.(NrPaps = length(unique(SW.ID))),
-                                             by = c("Year")]
+nrPaps                               <- aggregate(SW.ID ~ Year, data, function(x) length(unique(x)))
 
-# Base plot method
-YearRet2                             <- matrix(nrow=1,
-                                               ncol=(max(data$Year) - min(data$Year) + 1),
-                                               NA)
-colnames(YearRet2)                   <- as.character(seq(from=min(data$Year), to= max(data$Year), 1)) 
-rownames(YearRet2)                   <- "Retained"
-
-YearRet2["Retained", as.character(YearRet$Year)] <- YearRet$NrPaps
-YearRet2[is.na(YearRet2)]            <- 0
-
-tiff(paste0(outPath, "YearRet.tiff"), width = 1000, height=750, res=100)
-par(mar=c(5,5,2,2))
-plot(x=c(min(YearRet$Year), max(YearRet$Year)), y=c(0, max(YearRet$NrPaps)), type="n", ann=F, axes=F)
-lines(x=as.numeric(colnames(YearRet2)), y=YearRet2["Retained",], type="o", pch=16, lwd=2, cex=1.5)
-axis(1, at=seq(1965, 2025, 5), labels=seq(1965, 2025, 5), cex.axis=1.5)
-axis(2, las=1, cex.axis=1.5)
-axis(1, at=(max(data$Year) - ((max(data$Year) - min(data$Year))/2)), tick=F, line=2, cex.axis=2, "Publication year")
-axis(2, at=(max(YearRet$NrPaps)/2), tick=F, line=2, cex.axis=2, labels="Number of papers")
-dev.off()
-
-
-# ggplot method
-YearRet2                         <- expand.grid(Year=seq(min(data$Year),max(data$Year)))
-YearRet2                         <- merge(YearRet2, YearRet, by="Year", all.x=TRUE)
-
-p <- ggplot(YearRet2, aes(Year,NrPaps)) +
-  geom_point(size=2) +
-  geom_line() +
-  scale_x_continuous(n.breaks = 8) +
-  # scale_colour_brewer(palette = "Paired") +
-  labs(y="Number of papers") +
-  theme_bw() +
-  theme(axis.text = element_text(size = 12),
-        strip.text = element_text(size = 12),
-        axis.title = element_text(size = 14))
-print(p)
-ggsave("YearRet2.tiff", p, path=outPath, width=5, height = 4)
+write.csv(nrPaps, paste0(outPath,"nr papers per year.csv"), row.names = FALSE)
 
 
 
 #-----------------------------------------------#
-## Barplot by year of number of studies across all papers ----
+## Barplot by year of number of studies ----
 #-----------------------------------------------#
 
-YearRet                          <- data[,.(NrPaps = length(unique(SW.ID))),
-                                             by = c("Year")]
-YearRet2                         <- expand.grid(Year=seq(min(data$Year),max(data$Year)))
-YearRet2                         <- merge(YearRet2, YearRet, by="Year", all.x=TRUE)
-
-tiff(paste0(outPath, "YearBar.tiff"), width=1000, height=750, res=100)
-par(mar=c(5, 5, 2, 2))
-b                                     <- barplot(YearRet2$NrPaps, axes=T, col=viridis(3)[2], ylim=c(0,45), 
-                                                 names.arg = seq(1968, 2022, 1), cex.axis = 1.2, cex.names = 1.2,
-                                                 xlab="Publication year", ylab="Number of papers")
-box()
-text(x=1, y=40, paste0("Total number of unique papers: ", length(unique(data$SW.ID))))
-dev.off()
-
-
-#Same plot with ggplot2
 YearRet                          <- data[,.(NrPaps = length(unique(SW.ID))),
                                          by = c("Year")]
 YearRet2                         <- expand.grid(Year=seq(min(data$Year),max(data$Year)))
@@ -165,22 +115,25 @@ YearRet2$col                     <- with(YearRet2, ifelse(Year == 2022, "incompl
 p <- ggplot(YearRet2, aes(Year, NrPaps, fill=col)) +
   geom_bar(stat="identity") +
   scale_x_continuous(n.breaks = 8) +
-  scale_y_continuous(expand = c(0,0.5), n.breaks = 10) +
+  scale_y_continuous(expand = c(0,0), limits = c(0, 43), n.breaks = 10) +
   scale_fill_manual(values = rev(viridis(3)[-3])) +
   labs(x="Publication year", y="Number of papers") +
   theme_bw() +
   theme(legend.position = "none",
-        axis.text = element_text(size = 12),
-        strip.text = element_text(size = 12),
-        axis.title = element_text(size = 14))
+        axis.text = element_text(size = 10),
+        strip.text = element_text(size = 10),
+        axis.title = element_text(size = 10),
+        axis.title.x = element_text(margin = margin(t = 3, unit = "mm")),
+        axis.title.y = element_text(margin = margin(r = 3, unit = "mm")),
+        panel.grid.minor = element_blank())
 print(p)
 
-ggsave("YearBar2.tiff", p, path=outPath, width = 5, height = 4)
+ggsave("YearBar.png", p, path=outPath, width = 3.2, height = 3.2)
 
 
 
 #-----------------------------------------------#
-# Sanky diagram of fate of all records ----
+## Sankey diagram of fate of all records ----
 #-----------------------------------------------#
 
 #===#
@@ -253,6 +206,7 @@ EcoComp                               <- data[, .(NrPaps = length(unique(SW.ID))
                                               by = Ecosystem.component_level1]
 EcoComp                               <- EcoComp[order(NrPaps),,]
 
+
 tiff(paste0(outPath, "EcoComp.tiff"), width=1000, height=750, res=100)
 par(mar=c(5, 15, 2, 2))
 b                                     <- barplot(EcoComp$NrPaps, horiz=TRUE, axes=F, xlim=c(0,230), col=viridis(3)[2])
@@ -263,6 +217,25 @@ text(x=180, y=0, paste0("Total number of unique papers: ", length(unique(data$SW
 text(x=EcoComp$NrPaps+7, y=b, EcoComp$NrPaps, cex = 1.3)
 axis(1, at=110, tick=F, line=2, label="Number of papers", cex.axis=2)
 dev.off()
+
+
+# ggplot version
+p <- ggplot(EcoComp, aes(NrPaps,reorder(Ecosystem.component_level1,NrPaps))) +
+  geom_bar(stat="identity", fill=viridis(3)[2]) +
+  scale_x_continuous(n.breaks = 10, expand = c(0, 0), limits = c(0, 220)) +
+  labs(x="Number of papers", y="Ecosystem component") +
+  theme_bw() +
+  theme(legend.position = "none",
+        axis.text = element_text(size = 10),
+        strip.text = element_text(size = 10),
+        axis.title = element_text(size = 10),
+        axis.title.x = element_text(margin = margin(t = 3, unit = "mm")),
+        axis.title.y = element_text(margin = margin(r = 3, unit = "mm")))
+print(p)
+
+ggsave("EcoComp2.png", p, path=outPath, width = 4.5, height = 3)
+
+
 
 
 
@@ -278,8 +251,8 @@ ResVarCats                            <- ResVarCats[, .(NrPaps = length(unique(S
                                               by = Response.variable_category]
 ResVarCats                            <- ResVarCats[order(NrPaps),,]
 
-tiff(paste0(outPath, "ResVarCats.tiff"), width=1200, height=750, res=100)
-par(mar=c(5, 23, 2, 2))
+tiff(paste0(outPath, "ResVarCats.tiff"), width=1250, height=750, res=100)
+par(mar=c(5, 25, 2, 2))
 b                                     <- barplot(ResVarCats$NrPaps, horiz=TRUE, axes=F, xlim=c(0,265), col=viridis(3)[2])
 box()
 axis(2, at=b, labels=ResVarCats$Response.variable_category, las=1, cex.axis=2)
@@ -357,6 +330,8 @@ Gears                                <- subset(Gears, Fishery.type %in% c("Comme
 Gears$Gear_level1                    <- ifelse(is.na(Gears$Gear_level1)==T, "Not specified", 
                                                ifelse(Gears$Gear_level1 == "Hooks_and_lines", "Hooks and Lines", Gears$Gear_level1))
 GearLevels                           <- unique(Gears$Fishery.type)
+uniquePaps                           <- data[,.(NrPaps = length(unique(SW.ID))),
+                                             by = "Fishery.type"]
 
 tiff(paste0(outPath, "GearsStudiedCommRecr.tiff"), width= 1500, height = 1000, res = 100)
 par(mfrow=c(1,2))
@@ -366,7 +341,7 @@ for(iType in seq_along(GearLevels)){
   subdat                             <- subdat[order(NrPaps, decreasing=T)]
   b                                  <- barplot(subdat$NrPaps, axes=F, ylim=c(0, max(subdat$NrPaps*1.05)), col=viridis(3)[c(2,3)][iType])
   title(GearLevels[iType], cex.main=3, font=2, line=3)
-  title(paste0("(n = ", sum(subdat$NrPaps), ")"), font.main=3, cex.main=2, line=1.5)
+  title(paste0("(n = ", uniquePaps$NrPaps[iType], ")"), font.main=3, cex.main=2, line=1.5)
   axis(1, at=b, labels=subdat$Gear_level1, las=3, cex.axis=2.5)
   axis(2, las=1, cex.axis=2)
   text(x=b, y=max(subdat$NrPaps)*0.035, labels=subdat$NrPaps, cex=1.5, font=3)
@@ -380,6 +355,16 @@ par(mar=c(2,2,6,2))
 plot(c(0,1), c(0,1), type="n", axes=F, ann=F)
 # title("The different fishing gears studied", line=0, cex.main=3, font.main=2)
 dev.off()
+
+
+
+#-----------------------------------------------#
+## Table Sampling method by Ecosystem component ----
+#-----------------------------------------------#
+
+tab <- table(data_allScreened$Sampling.Method.used.for.data.collection,data_allScreened$Response.variable_category)
+
+write.table(tab, file=paste0(outPath, "sampl method ecosystem comp.csv"), sep=";")
 
 
 #####################################################################################################################-
@@ -680,6 +665,39 @@ ggsave("PressureYear.tiff", p, path=outPath, width=10, height = 5)
 #####################################################################################################################-
 #####################################################################################################################-
 #-----------------------------------------------#
+# Gears ----
+#-----------------------------------------------#
+
+#-----------------------------------------------#
+## Barplot time series commercial and recreational fishing -----
+#-----------------------------------------------#
+
+FishTypeYear                      <- data[,.(NrPaps = length(unique(SW.ID))),
+                                         by = c("Year","Fishery.type")]
+
+p <- ggplot(FishTypeYear, aes(Year, NrPaps, fill=Fishery.type)) +
+  geom_bar(stat="identity", position = "stack") +
+  scale_x_continuous(n.breaks = 8) +
+  scale_y_continuous(expand = c(0,0), limits = c(0, 45), n.breaks = 10) +
+  scale_fill_viridis_d(begin = 0, end = 0.9, name = "Fishery") +
+  labs(x="Publication year", y="Number of papers") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 10),
+        strip.text = element_text(size = 10),
+        axis.title = element_text(size = 10),
+        axis.title.x = element_text(margin = margin(t = 3, unit = "mm")),
+        axis.title.y = element_text(margin = margin(r = 3, unit = "mm")),
+        panel.grid.minor = element_blank()) #+
+  # facet_wrap(~Fishery.type)
+print(p)
+
+ggsave("FishTypeYear.png", p, path=outPath, width = 5, height = 3.2)
+
+
+
+#####################################################################################################################-
+#####################################################################################################################-
+#-----------------------------------------------#
 # Sankey diagram ----
 #-----------------------------------------------#
 
@@ -751,21 +769,40 @@ ggplotly(sankey)
 #====-
 ## Create long version
 sankeyDat                            <- data[,c("SW.ID","Fishery.type","Pressure.type","Gear_level1","Ecosystem.component_level1","Response.variable_category")]
-sankeyDat$Gear_level1                <- with(sankeyDat, ifelse(is.na(Gear_level1),"Unknown",Gear_level1))
+sankeyDat$Gear_level1                <- with(sankeyDat, ifelse(is.na(Gear_level1),"Unknown ",Gear_level1))
 sankeyDat                            <- sankeyDat[!duplicated(sankeyDat),]
 
 sankeyDat$Fishery.type               <- factor(sankeyDat$Fishery.type, levels = c("Unknown","Scientific","Recreational","Commercial"))
+sankeyDat$Pressure.type              <- factor(sankeyDat$Pressure.type, levels = c("Catch_and_bycatch","Input of litter","Physical disturbance of the seabed","Electromagnetic input",
+                                                                                   "Noise","Discarding","Visual disturbance"))
+sankeyDat$Gear_level1                <- factor(sankeyDat$Gear_level1, levels = c("Demersal trawls","Seines","Pots","Hooks_and_lines","Nets","Dredges","Pelagic trawls","Other","Spearfishing","Unknown "))
+sankeyDat$Ecosystem.component_level1 <- factor(sankeyDat$Ecosystem.component_level1, levels = c("Foodweb","Cephalopods","Benthos","Seabirds","Physical_habitats","Fish_cartilaginous",
+                                                                                                "Fish_teleost","Marine_mammals","Reptiles","Plants","Plankton"))
+sankeyDat$Response.variable_category <- factor(sankeyDat$Response.variable_category, levels = c("Abundance/biomass/density","Behaviour","Community composition","Mortality",
+                                                                                                "Sediment & physical properties","Damage & entanglement","Growth","Trophic structure",
+                                                                                                "Biodiversity","Size/age structure","Survival","Other","Reproduction",
+                                                                                                "Production/productivity","Physiology"))
 
-sankeyDat$Response.variable_category <- with(sankeyDat, ifelse(Response.variable_category %in% "Survival","Mortality",Response.variable_category))  
+# sankeyDat$Response.variable_category <- with(sankeyDat, ifelse(Response.variable_category %in% "Survival","Mortality",Response.variable_category))  
 
 sankeyInput                          <- make_long(sankeyDat, Fishery.type,Gear_level1,Pressure.type,Ecosystem.component_level1,Response.variable_category)
+
+sankeyInput$node                     <- factor(sankeyInput$node, levels = c("Unknown","Scientific","Recreational","Commercial",
+                                                                            rev(c("Seines","Pots","Demersal trawls","Pelagic trawls","Hooks_and_lines","Nets","Dredges","Spearfishing","Other","Unknown ")),
+                                                                            rev(c("Catch_and_bycatch","Physical disturbance of the seabed","Input of litter","Electromagnetic input","Noise","Discarding","Visual disturbance")),
+                                                                            "Plants","Plankton","Foodweb","Benthos","Physical_habitats","Cephalopods","Fish_cartilaginous",
+                                                                            "Fish_teleost","Seabirds","Marine_mammals","Reptiles",
+                                                                            rev(c("Behaviour","Mortality","Survival","Damage & entanglement","Abundance/biomass/density",
+                                                                                  "Sediment & physical properties","Trophic structure",
+                                                                                  "Community composition","Biodiversity","Size/age structure","Reproduction","Growth",
+                                                                                  "Production/productivity","Physiology"))))
 
 
 #===-
 # Create sankey diagram
 #====-
 ## Set colors
-colorpal                             <- viridis(8)[-c(1,2,3)]
+colorpal                             <- viridis(10)[-c(1,2,3,4,5)]
 
 ## Build sankey
 sankey <- ggplot(sankeyInput,
@@ -779,20 +816,20 @@ sankey <- ggplot(sankeyInput,
   scale_fill_manual(values=colorpal) +
   geom_sankey(flow.fill="grey",
               flow.alpha=0.8) +
-  geom_sankey_label(size=7) +
+  geom_sankey_label(size=8) +
   theme_few()+
   theme(axis.title = element_blank(),
         axis.text.y = element_blank(),
-        axis.text = element_text(size=20, colour = "black"),
+        axis.text = element_text(size=24, colour = "black"),
         legend.position = "none")
 
 ## View Sankey
 sankey
 
 ## Save sankey
-ggsave("Sankey5.tiff", sankey, path=outPath,
-       width = 400,
-       height = 200,
+ggsave("Sankey5.png", sankey, path=outPath,
+       width = 500,
+       height = 250,
        units = "mm")
 
 
@@ -805,7 +842,7 @@ ggsave("Sankey5.tiff", sankey, path=outPath,
 #-----------------------------------------------#
 
 # -----------------------------------------------#
-# ## Creating shapefile with Regions ----
+## ## Creating shapefile with Regions ----
 # -----------------------------------------------#
 # ## Load ICES regions as downloaded from https://gis.ices.dk/sf/ and mediterranean GSA's from https://www.fao.org/gfcm/data/maps/gsas/en/
 # ICESareas                            <- st_read(paste0(GISpath, "ICES_Areas_20160601_cut_dense_3857.shp"))
@@ -859,8 +896,8 @@ ggsave("Sankey5.tiff", sankey, path=outPath,
 Regions                              <- data[, .(NrPaps = length(unique(SW.ID))), 
                                               by = Region]
 Regions                              <- Regions[order(NrPaps),,]
-RegCol                               <- data.frame(colcode = viridis(max(Regions$NrPaps)),
-                                                   value = c(1:max(Regions$NrPaps)))
+RegCol                               <- data.frame(colcode = viridis(max(Regions$NrPaps)+2),
+                                                   value = c(1:c(max(Regions$NrPaps)+2)))
 Regions$Colcode                      <- RegCol$colcode [match(Regions$NrPaps, RegCol$value)]
 load(paste0(GISpath, "RegionalSeas.Rdata"))
 RegionalSeas$colcode                 <- Regions$Colcode [match(RegionalSeas$Region, Regions$Region)]
@@ -884,8 +921,48 @@ text(x= 1E6, y=6.01E6, "Global studies:", font=3, cex=1.4)
 text(x=1e6, y=5.85e6, paste0(subset(Regions, Region == "Global")$NrPaps), font=2, cex=1.4)
 gradient.rect(xleft=0, xright=1E6, ytop=1.5e6, ybottom=1.25E6, col=RegCol$colcode, gradient="x")
 text(x=0, y=1.18e6, "1")
-text(x=1E6, y=1.18e6, max(Regions$NrPaps))
-text(x=0.5e6, y=1.72e6, "Number of papers", font=4, cex=1.2)
+
+text(x=1E6, y=1.18e6, max(Regions$NrPaps)+2)
+text(x=0.5e6, y=1.72e6, "Number of papers", cex=1.2)
 dev.off()
 
+
+## Smaller version plot
+RegionalSeas$Xloc              <- ifelse(RegionalSeas$Region == "Baltic Sea", 4950000, RegionalSeas$Xloc) #change points to a better location
+RegionalSeas$Yloc              <- ifelse(RegionalSeas$Region == "Baltic Sea", 4010000, RegionalSeas$Yloc) #change points to a better location
+
+png(paste0(outPath, "RegMapSmall.png"), width = 700, height = 600, res = 100)
+par(mar=c(1,1,1,1))
+plot(st_geometry(RegionalSeas), col=RegionalSeas$colcode, border=F)
+text(RegionalSeas$NrPaps, x= RegionalSeas$Xloc, y=RegionalSeas$Yloc, col=RegionalSeas$textcol, font=2, cex=1.4)
+text(x= 1E6, y=6.1E6, "Global studies:", font=3, cex=1.4)
+text(x=1e6, y=5.85e6, paste0(subset(Regions, Region == "Global")$NrPaps), font=2, cex=1.4)
+gradient.rect(xleft=0, xright=1E6, ytop=1.5e6, ybottom=1.25E6, col=RegCol$colcode, gradient="x")
+text(x=0, y=1.15e6, "1")
+text(x=1E6, y=1.15e6, max(Regions$NrPaps)+2)
+text(x=0.5e6, y=1.72e6, "Number of papers", cex=1.2)
+dev.off()
+
+
+
+# ## Create a smaller version
+# load(paste0(GISpath, "RegionalSeas.Rdata"))
+# 
+# library(dplyr)
+# RegionalSeas <- RegionalSeas %>%
+#   left_join(Regions, by="Region")
+# 
+# ### Settings for plotting
+# library(rnaturalearth)
+# world   <- ne_countries(scale = "medium", returnclass = "sf")
+# xlim    <- c(290000,6912085)
+# ylim    <- c(861290.7,6962509)
+# colours <- brewer.pal(9,"YlOrRd") 
+# 
+# ggplot(data = RegionalSeas) +
+#   geom_sf(data = RegionalSeas, aes(fill=NrPaps)) +
+#   # geom_sf(data = world, fill="white", col="white") +
+#   coord_sf(xlim = xlim, ylim = ylim) +
+#   scale_fill_viridis_c() +
+#   theme_bw()
 
