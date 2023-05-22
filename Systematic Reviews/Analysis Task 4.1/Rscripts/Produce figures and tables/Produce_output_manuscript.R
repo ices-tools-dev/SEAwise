@@ -367,6 +367,34 @@ tab <- table(data_allScreened$Sampling.Method.used.for.data.collection,data_allS
 write.table(tab, file=paste0(outPath, "sampl method ecosystem comp.csv"), sep=";")
 
 
+
+#-----------------------------------------------#
+## Heatmap of ecosystem component level 1 vs pressure type level 1 ----
+#-----------------------------------------------#
+
+EcoPress                             <- data[, .(NrPaps = length(unique(SW.ID))),
+                                             by = c("Ecosystem.component_level1", "Pressure.type")]
+EcoPressExp                          <- expand.grid(Ecosystem.component_level1=EcoPress$Ecosystem.component_level1, 
+                                                    Pressure.type=EcoPress$Pressure.type)
+EcoPressExp                          <- EcoPressExp[!duplicated(EcoPressExp),]
+EcoPressExp                          <- merge(EcoPress, EcoPressExp, by=c("Ecosystem.component_level1","Pressure.type"), all=TRUE)
+# EcoPressExp$NrPaps[is.na(EcoPressExp$NrPaps)] <- 0
+
+p <- ggplot(EcoPressExp, aes(x=Pressure.type, y=Ecosystem.component_level1, fill=NrPaps)) +
+  geom_tile() +
+  scale_fill_viridis_c(name="No. papers", na.value = "transparent") +
+  labs(x="Pressure type", y="Ecosystem component") +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        axis.text = element_text(size=12),
+        axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
+        axis.title = element_text(size=12))
+print(p)
+
+ggsave("EcoPress_heatmap.tiff", p, path=outPath, width = 9, height = 7)
+
+
+
 #####################################################################################################################-
 #####################################################################################################################-
 #-----------------------------------------------#
