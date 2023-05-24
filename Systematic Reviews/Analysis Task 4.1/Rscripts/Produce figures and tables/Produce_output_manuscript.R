@@ -1,7 +1,10 @@
 #####################################################################################################################-
 #####################################################################################################################-
 #
-#     Script to explore and produce output for the manuscript.
+#     Script to explore and produce output for the general results section of the manuscript.
+#
+#     Note that this includes both output to be put in both the manuscript and the Supplement,
+#     with output for the latter linked to the general results section in the manuscript.
 #
 #     By Esther Beukhof, including code written by Karin van der Reijden and Elliot J. Brown
 #     June 2022
@@ -38,8 +41,8 @@ GISpath                               <- "Systematic Reviews/Analysis Task 4.1/G
 #  This section depends on the processed data file produced in step 1.
 # 
 #-----------------------------------------------#
-data                                  <- readRDS(file=paste0(datPath, "data.rds"))
-data_allScreened                      <- readRDS(file=paste0(datPath, "data_allScreened.rds"))
+data                                  <- readRDS(file=paste0(datPath, "data_correctTaxa_PressVar_RespVar_Methods.rds"))
+data_allScreened                      <- readRDS(file=paste0(datPath, "data_AllScreened_correctTaxa_PressVar_RespVar_Methods.rds"))
 
 
 # Add regions by combining CS areas
@@ -49,38 +52,150 @@ data$Region                           <- with(data, ifelse(RegionSEAwise %in% c(
                                                                      ifelse(RegionSEAwise %in% c("CS - Western Waters","Western Waters - non CS"),"Western Waters",
                                                                             ifelse(RegionSEAwise %in% c("CS - Mediterranean", "Mediterranean - non CS"),"Mediterranean Sea", RegionSEAwise)))))
 
+# Load fate of papers
+load(paste0(datPath, "FatePapers.Rdata"))
 
 
 #####################################################################################################################-
 #####################################################################################################################-
 #-----------------------------------------------#
-# General plots ----
+# General plots across all papers ----
 #-----------------------------------------------#
 
 #-----------------------------------------------#
-## Time series across all papers ----
+## Table excluded papers during screening ----
 #-----------------------------------------------#
 
-YearRet                              <- data[,.(NrPaps = length(unique(SW.ID))),
-                                             by = c("Year")]
-YearRet2                             <- matrix(nrow=1,
-                                               ncol=(max(data$Year) - min(data$Year) + 1),
-                                               NA)
-colnames(YearRet2)                   <- as.character(seq(from=min(data$Year), to= max(data$Year), 1)) 
-rownames(YearRet2)                   <- "Retained"
+datExclScr                           <- subset(FatePapers, Screening.Fate %in% "Excluded")
+datExclScr                           <- cSplit(datExclScr, "Screening.Exclusion.Code", " _ ", "long")
+exclScre                             <- aggregate(SW.ID ~ Screening.Exclusion.Code, datExclScr, function(x) length(unique(x)))
+names(exclScre)[2]                   <- "NrPaps"
+exclScre$totalNrPaps                 <- sum(exclScre$NrPaps)
+exclScre$propPaps                    <- round(exclScre$NrPaps / exclScre$totalNrPaps, 2)
 
-YearRet2["Retained", as.character(YearRet$Year)] <- YearRet$NrPaps
-YearRet2[is.na(YearRet2)]            <- 0
+write.csv(exclScre, paste0(outPath,"nr and prop papers excluded screening.csv"), row.names = FALSE)
 
-tiff(paste0(outPath, "YearRet.tiff"), width = 1000, height=750, res=100)
-par(mar=c(5,5,2,2))
-plot(x=c(min(YearRet$Year), max(YearRet$Year)), y=c(0, max(YearRet$NrPaps)), type="n", ann=F, axes=F)
-lines(x=as.numeric(colnames(YearRet2)), y=YearRet2["Retained",], type="o", pch=16, lwd=2, cex=1.5)
-axis(1, at=seq(1965, 2025, 5), labels=seq(1965, 2025, 5), cex.axis=1.5)
-axis(2, las=1, cex.axis=1.5)
-axis(1, at=(max(data$Year) - ((max(data$Year) - min(data$Year))/2)), tick=F, line=2, cex.axis=2, "Publication year")
-axis(2, at=(max(YearRet$NrPaps)/2), tick=F, line=2, cex.axis=2, labels="Number of papers")
-dev.off()
+
+
+#-----------------------------------------------#
+## Table excluded papers during data extraction ----
+#-----------------------------------------------#
+
+datExclDat                           <- subset(FatePapers, Extraction.Fate %in% "Excluded")
+datExclDat                           <- cSplit(datExclDat, "Extraction.Exclusion.Code", " _ ", "long")
+exclDat                              <- aggregate(SW.ID ~ Extraction.Exclusion.Code, datExclDat, function(x) length(unique(x)))
+names(exclDat)[2]                    <- "NrPaps"
+exclDat$totalNrPaps                  <- sum(exclDat$NrPaps)
+exclDat$propPaps                     <- round(exclDat$NrPaps / exclDat$totalNrPaps, 2)
+
+write.csv(exclDat, paste0(outPath,"nr and prop papers excluded data extraction.csv"), row.names = FALSE)
+
+
+
+#-----------------------------------------------#
+## Table number of papers per year ----
+#-----------------------------------------------#
+
+nrPaps                               <- aggregate(SW.ID ~ Year, data, function(x) length(unique(x)))
+
+write.csv(nrPaps, paste0(outPath,"nr papers per year.csv"), row.names = FALSE)
+
+
+
+#-----------------------------------------------#
+## Barplot by year of number of studies ----
+#-----------------------------------------------#
+
+YearRet                          <- data[,.(NrPaps = length(unique(SW.ID))),
+                                         by = c("Year")]
+YearRet2                         <- expand.grid(Year=seq(min(data$Year),max(data$Year)))
+YearRet2                         <- merge(YearRet2, YearRet, by="Year", all.x=TRUE)
+YearRet2$col                     <- with(YearRet2, ifelse(Year == 2022, "incomplete","complete"))
+
+p <- ggplot(YearRet2, aes(Year, NrPaps, fill=col)) +
+  geom_bar(stat="identity") +
+  scale_x_continuous(n.breaks = 8) +
+  scale_y_continuous(expand = c(0,0), limits = c(0, 43), n.breaks = 10) +
+  scale_fill_manual(values = rev(viridis(3)[-3])) +
+  labs(x="Publication year", y="Number of papers") +
+  theme_bw() +
+  theme(legend.position = "none",
+        axis.text = element_text(size = 10),
+        strip.text = element_text(size = 10),
+        axis.title = element_text(size = 10),
+        axis.title.x = element_text(margin = margin(t = 3, unit = "mm")),
+        axis.title.y = element_text(margin = margin(r = 3, unit = "mm")),
+        panel.grid.minor = element_blank())
+print(p)
+
+ggsave("YearBar.png", p, path=outPath, width = 3.2, height = 3.2)
+
+
+
+#-----------------------------------------------#
+## Sankey diagram of fate of all records ----
+#-----------------------------------------------#
+
+#===#
+# Data cleaning
+#====#
+
+## Create columns for fate for screening and extraction phase by code
+FatePapers$Screening.Result        <- with(FatePapers, ifelse(Screening.Fate %in% "Included","INCLUDE",Screening.Exclusion.Code))
+FatePapers$Extraction.Result       <- with(FatePapers, ifelse(Extraction.Fate %in% "Included","INCLUDE",Extraction.Exclusion.Code))
+
+## Create long versions of both screening and full-text fates for each record
+screenFatelong <- cSplit(indt = FatePapers[, c("SW.ID", "Screening.Result")],
+                         splitCols = "Screening.Result",
+                         sep = " _ ",
+                         direction = "long")
+
+ExtractFatelong <- cSplit(indt = FatePapers[, c("SW.ID", "Extraction.Result")],
+                          splitCols = "Extraction.Result",
+                          sep = " _ ",
+                          direction = "long")
+## Merge screening and extraction fates
+fatelong <- merge(screenFatelong, ExtractFatelong, by = "SW.ID", all = TRUE)
+
+fatelong$Extraction.Result[is.na(fatelong$Extraction.Result)] <- "EXCLUDE"
+# fatelong$Extraction.Result <- with(fatelong, ifelse(!Extraction.Result %in% "INCLUDE","Excluded from Review",Extraction.Result))
+
+fatelong$SearchResults <- rep("Search Results", nrow(fatelong))
+fatelong$UltimateFate <- with(fatelong, ifelse(Extraction.Result %in% "INCLUDE","INCLUDE","EXCLUDE"))
+
+
+sfate <- make_long(fatelong, SearchResults, Screening.Result, Extraction.Result, UltimateFate)
+
+#===#
+# Create sankey diagram
+#====#
+## Build sankey
+sankey <- ggplot(sfate,
+                 mapping = aes(x = x,
+                               next_x = next_x,
+                               node = node,
+                               next_node = next_node,
+                               fill = factor(node),
+                               label = node)) +
+  geom_sankey(flow.fill="grey",
+              flow.alpha=0.8) +  
+  geom_sankey_label(size=7, colour="white") +
+  scale_fill_manual(values=viridis(11)) +
+  theme_few()+
+  theme(axis.title = element_blank(),
+        axis.text.y = element_blank(),
+        axis.text = element_text(size=20),
+        legend.position = "none")
+
+## View Sankey
+sankey
+
+## Save sankey
+ggsave("SankeyFateRecords.tiff", sankey, path=outPath,
+       width = 400,
+       height = 200,
+       units = "mm")
+
 
 
 #-----------------------------------------------#
@@ -90,6 +205,7 @@ dev.off()
 EcoComp                               <- data[, .(NrPaps = length(unique(SW.ID))),
                                               by = Ecosystem.component_level1]
 EcoComp                               <- EcoComp[order(NrPaps),,]
+
 
 tiff(paste0(outPath, "EcoComp.tiff"), width=1000, height=750, res=100)
 par(mar=c(5, 15, 2, 2))
@@ -101,6 +217,25 @@ text(x=180, y=0, paste0("Total number of unique papers: ", length(unique(data$SW
 text(x=EcoComp$NrPaps+7, y=b, EcoComp$NrPaps, cex = 1.3)
 axis(1, at=110, tick=F, line=2, label="Number of papers", cex.axis=2)
 dev.off()
+
+
+# ggplot version
+p <- ggplot(EcoComp, aes(NrPaps,reorder(Ecosystem.component_level1,NrPaps))) +
+  geom_bar(stat="identity", fill=viridis(3)[2]) +
+  scale_x_continuous(n.breaks = 10, expand = c(0, 0), limits = c(0, 220)) +
+  labs(x="Number of papers", y="Ecosystem component") +
+  theme_bw() +
+  theme(legend.position = "none",
+        axis.text = element_text(size = 10),
+        strip.text = element_text(size = 10),
+        axis.title = element_text(size = 10),
+        axis.title.x = element_text(margin = margin(t = 3, unit = "mm")),
+        axis.title.y = element_text(margin = margin(r = 3, unit = "mm")))
+print(p)
+
+ggsave("EcoComp2.png", p, path=outPath, width = 4.5, height = 3)
+
+
 
 
 
@@ -116,8 +251,8 @@ ResVarCats                            <- ResVarCats[, .(NrPaps = length(unique(S
                                               by = Response.variable_category]
 ResVarCats                            <- ResVarCats[order(NrPaps),,]
 
-tiff(paste0(outPath, "ResVarCats.tiff"), width=1200, height=750, res=100)
-par(mar=c(5, 23, 2, 2))
+tiff(paste0(outPath, "ResVarCats.tiff"), width=1250, height=750, res=100)
+par(mar=c(5, 25, 2, 2))
 b                                     <- barplot(ResVarCats$NrPaps, horiz=TRUE, axes=F, xlim=c(0,265), col=viridis(3)[2])
 box()
 axis(2, at=b, labels=ResVarCats$Response.variable_category, las=1, cex.axis=2)
@@ -195,6 +330,8 @@ Gears                                <- subset(Gears, Fishery.type %in% c("Comme
 Gears$Gear_level1                    <- ifelse(is.na(Gears$Gear_level1)==T, "Not specified", 
                                                ifelse(Gears$Gear_level1 == "Hooks_and_lines", "Hooks and Lines", Gears$Gear_level1))
 GearLevels                           <- unique(Gears$Fishery.type)
+uniquePaps                           <- data[,.(NrPaps = length(unique(SW.ID))),
+                                             by = "Fishery.type"]
 
 tiff(paste0(outPath, "GearsStudiedCommRecr.tiff"), width= 1500, height = 1000, res = 100)
 par(mfrow=c(1,2))
@@ -204,7 +341,7 @@ for(iType in seq_along(GearLevels)){
   subdat                             <- subdat[order(NrPaps, decreasing=T)]
   b                                  <- barplot(subdat$NrPaps, axes=F, ylim=c(0, max(subdat$NrPaps*1.05)), col=viridis(3)[c(2,3)][iType])
   title(GearLevels[iType], cex.main=3, font=2, line=3)
-  title(paste0("(n = ", sum(subdat$NrPaps), ")"), font.main=3, cex.main=2, line=1.5)
+  title(paste0("(n = ", uniquePaps$NrPaps[iType], ")"), font.main=3, cex.main=2, line=1.5)
   axis(1, at=b, labels=subdat$Gear_level1, las=3, cex.axis=2.5)
   axis(2, las=1, cex.axis=2)
   text(x=b, y=max(subdat$NrPaps)*0.035, labels=subdat$NrPaps, cex=1.5, font=3)
@@ -220,11 +357,61 @@ plot(c(0,1), c(0,1), type="n", axes=F, ann=F)
 dev.off()
 
 
+
+#-----------------------------------------------#
+## Table Sampling method by Ecosystem component ----
+#-----------------------------------------------#
+
+tab <- table(data_allScreened$Sampling.Method.used.for.data.collection,data_allScreened$Response.variable_category)
+
+write.table(tab, file=paste0(outPath, "sampl method ecosystem comp.csv"), sep=";")
+
+
+
+#-----------------------------------------------#
+## Heatmap of ecosystem component level 1 vs pressure type level 1 ----
+#-----------------------------------------------#
+
+EcoPress                             <- data[, .(NrPaps = length(unique(SW.ID))),
+                                             by = c("Ecosystem.component_level1", "Pressure.type")]
+EcoPressExp                          <- expand.grid(Ecosystem.component_level1=EcoPress$Ecosystem.component_level1, 
+                                                    Pressure.type=EcoPress$Pressure.type)
+EcoPressExp                          <- EcoPressExp[!duplicated(EcoPressExp),]
+EcoPressExp                          <- merge(EcoPress, EcoPressExp, by=c("Ecosystem.component_level1","Pressure.type"), all=TRUE)
+# EcoPressExp$NrPaps[is.na(EcoPressExp$NrPaps)] <- 0
+
+p <- ggplot(EcoPressExp, aes(x=Pressure.type, y=Ecosystem.component_level1, fill=NrPaps)) +
+  geom_tile() +
+  scale_fill_viridis_c(name="No. papers", na.value = "transparent") +
+  labs(x="Pressure type", y="Ecosystem component") +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        axis.text = element_text(size=12),
+        axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
+        axis.title = element_text(size=12))
+print(p)
+
+ggsave("EcoPress_heatmap.tiff", p, path=outPath, width = 9, height = 7)
+
+
+
 #####################################################################################################################-
 #####################################################################################################################-
 #-----------------------------------------------#
 # Regional differences ----
 #-----------------------------------------------#
+
+#-----------------------------------------------#
+## Table with number and proportion of papers by region -----
+#-----------------------------------------------#
+
+Regions                               <- data[, .(NrPaps = length(unique(SW.ID))), by = "Region"]   
+Regions$Prop                          <- Regions$NrPaps / sum(Regions$NrPaps)
+
+sum(Regions$NrPaps) #higher than number of unique papers in data, so some papers cover multiple regions
+
+write.csv(Regions, paste0(outPath,"nr and prop papers region.csv"), row.names = FALSE)
+
 
 #-----------------------------------------------#
 ## Barplot with number of papers by region -----
@@ -234,7 +421,7 @@ Regions                               <- data[, .(NrPaps = length(unique(SW.ID))
 Regions                               <- Regions[, .(NrPaps = sum(NrPaps)), by="Region"]
 Regions                               <- Regions[order(NrPaps, decreasing = F),,]
 
-sum(Regions$NrPaps) #558, suggesting that, out of 549 papers, several of them studied multiple regions
+sum(Regions$NrPaps) #542, suggesting that, out of 528 papers, several of them studied multiple regions
 
 
 tiff(paste0(outPath, "Regions.tiff"), width=1000, height=750, res=100)
@@ -460,7 +647,7 @@ p <- ggplot(EcoComp, aes(Ecosystem.component_level1, NrPaps, fill=Response.varia
   scale_fill_manual(values = mycolors) +
   labs(x="Ecosystem component", y="Number of times aspect is studied across all papers") +
   theme_bw() +
-  theme(legend.position = c(0.87,0.63),
+  theme(legend.position = c(0.87,0.58),
         axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
 print(p)
 
@@ -500,6 +687,39 @@ p <- ggplot(Pressures, aes(Year,NrPaps)) +
   facet_wrap(~Pressure.type, nrow = 2)
 print(p)
 ggsave("PressureYear.tiff", p, path=outPath, width=10, height = 5)
+
+
+
+#####################################################################################################################-
+#####################################################################################################################-
+#-----------------------------------------------#
+# Gears ----
+#-----------------------------------------------#
+
+#-----------------------------------------------#
+## Barplot time series commercial and recreational fishing -----
+#-----------------------------------------------#
+
+FishTypeYear                      <- data[,.(NrPaps = length(unique(SW.ID))),
+                                         by = c("Year","Fishery.type")]
+
+p <- ggplot(FishTypeYear, aes(Year, NrPaps, fill=Fishery.type)) +
+  geom_bar(stat="identity", position = "stack") +
+  scale_x_continuous(n.breaks = 8) +
+  scale_y_continuous(expand = c(0,0), limits = c(0, 45), n.breaks = 10) +
+  scale_fill_viridis_d(begin = 0, end = 0.9, name = "Fishery") +
+  labs(x="Publication year", y="Number of papers") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 10),
+        strip.text = element_text(size = 10),
+        axis.title = element_text(size = 10),
+        axis.title.x = element_text(margin = margin(t = 3, unit = "mm")),
+        axis.title.y = element_text(margin = margin(r = 3, unit = "mm")),
+        panel.grid.minor = element_blank()) #+
+  # facet_wrap(~Fishery.type)
+print(p)
+
+ggsave("FishTypeYear.png", p, path=outPath, width = 5, height = 3.2)
 
 
 
@@ -577,21 +797,40 @@ ggplotly(sankey)
 #====-
 ## Create long version
 sankeyDat                            <- data[,c("SW.ID","Fishery.type","Pressure.type","Gear_level1","Ecosystem.component_level1","Response.variable_category")]
-sankeyDat$Gear_level1                <- with(sankeyDat, ifelse(is.na(Gear_level1),"Unknown",Gear_level1))
+sankeyDat$Gear_level1                <- with(sankeyDat, ifelse(is.na(Gear_level1),"Unknown ",Gear_level1))
 sankeyDat                            <- sankeyDat[!duplicated(sankeyDat),]
 
 sankeyDat$Fishery.type               <- factor(sankeyDat$Fishery.type, levels = c("Unknown","Scientific","Recreational","Commercial"))
+sankeyDat$Pressure.type              <- factor(sankeyDat$Pressure.type, levels = c("Catch_and_bycatch","Input of litter","Physical disturbance of the seabed","Electromagnetic input",
+                                                                                   "Noise","Discarding","Visual disturbance"))
+sankeyDat$Gear_level1                <- factor(sankeyDat$Gear_level1, levels = c("Demersal trawls","Seines","Pots","Hooks_and_lines","Nets","Dredges","Pelagic trawls","Other","Spearfishing","Unknown "))
+sankeyDat$Ecosystem.component_level1 <- factor(sankeyDat$Ecosystem.component_level1, levels = c("Foodweb","Cephalopods","Benthos","Seabirds","Physical_habitats","Fish_cartilaginous",
+                                                                                                "Fish_teleost","Marine_mammals","Reptiles","Plants","Plankton"))
+sankeyDat$Response.variable_category <- factor(sankeyDat$Response.variable_category, levels = c("Abundance/biomass/density","Behaviour","Community composition","Mortality",
+                                                                                                "Sediment & physical properties","Damage & entanglement","Growth","Trophic structure",
+                                                                                                "Biodiversity","Size/age structure","Survival","Other","Reproduction",
+                                                                                                "Production/productivity","Physiology"))
 
-sankeyDat$Response.variable_category <- with(sankeyDat, ifelse(Response.variable_category %in% "Survival","Mortality",Response.variable_category))  
+# sankeyDat$Response.variable_category <- with(sankeyDat, ifelse(Response.variable_category %in% "Survival","Mortality",Response.variable_category))  
 
 sankeyInput                          <- make_long(sankeyDat, Fishery.type,Gear_level1,Pressure.type,Ecosystem.component_level1,Response.variable_category)
+
+sankeyInput$node                     <- factor(sankeyInput$node, levels = c("Unknown","Scientific","Recreational","Commercial",
+                                                                            rev(c("Seines","Pots","Demersal trawls","Pelagic trawls","Hooks_and_lines","Nets","Dredges","Spearfishing","Other","Unknown ")),
+                                                                            rev(c("Catch_and_bycatch","Physical disturbance of the seabed","Input of litter","Electromagnetic input","Noise","Discarding","Visual disturbance")),
+                                                                            "Plants","Plankton","Foodweb","Benthos","Physical_habitats","Cephalopods","Fish_cartilaginous",
+                                                                            "Fish_teleost","Seabirds","Marine_mammals","Reptiles",
+                                                                            rev(c("Behaviour","Mortality","Survival","Damage & entanglement","Abundance/biomass/density",
+                                                                                  "Sediment & physical properties","Trophic structure",
+                                                                                  "Community composition","Biodiversity","Size/age structure","Reproduction","Growth",
+                                                                                  "Production/productivity","Physiology"))))
 
 
 #===-
 # Create sankey diagram
 #====-
 ## Set colors
-colorpal                             <- viridis(8)[-c(1,2,3)]
+colorpal                             <- viridis(10)[-c(1,2,3,4,5)]
 
 ## Build sankey
 sankey <- ggplot(sankeyInput,
@@ -605,22 +844,22 @@ sankey <- ggplot(sankeyInput,
   scale_fill_manual(values=colorpal) +
   geom_sankey(flow.fill="grey",
               flow.alpha=0.8) +
-  geom_sankey_label(size=7) +
+  geom_sankey_label(size=8) +
   theme_few()+
   theme(axis.title = element_blank(),
         axis.text.y = element_blank(),
-        axis.text = element_text(size=20, colour = "black"),
+        axis.text = element_text(size=24, colour = "black"),
         legend.position = "none")
 
 ## View Sankey
 sankey
 
 ## Save sankey
-ggsave("Sankey5.tiff", sankey, path=outPath,
-       width = 400,
-       height = 200,
+ggsave("Sankey5.png", sankey, path=outPath,
+       width = 500,
+       height = 250,
        units = "mm")
-x
+
 
 
 
@@ -630,53 +869,53 @@ x
 # Map with regions ----
 #-----------------------------------------------#
 
------------------------------------------------#
-## Creating shapefile with Regions ----
------------------------------------------------#
-## Load ICES regions as downloaded from https://gis.ices.dk/sf/ and mediterranean GSA's from https://www.fao.org/gfcm/data/maps/gsas/en/
-ICESareas                            <- st_read(paste0(GISpath, "ICES_Areas_20160601_cut_dense_3857.shp"))
-ICESareas                            <- st_transform(ICESareas, crs=3035)
-ICESEcors                            <- st_read(paste0(GISpath, "ICES_ecoregions_20171207_erase_ESRI.shp"))
-ICESEcors                            <- st_transform(ICESEcors, crs=3035)
-
-ICESEcors$Region                     <- ifelse(ICESEcors$Ecoregion %in% c("Western Mediterranean Sea", "Adriatic Sea",
-                                                                   "Ionian Sea and the Central Mediterranean Sea",
-                                                                   "Aegean-Levantine Sea"), "Mediterranean Sea",
-                                               ifelse(ICESEcors$Ecoregion == "Greater North Sea", "North Sea",
-                                                      ifelse(ICESEcors$Ecoregion %in% c("Black Sea", "Norwegian Sea","Barents Sea","Baltic Sea"), ICESEcors$Ecoregion,
-                                                             ifelse(ICESEcors$Ecoregion %in% c("Azores", "Oceanic Northeast Atlantic", "Greenland Sea",
-                                                                                                      "Icelandic Waters", "Faroes", "Celtic Seas"), "NE-Atlantic", NA))))
-
-ICESareas$Region                     <- ifelse(ICESareas$Area_Full %in% c("27.7.a", "27.7.e", "27.7.f", "27.7.g", "27.7.h", "27.8.a","27.8.b","27.8.c", "27.8.d.2"), "Western Waters",
-                                               ifelse(ICESareas$Area_Full %in% c("27.9.a", "27.9.b.1", "27.9.b.2", "27.8.e.1", "27.8.e.2", "27.6.a", "27.7.c.2",
-                                                                                 "27.6.b.2", "27.7.b", "27.7.k.2", "27.7.j.2", "27.7.b", "27.7.j.1"), "NE-Atlantic", NA))
-
-Regions                              <- rbind(subset(ICESEcors[,c("Region", "geometry")], is.na(Region)==F), subset(ICESareas[,c("Region", "geometry")], is.na(Region)==F))
-
-# Select regions that already consist of one area
-Regs                                 <- subset(Regions, Region %in% c("Baltic Sea","Barents Sea", "Black Sea", "North Sea", "Norwegian Sea"))
-
-# Combine subregions into on region
-for (iReg in c("Mediterranean Sea", "Western Waters", "NE-Atlantic")){
-  subdat                             <- subset(Regions, Region == iReg)
-  a                                  <- st_sf(st_union(subdat))
-  b                                  <- data.frame(Region = iReg)
-  b                                  <- st_set_geometry(b, st_geometry(a))
-  Regs                               <- rbind(Regs, b)
-} # end iReg loop
-
-## Fix some overlaps that should not be there
-## NE-Atlantic
-WW                                   <- st_difference(subset(Regs, Region == "NE-Atlantic"), subset(Regs, Region == "Western Waters"))
-WW$Region.1                          <- NULL
-
-## Update the fixes
-Regs2                                <- subset(Regs, !Region %in% "NE-Atlantic")
-Regs2                                <- rbind(Regs2, WW)
-
-RegionalSeas                         <- Regs2
-st_write(RegionalSeas, paste0(GISpath, "RegionalSeas.shp"))
-save(RegionalSeas, file=paste0(GISpath, "RegionalSeas.Rdata"))
+# -----------------------------------------------#
+## ## Creating shapefile with Regions ----
+# -----------------------------------------------#
+# ## Load ICES regions as downloaded from https://gis.ices.dk/sf/ and mediterranean GSA's from https://www.fao.org/gfcm/data/maps/gsas/en/
+# ICESareas                            <- st_read(paste0(GISpath, "ICES_Areas_20160601_cut_dense_3857.shp"))
+# ICESareas                            <- st_transform(ICESareas, crs=3035)
+# ICESEcors                            <- st_read(paste0(GISpath, "ICES_ecoregions_20171207_erase_ESRI.shp"))
+# ICESEcors                            <- st_transform(ICESEcors, crs=3035)
+# 
+# ICESEcors$Region                     <- ifelse(ICESEcors$Ecoregion %in% c("Western Mediterranean Sea", "Adriatic Sea",
+#                                                                    "Ionian Sea and the Central Mediterranean Sea",
+#                                                                    "Aegean-Levantine Sea"), "Mediterranean Sea",
+#                                                ifelse(ICESEcors$Ecoregion == "Greater North Sea", "North Sea",
+#                                                       ifelse(ICESEcors$Ecoregion %in% c("Black Sea", "Norwegian Sea","Barents Sea","Baltic Sea"), ICESEcors$Ecoregion,
+#                                                              ifelse(ICESEcors$Ecoregion %in% c("Azores", "Oceanic Northeast Atlantic", "Greenland Sea",
+#                                                                                                       "Icelandic Waters", "Faroes", "Celtic Seas"), "NE-Atlantic", NA))))
+# 
+# ICESareas$Region                     <- ifelse(ICESareas$Area_Full %in% c("27.7.a", "27.7.e", "27.7.f", "27.7.g", "27.7.h", "27.8.a","27.8.b","27.8.c", "27.8.d.2"), "Western Waters",
+#                                                ifelse(ICESareas$Area_Full %in% c("27.9.a", "27.9.b.1", "27.9.b.2", "27.8.e.1", "27.8.e.2", "27.6.a", "27.7.c.2",
+#                                                                                  "27.6.b.2", "27.7.b", "27.7.k.2", "27.7.j.2", "27.7.b", "27.7.j.1"), "NE-Atlantic", NA))
+# 
+# Regions                              <- rbind(subset(ICESEcors[,c("Region", "geometry")], is.na(Region)==F), subset(ICESareas[,c("Region", "geometry")], is.na(Region)==F))
+# 
+# # Select regions that already consist of one area
+# Regs                                 <- subset(Regions, Region %in% c("Baltic Sea","Barents Sea", "Black Sea", "North Sea", "Norwegian Sea"))
+# 
+# # Combine subregions into on region
+# for (iReg in c("Mediterranean Sea", "Western Waters", "NE-Atlantic")){
+#   subdat                             <- subset(Regions, Region == iReg)
+#   a                                  <- st_sf(st_union(subdat))
+#   b                                  <- data.frame(Region = iReg)
+#   b                                  <- st_set_geometry(b, st_geometry(a))
+#   Regs                               <- rbind(Regs, b)
+# } # end iReg loop
+# 
+# ## Fix some overlaps that should not be there
+# ## NE-Atlantic
+# WW                                   <- st_difference(subset(Regs, Region == "NE-Atlantic"), subset(Regs, Region == "Western Waters"))
+# WW$Region.1                          <- NULL
+# 
+# ## Update the fixes
+# Regs2                                <- subset(Regs, !Region %in% "NE-Atlantic")
+# Regs2                                <- rbind(Regs2, WW)
+# 
+# RegionalSeas                         <- Regs2
+# st_write(RegionalSeas, paste0(GISpath, "RegionalSeas.shp"))
+# save(RegionalSeas, file=paste0(GISpath, "RegionalSeas.Rdata"))
 
 
 #-----------------------------------------------#
@@ -685,8 +924,8 @@ save(RegionalSeas, file=paste0(GISpath, "RegionalSeas.Rdata"))
 Regions                              <- data[, .(NrPaps = length(unique(SW.ID))), 
                                               by = Region]
 Regions                              <- Regions[order(NrPaps),,]
-RegCol                               <- data.frame(colcode = viridis(max(Regions$NrPaps)),
-                                                   value = c(1:max(Regions$NrPaps)))
+RegCol                               <- data.frame(colcode = viridis(max(Regions$NrPaps)+2),
+                                                   value = c(1:c(max(Regions$NrPaps)+2)))
 Regions$Colcode                      <- RegCol$colcode [match(Regions$NrPaps, RegCol$value)]
 load(paste0(GISpath, "RegionalSeas.Rdata"))
 RegionalSeas$colcode                 <- Regions$Colcode [match(RegionalSeas$Region, Regions$Region)]
@@ -710,278 +949,47 @@ text(x= 1E6, y=6.01E6, "Global studies:", font=3, cex=1.4)
 text(x=1e6, y=5.85e6, paste0(subset(Regions, Region == "Global")$NrPaps), font=2, cex=1.4)
 gradient.rect(xleft=0, xright=1E6, ytop=1.5e6, ybottom=1.25E6, col=RegCol$colcode, gradient="x")
 text(x=0, y=1.18e6, "1")
-text(x=1E6, y=1.18e6, max(Regions$NrPaps))
-text(x=0.5e6, y=1.72e6, "Number of papers", font=4, cex=1.2)
+text(x=1E6, y=1.18e6, max(Regions$NrPaps)+2)
+text(x=0.5e6, y=1.72e6, "Number of papers", cex=1.2)
+dev.off()
+
+
+## Smaller version plot
+RegionalSeas$Xloc              <- ifelse(RegionalSeas$Region == "Baltic Sea", 4950000, RegionalSeas$Xloc) #change points to a better location
+RegionalSeas$Yloc              <- ifelse(RegionalSeas$Region == "Baltic Sea", 4010000, RegionalSeas$Yloc) #change points to a better location
+
+png(paste0(outPath, "RegMapSmall.png"), width = 700, height = 600, res = 100)
+par(mar=c(1,1,1,1))
+plot(st_geometry(RegionalSeas), col=RegionalSeas$colcode, border=F)
+text(RegionalSeas$NrPaps, x= RegionalSeas$Xloc, y=RegionalSeas$Yloc, col=RegionalSeas$textcol, font=2, cex=1.4)
+text(x= 1E6, y=6.1E6, "Global studies:", font=3, cex=1.4)
+text(x=1e6, y=5.85e6, paste0(subset(Regions, Region == "Global")$NrPaps), font=2, cex=1.4)
+gradient.rect(xleft=0, xright=1E6, ytop=1.5e6, ybottom=1.25E6, col=RegCol$colcode, gradient="x")
+text(x=0, y=1.15e6, "1")
+text(x=1E6, y=1.15e6, max(Regions$NrPaps)+2)
+text(x=0.5e6, y=1.72e6, "Number of papers", cex=1.2)
 dev.off()
 
 
 
-#####################################################################################################################-
-#####################################################################################################################-
-#-----------------------------------------------#
-# Worked-out examples ----
-#-----------------------------------------------#
+# ## Create a smaller version
+# load(paste0(GISpath, "RegionalSeas.Rdata"))
+# 
+# library(dplyr)
+# RegionalSeas <- RegionalSeas %>%
+#   left_join(Regions, by="Region")
+# 
+# ### Settings for plotting
+# library(rnaturalearth)
+# world   <- ne_countries(scale = "medium", returnclass = "sf")
+# xlim    <- c(290000,6912085)
+# ylim    <- c(861290.7,6962509)
+# colours <- brewer.pal(9,"YlOrRd") 
+# 
+# ggplot(data = RegionalSeas) +
+#   geom_sf(data = RegionalSeas, aes(fill=NrPaps)) +
+#   # geom_sf(data = world, fill="white", col="white") +
+#   coord_sf(xlim = xlim, ylim = ylim) +
+#   scale_fill_viridis_c() +
+#   theme_bw()
 
-#-----------------------------------------------#
-## Physical disturbance benthos -----
-#-----------------------------------------------#
-
-# Subset data
-datasub                              <- subset(data, Pressure.type %in% "Physical disturbance of the seabed")
-length(unique(datasub$SW.ID)) #182 papers
-
-
-# Convert all survival studies to mortality studies
-table(datasub$Response.variable_category)
-datasub$Direction.of.relationship    <- with(datasub, ifelse(Response.variable_category %in% "Survival" & 
-                                                            Direction.of.relationship %in% "Positive","Negative",
-                                                            ifelse(Response.variable_category %in% "Survival" &
-                                                                     Direction.of.relationship %in% "Negative","Positive",Direction.of.relationship)))
-datasub$Response.variable_category   <- with(datasub, ifelse(Response.variable_category %in% "Survival","Mortality",Response.variable_category))
-table(datasub$Response.variable_category)
-
-
-# Barplot with number of papers by ecosystem component
-EcoComp                               <- datasub[, .(NrPaps = length(unique(SW.ID))), by = "Ecosystem.component_level1"]
-EcoComp                               <- EcoComp[, .(NrPaps = sum(NrPaps)), by="Region"]
-EcoComp                               <- EcoComp[order(NrPaps, decreasing = F),,]
-
-tiff(paste0(outPath, "EcoComp_PhysDist.tiff"), width=1000, height=750, res=100)
-par(mar=c(5, 16, 4, 2))
-b                                     <- barplot(EcoComp$NrPaps, horiz=TRUE, axes=F, xlim=c(0,max(EcoComp$NrPaps)+10), col=viridis(3)[2])
-box()
-axis(2, at=b, labels=EcoComp$Ecosystem.component_level1, las=1, cex.axis=2)
-axis(1, at= seq(0,max(EcoComp$NrPaps), 20), labels=seq(0, max(EcoComp$NrPaps), 20), cex.axis=1.5)
-# title(main="Number of papers per region", cex.main=1.5, font.main=2)
-text(x=80, y=0, paste0("Total number of unique papers ", length(unique(datasub$SW.ID))), pos=4)
-text(x=EcoComp$NrPaps + 4, y=b, EcoComp$NrPaps, cex=1.3)
-axis(1, at=max(EcoComp$NrPaps)/2, tick=F, line=2, label="Number of papers", cex.axis=2)
-dev.off()
-
-
-
-# Subset data further to benthos
-datasub                              <- subset(data, Pressure.type %in% "Physical disturbance of the seabed" &
-                                                 Ecosystem.component_level1 %in% "Benthos")
-length(unique(datasub$SW.ID)) #127 papers
-
-# Convert all survival studies to mortality studies
-table(datasub$Response.variable_category)
-datasub$Direction.of.relationship    <- with(datasub, ifelse(Response.variable_category %in% "Survival" & 
-                                                               Direction.of.relationship %in% "Positive","Negative",
-                                                             ifelse(Response.variable_category %in% "Survival" &
-                                                                      Direction.of.relationship %in% "Negative","Positive",Direction.of.relationship)))
-datasub$Response.variable_category   <- with(datasub, ifelse(Response.variable_category %in% "Survival","Mortality",Response.variable_category))
-table(datasub$Response.variable_category)
-
-
-# Barplot with number of papers by region
-Regions                               <- datasub[, .(NrPaps = length(unique(SW.ID))), by = "Region"]
-Regions                               <- Regions[, .(NrPaps = sum(NrPaps)), by="Region"]
-Regions                               <- Regions[order(NrPaps, decreasing = F),,]
-
-tiff(paste0(outPath, "Regions_PhysBenthos.tiff"), width=1000, height=750, res=100)
-par(mar=c(5, 16, 4, 2))
-b                                     <- barplot(Regions$NrPaps, horiz=TRUE, axes=F, xlim=c(0,max(Regions$NrPaps)+5), col=viridis(3)[2])
-box()
-axis(2, at=b, labels=Regions$Region, las=1, cex.axis=2)
-axis(1, at= seq(0,max(Regions$NrPaps), 10), labels=seq(0, max(Regions$NrPaps), 10), cex.axis=1.5)
-# title(main="Number of papers per region", cex.main=1.5, font.main=2)
-text(x=80, y=0, paste0("Total number of unique papers ", length(unique(datasub$SW.ID))), pos=4)
-text(x=Regions$NrPaps + 1.5, y=b, Regions$NrPaps, cex=1.3)
-axis(1, at=max(Regions$NrPaps)/2, tick=F, line=2, label="Number of papers", cex.axis=2)
-dev.off()
-
-
-# Barplot for Response variable categories
-ResVarCats                            <- datasub[, .(NrPaps = length(unique(SW.ID))),
-                                                    by = Response.variable_category]
-ResVarCats                            <- ResVarCats[order(NrPaps),,]
-
-tiff(paste0(outPath, "ResVarCats_PhysBenthos.tiff"), width=1200, height=750, res=100)
-par(mar=c(5, 23, 2, 2))
-b                                     <- barplot(ResVarCats$NrPaps, horiz=TRUE, axes=F, xlim=c(0,70), col=viridis(3)[2])
-box()
-axis(2, at=b, labels=ResVarCats$Response.variable_category, las=1, cex.axis=2)
-axis(1, at= seq(0,70, 10), labels=seq(0, 70, 10), cex.axis=1.5)
-text(x=43, y=0, paste0("Total number of unique papers: ", length(unique(datasub$SW.ID))), pos=4)
-text(x=ResVarCats$NrPaps+1.5, y=b, ResVarCats$NrPaps, cex = 1.3)
-axis(1, at=35, tick=F, line=2, label="Number of papers", cex.axis=2)
-dev.off()
-
-
-# Barplot for Response variable categories including direction of relationship
-dataplot                              <- datasub[, .(NrPaps = length(unique(SW.ID))),
-                                                 by = c("Response.variable_category", "Direction.of.relationship")]
-names(dataplot)                       <- c("ResVar","DirRel","NrPaps")
-
-ResOrder                              <- data.frame(ResVar = unique(dataplot$ResVar),
-                                                    Sord    = c(1,2,3,4,7,5,8,6,9,10,12,11))
-ResOrder                              <- ResOrder[order(ResOrder$Sord, decreasing = TRUE),]
-
-DirOrder                              <- data.frame(DirRel = unique(dataplot$DirRel),
-                                                    Sord    = c(2,1,4,3,5))
-DirOrder                              <- DirOrder[order(DirOrder$Sord),]
-
-dataplot2                             <- matrix(nrow=5, ncol=12, dimnames=list(DirOrder$DirRel,ResOrder$ResVar))
-
-for(iRow in c(1:nrow(dataplot))){
-  subset                              <- dataplot[iRow,]
-  dataplot2[subset$DirRel,subset$ResVar] <- subset$NrPaps
-}
-dataplot2[is.na(dataplot2)]             <- 0
-
-tiff(paste0(outPath, "ResVarDir_PhysBenthos.tiff"), width=1200, height=750, res=100)
-par(mar=c(5,20,2,2))
-b <- barplot(dataplot2, xlim=c(0,80), axes=T, col=viridis(5), main=NULL, horiz = TRUE, 
-             las=2, axis.lty = "solid", cex.axis = 1.5, cex.names = 1.5)
-box()
-# axis(2, at=b, labels=colnames(dataplot2), las=1, cex.axis=2)
-# axis(1, at= seq(0,100, 10), labels=seq(0, 100, 10), cex.axis=1.5)
-axis(1, at=50, "Number of papers", cex.axis=1.5, tick=F, line=1.5)
-legend(x=55, y=4.5, cex=1.5, fill=viridis(5), legend=DirOrder$DirRel)
-dev.off()
-
-tiff(paste0(outPath, "ResVarCats_PhysBenthos.tiff"), width=1200, height=750, res=100)
-par(mar=c(5, 23, 2, 2))
-b                                     <- barplot(ResVarCats$NrPaps, horiz=TRUE, axes=F, xlim=c(0,70), col=viridis(3)[2])
-box()
-axis(2, at=b, labels=ResVarCats$Response.variable_category, las=1, cex.axis=2)
-axis(1, at= seq(0,70, 10), labels=seq(0, 70, 10), cex.axis=1.5)
-text(x=43, y=0, paste0("Total number of unique papers: ", length(unique(datasub$SW.ID))), pos=4)
-text(x=ResVarCats$NrPaps+1.5, y=b, ResVarCats$NrPaps, cex = 1.3)
-axis(1, at=35, tick=F, line=2, label="Number of papers", cex.axis=2)
-dev.off()
-
-
-# Table direction of relationship
-Direction                            <- datasub[, .(NrPaps = length(unique(SW.ID))), 
-                                                 by = Direction.of.relationship]
-Direction$Prop                       <- Direction$NrPaps / sum(Direction$NrPaps)
-
-
-
-dataplot                            <- datasub[, .(NrPaps = length(unique(SW.ID))), 
-                                                by = c("Response.variable_category","Direction.of.relationship")]
-dataplot                            <- dataplot[order(NrPaps),,]
-
-
-ggplot(dataplot, aes(NrPaps, Response.variable_category, fill=Direction.of.relationship)) +
-  geom_bar(stat = "identity")
-
-
-
-#-----------------------------------------------#
-## Discarding -----
-#-----------------------------------------------#
-
-# Subset data
-datasub                              <- subset(data, Pressure.type %in% "Discarding")
-length(unique(datasub$SW.ID))
-
-
-# Barplot for Ecosys comp and Region
-dataplot                             <- datasub[, .(NrPaps = length(unique(SW.ID))), 
-                                                by = c("Ecosystem.component_level1","Region")]
-names(dataplot)                       <- c("EcosysComp","Region","NrPaps")
-
-EcoOrder                              <- data.frame(EcoComp = unique(dataplot$EcosysComp),
-                                                    Sord    = c(3,1,4,5,2))
-EcoOrder                              <- EcoOrder[order(EcoOrder$Sord),]
-
-RegionOrder                           <- data.frame(Region = unique(dataplot$Region),
-                                                    Sord    = c(1,4,3,2,5))
-RegionOrder                           <- RegionOrder[order(RegionOrder$Sord),]
-
-dataplot2                             <- matrix(nrow=5, ncol=5, dimnames=list(RegionOrder$Region,EcoOrder$EcoComp))
-
-for(iRow in c(1:nrow(dataplot))){
-  subset                              <- dataplot[iRow,]
-  dataplot2[subset$Region,subset$EcosysComp] <- subset$NrPaps
-}
-dataplot2[is.na(dataplot2)]             <- 0
-
-tiff(paste0(outPath, "EcoRegion_DiscSeabirds.tiff"), width = 800, height = 800, res=100)
-par(mar=c(10,5,2,0))
-b <- barplot(dataplot2, ylim=c(0,25), axes=F, names.arg=rep("", 5), width=1, xlim=c(0,6), col=viridis(5), main=NULL)
-axis(2, at=seq(0,25,5), cex.axis=1.5, las=1, pos=0)
-axis(1, at=b, colnames(dataplot2), las=3, cex.axis=1.5)
-axis(2, at=15, "Number of papers", cex.axis=2, tick=F, line=1.5)
-legend(x=3.5, y=25, cex=1.5, fill=viridis(5), legend=RegionOrder$Region)
-dev.off()
-
-
-# Barplot for Response variable and Direction of relationship Seabirds
-dataplot                             <- subset(datasub, Ecosystem.component_level1 %in% "Seabirds")
-dataplot                             <- dataplot[, .(NrPaps = length(unique(SW.ID))), 
-                                                by = c("Response.variable_category","Direction.of.relationship")]
-names(dataplot)                       <- c("ResVar","DirRel","NrPaps")
-
-ResOrder                              <- data.frame(ResVar = unique(dataplot$ResVar),
-                                                    Sord    = c(1,2,3,6,5,7,4))
-ResOrder                              <- ResOrder[order(ResOrder$Sord),]
-
-DirOrder                              <- data.frame(DirRel = unique(dataplot$DirRel),
-                                                    Sord    = c(1,2,3,4))
-DirOrder                              <- DirOrder[order(DirOrder$Sord),]
-
-dataplot2                             <- matrix(nrow=4, ncol=7, dimnames=list(DirOrder$DirRel,ResOrder$ResVar))
-
-for(iRow in c(1:nrow(dataplot))){
-  subset                              <- dataplot[iRow,]
-  dataplot2[subset$DirRel,subset$ResVar] <- subset$NrPaps
-}
-dataplot2[is.na(dataplot2)]             <- 0
-
-tiff(paste0(outPath, "ResVarDir_DiscSeabirds.tiff"), width = 800, height = 800, res=100)
-par(mar=c(10,5,2,0))
-b <- barplot(dataplot2, ylim=c(0,10), axes=F, names.arg=rep("", 7), width=1, col=viridis(4), main=NULL)
-axis(2, at=seq(0,10,1), cex.axis=1.5, las=1, pos=0)
-axis(1, at=b, colnames(dataplot2), las=3, cex.axis=1.7)
-axis(2, at=4, "Number of papers", cex.axis=2, tick=F, line=1.5)
-legend(x=6, y=9.5, cex=1.5, fill=viridis(4), legend=DirOrder$DirRel)
-dev.off()
-
-
-## Ggplot versionpar(mar=c(10,5,2,0))
-dataplot                             <- subset(datasub, Ecosystem.component_level1 %in% "Seabirds")
-ResVarOrder                          <- dataplot[, .(NrPaps = length(unique(SW.ID))), by = "Response.variable_category"]
-dataplot                             <- dataplot[, .(NrPaps = length(unique(SW.ID))), 
-                                                 by = c("Response.variable_category","Direction.of.relationship")]
-dataplot$Response.variable_category  <- factor(dataplot$Response.variable_category, 
-                                               levels = ResVarOrder$Response.variable_category[sort(ResVarOrder$NrPaps, decreasing = TRUE)])
-
-p <- ggplot(dataplot, aes(NrPaps, Response.variable_category, fill=Direction.of.relationship)) +
-    geom_bar(stat = "identity") +
-    scale_x_continuous(n.breaks = 10) +
-    scale_fill_manual(values = rev(viridis(5)[c(1:4)])) +
-    labs(x="Number of papers") +
-    theme_bw() +
-    theme(axis.text = element_text(colour="black"),
-          axis.title.y = element_blank(),
-          panel.grid = element_blank())
-print(p)
-
-#-----------------------------------------------#
-## Input of Litter ----
-#-----------------------------------------------#
-
-# Subset to litter only
-litter <- data[Pressure.type == "Input of litter", ]
-# Number of unique papers
-nrow(litter[!duplicated(litter$SW.ID),])
-
-# Earliest paper
-litter[litter$Year == min(litter$Year), ]
-litter[litter$Year == min(litter$Year), "Year"]
-
-
-
-
-#####################################################################################################################-
-#####################################################################################################################-
-#-----------------------------------------------#
-# Get citations by paper ----
-#-----------------------------------------------#
-
-load("Systematic Reviews/Analysis Task 4.1/Search/search results_citedBy.RData")
