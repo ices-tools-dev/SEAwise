@@ -962,6 +962,20 @@ p <- ggplot(dataplot, aes(NrPaps, Response.variable_category, fill=Direction.of.
           panel.grid = element_blank())
 print(p)
 
+#-----------------------------------------------#
+## Input of Litter ----
+#-----------------------------------------------#
+
+# Subset to litter only
+litter <- data[Pressure.type == "Input of litter", ]
+# Number of unique papers
+nrow(litter[!duplicated(litter$SW.ID),])
+
+# Earliest paper
+litter[litter$Year == min(litter$Year), ]
+litter[litter$Year == min(litter$Year), "Year"]
+
+
 
 
 #####################################################################################################################-
