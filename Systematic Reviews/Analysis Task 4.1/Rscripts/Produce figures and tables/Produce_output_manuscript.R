@@ -27,6 +27,7 @@ library(splitstackshape)
 library(RColorBrewer)
 library(sf)
 library(plotrix)
+library(colorspace)
 
 
 datPath                               <- "Systematic Reviews/Analysis Task 4.1/Routput/"
@@ -992,4 +993,361 @@ dev.off()
 #   coord_sf(xlim = xlim, ylim = ylim) +
 #   scale_fill_viridis_c() +
 #   theme_bw()
+
+#####################################################################################################################-
+#####################################################################################################################-
+#-----------------------------------------------#
+# Case Study Litter: Plots and numbers ----
+#-----------------------------------------------#
+# Subset to litter only
+litter <- droplevels(data[Pressure.type == "Input of litter", ])
+
+# Litter specific data cleaning
+litter[is.na(litter$Gear_level1) & !duplicated(litter$SW.ID), ]
+litter[is.na(litter$Gear_level1), "Gear_level1"] <- "Other"
+
+litter[litter$Pressure.variable_category == "Fishing effort",]
+
+#-----------------------------------------------#
+## Basic Numbers ----
+#-----------------------------------------------#
+# Number of unique papers
+nrow(litter[!duplicated(litter$SW.ID),])
+
+# Earliest paper
+litter[litter$Year == min(litter$Year), ]
+litter[litter$Year == min(litter$Year), "Year"]
+
+#-----------------------------------------------#
+## Gears ----
+#-----------------------------------------------#
+unique(litter$Gear_level1)
+table(litter$Gear_level1)
+unique(litter$Gear_level2)
+table(litter$Gear_level2)
+
+#-----------------------------------------------#
+## Pressures & Responses ----
+#-----------------------------------------------#
+# Pressures exerted
+unique(litter$Response.variable_paper)
+unique(litter$Response.variable_category)
+table(litter$Response.variable_category)
+table(litter$Pressure.variable_category)
+
+#-----------------------------------------------#
+## Responses & Ecosystem Components ----
+#-----------------------------------------------#
+unique(litter$Ecosystem.component_level1)
+table(litter$Ecosystem.component_level1)
+unique(litter$Ecosystem.component_level2)
+table(litter$Ecosystem.component_level2)
+
+table(litter[litter$Ecosystem.component_level1 == "Benthos", Ecosystem.component_level3])
+
+#-----------------------------------------------#
+## Methods ----
+#-----------------------------------------------#
+unique(litter$Sampling.Method.used.for.data.collection)
+table(litter$Sampling.Method.used.for.data.collection)
+table(litter$Analytical.method.used.for.inference)
+table(litter$Study.type)
+
+#===-
+# Data cleaning
+#====-
+## Create long version
+# tempLit <- litter[!duplicated(litter$SW.ID), c("SW.ID","Ecosystem.component_level1", "Sampling.Method.used.for.data.collection", "Response.variable_category", "Analytical.method.used.for.inference", "Direction.of.relationship")]
+tempLit <- litter[, c("SW.ID","Ecosystem.component_level1", "Sampling.Method.used.for.data.collection", "Response.variable_category", "Analytical.method.used.for.inference", "Direction.of.relationship")]
+tempLit <- atempLit[!duplicated(atempLit), ]
+
+tempLit$Response.variable_category <- with(tempLit, ifelse(Response.variable_category %in% "Survival","Mortality",Response.variable_category))  
+tempLit$Sampling.Method.used.for.data.collection <- ifelse(tempLit$Sampling.Method.used.for.data.collection %in% c("In situ structural growth", "Visual Analyses of Quadrats/Transects"), "Visual or Photographic\nAnalyses",
+                                                           ifelse(tempLit$Sampling.Method.used.for.data.collection %in% c("Irregular Fisheries Independent Survey"), "Irregular Fisheries\nIndependent Survey",
+                                                                  ifelse(tempLit$Sampling.Method.used.for.data.collection %in% c("Active Acoustic Sampling Survey"), "Active Acoustic\nSampling Survey",
+                                                                         tempLit$Sampling.Method.used.for.data.collection)))
+####### KEEP WORKING FROM HERE.
+# tempLit$Analytical.method.used.for.inference <- ifelse(tempLit$Analytical.method.used.for.inference %in% c("In situ structural growth", "Visual Analyses of Quadrats/Transects"), "Visual or Photographic\nAnalyses",
+#                                                        ifelse(tempLit$Analytical.method.used.for.inference %in% c("Irregular Fisheries Independent Survey"), "Irregular Fisheries\nIndependent Survey",
+#                                                               ifelse(tempLit$Analytical.method.used.for.inference %in% c("Active Acoustic Sampling Survey"), "Active Acoustic\nSampling Survey",
+#                                                                      tempLit$Analytical.method.used.for.inference)))
+
+## Order factors for plotting nicely
+tempLit$Ecosystem.component_level1 <- reorder(x = as.factor(tempLit$Ecosystem.component_level1),
+                                              X = as.factor(tempLit$Ecosystem.component_level1),
+                                              FUN = length)
+tempLit$Sampling.Method.used.for.data.collection <- reorder(x = as.factor(tempLit$Sampling.Method.used.for.data.collection),
+                                                            X = as.factor(tempLit$Sampling.Method.used.for.data.collection),
+                                                            FUN = length)
+tempLit$Response.variable_category <- reorder(x = as.factor(tempLit$Response.variable_category),
+                                              X = as.factor(tempLit$Response.variable_category),
+                                              FUN = length)
+tempLit$Analytical.method.used.for.inference <- reorder(x = as.factor(tempLit$Analytical.method.used.for.inference),
+                                                        X = as.factor(tempLit$Analytical.method.used.for.inference),
+                                                        FUN = length)
+tempLit$Direction.of.relationship <- reorder(x = as.factor(tempLit$Direction.of.relationship),
+                                             X = as.factor(tempLit$Direction.of.relationship),
+                                             FUN = length)
+
+
+litterMethodsInput <- make_long(tempLit, Ecosystem.component_level1, Sampling.Method.used.for.data.collection, Response.variable_category, Analytical.method.used.for.inference, Direction.of.relationship)
+
+
+#===-
+# Create sankey diagram
+#====-
+## Set colors
+# colorpal                             <- brewer.pal(8,"Paired")[-c(2,4,6,8)]
+colorpal                             <- viridis(8)[-c(1,2,3,6)]
+# mycolors                             <- c(rep(colorpal[1],4), rep(colorpal[3],7), rep(colorpal[5],11), rep(colorpal[7],13))
+
+## Build sankey
+litterMethods <- ggplot(litterMethodsInput,
+                 mapping = aes(x = x,
+                               next_x = next_x,
+                               node = node,
+                               next_node = next_node,
+                               fill = factor(x),
+                               label = node)) +
+  # scale_x_discrete(labels=c("Fishery","Pressure","Ecosystem component","Impact")) +
+  # scale_fill_manual(values=colorpal) +
+  geom_sankey(flow.fill="grey",
+              flow.alpha=0.8) +
+  geom_sankey_label(size=7) +
+  theme_few()+
+  theme(axis.title = element_blank(),
+        axis.text.y = element_blank(),
+        axis.text = element_text(size=20, colour = "black"),
+        legend.position = "none")
+
+litterMethods
+
+ggsave()
+ggplot() +
+  geom_bar(data = litter[!duplicated(litter$SW.ID), ],
+           mapping = aes(x = ))
+
+#-----------------------------------------------#
+## Spatial Scales ----
+#-----------------------------------------------#
+
+## Make spatial extent and scale categories
+litter$ScaleSpatial <- factor(x = litter$Scale...Spatial..m.,
+                              levels = c("0-5", "5-10", "10-50", "50-100", "100-500", "500-1,000", "1,000-5,000", "5,000-10,000", "10,000-50,000", "50,000-100,000", ">100,000"),
+                              ordered = TRUE)
+litter$ResSpatial <- factor(x = litter$Resolution...Spatial..m.,
+                              levels = c("0-5", "5-10", "10-50", "50-100", "100-500", "500-1,000", "1,000-5,000", "5,000-10,000", "10,000-50,000", "50,000-100,000", ">100,000"),
+                              ordered = TRUE)
+
+spatResEx_cat <- expand.grid(levels(litter$ScaleSpatial),
+                             levels(litter$ScaleSpatial))
+
+colnames(spatResEx_cat) <- c("SpatialExtent_m", "SpatialRes_m")
+
+## Make counts of articles in different combinations of SPATIAL EXTENTS & RESOLUTIONS
+spatResEx_count <- aggregate(SW.ID~ScaleSpatial+ResSpatial,
+                             data = litter[!duplicated(litter$SW.ID), ],
+                             FUN = length)
+
+names(spatResEx_count)[names(spatResEx_count) %in% "SW.ID"] <- "NumberOfArticles"
+
+
+spatResEx_count <- merge(x = spatResEx_cat,
+                         y = spatResEx_count,
+                         by.y = c("ScaleSpatial", "ResSpatial"),
+                         by.x = c("SpatialExtent_m", "SpatialRes_m"),
+                         all.x = TRUE)
+
+spatResEx_count[is.na(spatResEx_count$NumberOfArticles), "NumberOfArticles"] <- 0
+
+## Plot
+ggsave(filename = paste(outPath, "litter_spatialResVExt.png"),
+       device = "png",
+       dpi = 600,
+       width = 170,
+       height = 90,
+       units = "mm",
+       plot = 
+         ggplot() +
+         geom_tile(data = spatResEx_count,
+                   mapping = aes(x = SpatialExtent_m,
+                                 y = SpatialRes_m,
+                                 fill = NumberOfArticles)) +
+         scale_fill_continuous_sequential(palette = "blues3",
+                                          rev = TRUE,
+                                          na.value = 0) +
+         scale_x_discrete(drop = FALSE) +
+         scale_y_discrete(drop = FALSE) +
+         ylab("Sampling Resolution (m)") +
+         xlab("Sampling Extent (m)") +
+         theme_few() +
+         theme(text = element_text(size = 9), 
+               # axis.text.x = element_text(hjust = 0.5, vjust = 1),
+               axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
+               )
+)
+
+#-----------------------------------------------#
+## Temporal Scales ----
+#-----------------------------------------------#
+
+## Make temporal extent and scale categories
+litter$ScaleTemporal <- factor(x = litter$Scale...Temporal,
+                               levels = c("snapshot/no repeat sampling", "subday", "day", "week", "two week", "month", "two month", "quarter", "half year", "year", "two year", "five year", "decade", "multidecadal"),
+                               ordered = TRUE)
+litter$ResTemporal <- factor(x = litter$Resolution...Temporal,
+                             levels = c("snapshot/no repeat sampling", "subday", "day", "week", "two week", "month", "two month", "quarter", "half year", "year", "two year", "five year", "decade", "multidecadal"),
+                             ordered = TRUE)
+
+tempResEx_cat <- expand.grid(levels(litter$ScaleTemporal),
+                             levels(litter$ScaleTemporal))
+
+colnames(tempResEx_cat) <- c("TemporalExtent", "TemporalRes")
+
+## Make counts of articles in different combinations of TEMPORAL EXTENTS & RESOLUTIONS
+tempResEx_count <- aggregate(SW.ID~ScaleTemporal+ResTemporal,
+                             data = litter[!duplicated(litter$SW.ID), ],
+                             FUN = length)
+
+names(tempResEx_count)[names(tempResEx_count) %in% "SW.ID"] <- "NumberOfArticles"
+
+
+tempResEx_count <- merge(x = tempResEx_cat,
+                         y = tempResEx_count,
+                         by.y = c("ScaleTemporal", "ResTemporal"),
+                         by.x = c("TemporalExtent", "TemporalRes"),
+                         all.x = TRUE)
+
+tempResEx_count[is.na(tempResEx_count$NumberOfArticles), "NumberOfArticles"] <- 0
+
+## Plot
+ggsave(filename = paste(outPath, "litter_temporalResVExt.png"),
+       device = "png",
+       dpi = 600,
+       width = 170,
+       height = 90,
+       units = "mm",
+       plot = 
+         ggplot() +
+         geom_tile(data = tempResEx_count,
+                   mapping = aes(x = TemporalExtent,
+                                 y = TemporalRes,
+                                 fill = NumberOfArticles)) +
+         scale_fill_continuous_sequential(palette = "blues3",
+                                          rev = TRUE,
+                                          na.value = 0) +
+         scale_x_discrete(drop = FALSE) +
+         scale_y_discrete(drop = FALSE) +
+         ylab("Sampling Resolution") +
+         xlab("Sampling Extent") +
+         theme_few() +
+         theme(text = element_text(size = 9), 
+               # axis.text.x = element_text(hjust = 0.5, vjust = 1),
+               axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
+         )
+)
+
+
+#-----------------------------------------------#
+## SpatioTemporal Extent ----
+#-----------------------------------------------#
+## Dependent on code above
+
+
+# Make spatio-temperal extent and resolution category matrix in long form
+spatempResEx_cat <- expand.grid(levels(litter$ScaleSpatial),
+                                levels(litter$ScaleTemporal))
+
+colnames(spatempResEx_cat) <- c("SpatialScale_m", "TemporalScale")
+
+## Make counts of articles in different combinations of SPATIAL & TEMPORAL EXTENTS
+spatempEx_count <- aggregate(SW.ID~ScaleSpatial+ScaleTemporal,
+                             data = litter[!duplicated(litter$SW.ID), ],
+                             FUN = length)
+names(spatempEx_count)[names(spatempEx_count) %in% "SW.ID"] <- "NumberOfArticles"
+
+
+spatempEx_count <- merge(x = spatempResEx_cat,
+                         y = spatempEx_count,
+                         by.y = c("ScaleSpatial", "ScaleTemporal"),
+                         by.x = c("SpatialScale_m", "TemporalScale"),
+                         all.x = TRUE)
+
+spatempEx_count[is.na(spatempEx_count$NumberOfArticles), "NumberOfArticles"] <- 0
+
+
+## Plot
+ggsave(filename = paste(outPath, "litter_spatiotemporalExt.png"),
+       device = "png",
+       dpi = 600,
+       width = 170,
+       height = 90,
+       units = "mm",
+       plot = 
+         ggplot() +
+         geom_tile(data = spatempEx_count,
+                   mapping = aes(x = SpatialScale_m,
+                                 y = TemporalScale,
+                                 fill = NumberOfArticles)) +
+         scale_fill_continuous_sequential(palette = "blues3",
+                                          rev = TRUE,
+                                          na.value = 0) +
+         scale_x_discrete(drop = FALSE) +
+         scale_y_discrete(drop = FALSE) +
+         ylab("Temporal Extent") +
+         xlab("Spatial Extent (m)") +
+         theme_few() +
+         theme(text = element_text(size = 9), 
+               # axis.text.x = element_text(hjust = 0.5, vjust = 1),
+               axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
+         )
+)
+
+#-----------------------------------------------#
+## SpatioTemporal Resolution ----
+#-----------------------------------------------#
+## Dependent on code above
+
+## Make counts of articles in different combinations of SPATIAL & TEMPORAL RESOLUTIONS
+spatempRes_count <- aggregate(SW.ID~ResSpatial+ResTemporal,
+                              data = litter[!duplicated(litter$SW.ID), ],
+                              FUN = length)
+names(spatempRes_count)[names(spatempRes_count) %in% "SW.ID"] <- "NumberOfArticles"
+
+
+spatempRes_count <- merge(x = spatempResEx_cat,
+                          y = spatempRes_count,
+                          by.y = c("ResSpatial", "ResTemporal"),
+                          by.x = c("SpatialScale_m", "TemporalScale"),
+                          all.x = TRUE)
+
+spatempRes_count[is.na(spatempRes_count$NumberOfArticles), "NumberOfArticles"] <- 0
+
+## Plot
+ggsave(filename = paste(outPath, "litter_spatiotemporalRes.png"),
+       device = "png",
+       dpi = 600,
+       width = 170,
+       height = 90,
+       units = "mm",
+       plot = 
+         ggplot() +
+         geom_tile(data = spatempRes_count,
+                   mapping = aes(x = SpatialScale_m,
+                                 y = TemporalScale,
+                                 fill = NumberOfArticles)) +
+         scale_fill_continuous_sequential(palette = "blues3",
+                                          rev = TRUE,
+                                          na.value = 0) +
+         scale_x_discrete(drop = FALSE) +
+         scale_y_discrete(drop = FALSE) +
+         ylab("Temporal Resolution") +
+         xlab("Spatial Resolution (m)") +
+         theme_few() +
+         theme(text = element_text(size = 9), 
+               # axis.text.x = element_text(hjust = 0.5, vjust = 1),
+               axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
+         )
+)
+
 
