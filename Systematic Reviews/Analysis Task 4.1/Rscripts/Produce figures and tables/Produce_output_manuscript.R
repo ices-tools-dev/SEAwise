@@ -1027,25 +1027,6 @@ unique(litter$Gear_level2)
 table(litter$Gear_level2)
 
 #-----------------------------------------------#
-## Pressures & Responses ----
-#-----------------------------------------------#
-# Pressures exerted
-unique(litter$Response.variable_paper)
-unique(litter$Response.variable_category)
-table(litter$Response.variable_category)
-table(litter$Pressure.variable_category)
-
-#-----------------------------------------------#
-## Responses & Ecosystem Components ----
-#-----------------------------------------------#
-unique(litter$Ecosystem.component_level1)
-table(litter$Ecosystem.component_level1)
-unique(litter$Ecosystem.component_level2)
-table(litter$Ecosystem.component_level2)
-
-table(litter[litter$Ecosystem.component_level1 == "Benthos", Ecosystem.component_level3])
-
-#-----------------------------------------------#
 ## Methods ----
 #-----------------------------------------------#
 unique(litter$Sampling.Method.used.for.data.collection)
@@ -1054,23 +1035,44 @@ table(litter$Analytical.method.used.for.inference)
 table(litter$Study.type)
 
 #===-
-# Data cleaning
+### Data cleaning ----
 #====-
-## Create long version
 # tempLit <- litter[!duplicated(litter$SW.ID), c("SW.ID","Ecosystem.component_level1", "Sampling.Method.used.for.data.collection", "Response.variable_category", "Analytical.method.used.for.inference", "Direction.of.relationship")]
 tempLit <- litter[, c("SW.ID","Ecosystem.component_level1", "Sampling.Method.used.for.data.collection", "Response.variable_category", "Analytical.method.used.for.inference", "Direction.of.relationship")]
 tempLit <- atempLit[!duplicated(atempLit), ]
 
-tempLit$Response.variable_category <- with(tempLit, ifelse(Response.variable_category %in% "Survival","Mortality",Response.variable_category))  
+tempLit$Response.variable_category <- ifelse(tempLit$Response.variable_category %in% "Survival","Mortality",
+                                             ifelse(tempLit$Response.variable_category %in% c("Community composition"), "Biodiversity",
+                                             tempLit$Response.variable_category))  
 tempLit$Sampling.Method.used.for.data.collection <- ifelse(tempLit$Sampling.Method.used.for.data.collection %in% c("In situ structural growth", "Visual Analyses of Quadrats/Transects"), "Visual or Photographic\nAnalyses",
                                                            ifelse(tempLit$Sampling.Method.used.for.data.collection %in% c("Irregular Fisheries Independent Survey"), "Irregular Fisheries\nIndependent Survey",
                                                                   ifelse(tempLit$Sampling.Method.used.for.data.collection %in% c("Active Acoustic Sampling Survey"), "Active Acoustic\nSampling Survey",
                                                                          tempLit$Sampling.Method.used.for.data.collection)))
-####### KEEP WORKING FROM HERE.
-# tempLit$Analytical.method.used.for.inference <- ifelse(tempLit$Analytical.method.used.for.inference %in% c("In situ structural growth", "Visual Analyses of Quadrats/Transects"), "Visual or Photographic\nAnalyses",
-#                                                        ifelse(tempLit$Analytical.method.used.for.inference %in% c("Irregular Fisheries Independent Survey"), "Irregular Fisheries\nIndependent Survey",
-#                                                               ifelse(tempLit$Analytical.method.used.for.inference %in% c("Active Acoustic Sampling Survey"), "Active Acoustic\nSampling Survey",
-#                                                                      tempLit$Analytical.method.used.for.inference)))
+
+tempLit$AnalyticalMethod <- ifelse(tempLit$Analytical.method.used.for.inference %in% c("Summarizing statistics",
+                                                                                       "Deacriptive statistics (Percentage abundance; Frequeny´cy of occurrence)",
+                                                                                       "questionnaire (Local Ecological Knowledge), chemical digestion analysis of guts, polymer identification",
+                                                                                       "occurrence _ abundance",
+                                                                                       "NA",
+                                                                                       "Digital Elevation Models (DEMs) _ ROV video images _ SIS",
+                                                                                       "Video data", "postmortem examination of species, sex, body mass, external measures and pathoanatomical dissection using protocol",
+                                                                                       "MATLAB _ Rainbow Click software package "),
+                                   "Descriptive\nstatistics",
+                                   ifelse(tempLit$Analytical.method.used.for.inference %in% c("ANOSIM _ Mann-Whitney test _ Kruskal-Wallis",
+                                                                                              "Kruskal–Wallis test _ Mann–Whitney U test _ chi-square test",
+                                                                                              "CPUE _ Kruskal-Wallis _ 1-way ANOVA"),
+                                          "Non-parametric\nGroupwise",
+                                          ifelse(tempLit$Analytical.method.used.for.inference %in% c("Quantitative image analysis _ Pearson and Kendall correlation _ species richness and abundance _ frequency of occurrence _ mean size",
+                                                                                                     "least-square regresssion analysis",
+                                                                                                     "CPUE"),
+                                                 "Linear Models",
+                                                 ifelse(tempLit$Analytical.method.used.for.inference %in% c("PERMANOVA _ Pairwise _ Canonical Analysis of Principal coordinates _ 3D-nMDS _ Ordinary LS",
+                                                                                                            "PCA, Significance tests",
+                                                                                                            "PERMANOVA"),
+                                                        "Multivariate &\nOrdination",
+                                                        ifelse(tempLit$Analytical.method.used.for.inference %in% c("Benthic Terrain Modelling (BTM)"),
+                                                               "GLMs GAMs &\nMachine Learning",
+                                                               tempLit$Analytical.method.used.for.inference)))))
 
 ## Order factors for plotting nicely
 tempLit$Ecosystem.component_level1 <- reorder(x = as.factor(tempLit$Ecosystem.component_level1),
@@ -1082,19 +1084,21 @@ tempLit$Sampling.Method.used.for.data.collection <- reorder(x = as.factor(tempLi
 tempLit$Response.variable_category <- reorder(x = as.factor(tempLit$Response.variable_category),
                                               X = as.factor(tempLit$Response.variable_category),
                                               FUN = length)
-tempLit$Analytical.method.used.for.inference <- reorder(x = as.factor(tempLit$Analytical.method.used.for.inference),
+tempLit$AnalyticalMethod <- reorder(x = as.factor(tempLit$AnalyticalMethod),
                                                         X = as.factor(tempLit$Analytical.method.used.for.inference),
                                                         FUN = length)
 tempLit$Direction.of.relationship <- reorder(x = as.factor(tempLit$Direction.of.relationship),
                                              X = as.factor(tempLit$Direction.of.relationship),
                                              FUN = length)
+tempLit <- droplevels(tempLit)
 
-
-litterMethodsInput <- make_long(tempLit, Ecosystem.component_level1, Sampling.Method.used.for.data.collection, Response.variable_category, Analytical.method.used.for.inference, Direction.of.relationship)
+## Create long versions for sankeys
+litterMethodsInput <- make_long(tempLit, Ecosystem.component_level1, Sampling.Method.used.for.data.collection, Response.variable_category, AnalyticalMethod)
+litterLinkageInput <- make_long(tempLit, Ecosystem.component_level1, Response.variable_category, Direction.of.relationship)
 
 
 #===-
-# Create sankey diagram
+### Create sankey diagram ----
 #====-
 ## Set colors
 # colorpal                             <- brewer.pal(8,"Paired")[-c(2,4,6,8)]
@@ -1109,23 +1113,26 @@ litterMethods <- ggplot(litterMethodsInput,
                                next_node = next_node,
                                fill = factor(x),
                                label = node)) +
-  # scale_x_discrete(labels=c("Fishery","Pressure","Ecosystem component","Impact")) +
+  scale_x_discrete(labels=c("Ecosystem\nComponent","Sampling\nMethodology","Response\nMeasured","Analytic\nMethod")) +
   # scale_fill_manual(values=colorpal) +
   geom_sankey(flow.fill="grey",
               flow.alpha=0.8) +
-  geom_sankey_label(size=7) +
+  geom_sankey_label(size=2) +
   theme_few()+
-  theme(axis.title = element_blank(),
+  theme(text = element_text(size = 10),
+        axis.title = element_blank(),
         axis.text.y = element_blank(),
-        axis.text = element_text(size=20, colour = "black"),
+        axis.text = element_text(colour = "black"),
         legend.position = "none")
 
-litterMethods
+ggsave(plot = litterMethods,
+       filename = paste0(outPath, "litterMethods.png"),
+       device = "png",
+       dpi = 300,
+       width = 170,
+       height = 90,
+       units = "mm")
 
-ggsave()
-ggplot() +
-  geom_bar(data = litter[!duplicated(litter$SW.ID), ],
-           mapping = aes(x = ))
 
 #-----------------------------------------------#
 ## Spatial Scales ----
@@ -1163,7 +1170,7 @@ spatResEx_count[is.na(spatResEx_count$NumberOfArticles), "NumberOfArticles"] <- 
 ## Plot
 ggsave(filename = paste(outPath, "litter_spatialResVExt.png"),
        device = "png",
-       dpi = 600,
+       dpi = 300,
        width = 170,
        height = 90,
        units = "mm",
@@ -1223,7 +1230,7 @@ tempResEx_count[is.na(tempResEx_count$NumberOfArticles), "NumberOfArticles"] <- 
 ## Plot
 ggsave(filename = paste(outPath, "litter_temporalResVExt.png"),
        device = "png",
-       dpi = 600,
+       dpi = 300,
        width = 170,
        height = 90,
        units = "mm",
@@ -1279,7 +1286,7 @@ spatempEx_count[is.na(spatempEx_count$NumberOfArticles), "NumberOfArticles"] <- 
 ## Plot
 ggsave(filename = paste(outPath, "litter_spatiotemporalExt.png"),
        device = "png",
-       dpi = 600,
+       dpi = 300,
        width = 170,
        height = 90,
        units = "mm",
@@ -1326,7 +1333,7 @@ spatempRes_count[is.na(spatempRes_count$NumberOfArticles), "NumberOfArticles"] <
 ## Plot
 ggsave(filename = paste(outPath, "litter_spatiotemporalRes.png"),
        device = "png",
-       dpi = 600,
+       dpi = 300,
        width = 170,
        height = 90,
        units = "mm",
@@ -1350,4 +1357,51 @@ ggsave(filename = paste(outPath, "litter_spatiotemporalRes.png"),
          )
 )
 
+#-----------------------------------------------#
+## Pressures & Responses ----
+#-----------------------------------------------#
+# Pressures exerted
+unique(litter$Response.variable_paper)
+unique(litter$Response.variable_category)
+table(litter$Response.variable_category)
+table(litter$Pressure.variable_category)
+
+#-----------------------------------------------#
+## Responses & Ecosystem Components ----
+#-----------------------------------------------#
+unique(litter$Ecosystem.component_level1)
+table(litter$Ecosystem.component_level1)
+unique(litter$Ecosystem.component_level2)
+table(litter$Ecosystem.component_level2)
+
+#===-
+### Create sankey diagram ----
+#====-
+## Build sankey
+litterLinkage <- ggplot(litterLinkageInput,
+                        mapping = aes(x = x,
+                                      next_x = next_x,
+                                      node = node,
+                                      next_node = next_node,
+                                      fill = factor(x),
+                                      label = node)) +
+  scale_x_discrete(labels=c("Ecosystem\nComponent","Response\nMeasured","Direction of\nRelationship")) +
+  # scale_fill_manual(values=colorpal) +
+  geom_sankey(flow.fill="grey",
+              flow.alpha=0.8) +
+  geom_sankey_label(size=2) +
+  theme_few()+
+  theme(text = element_text(size = 10),
+        axis.title = element_blank(),
+        axis.text.y = element_blank(),
+        axis.text = element_text(colour = "black"),
+        legend.position = "none")
+
+ggsave(plot = litterLinkage,
+       filename = paste0(outPath, "litterLinkage.png"),
+       device = "png",
+       dpi = 300,
+       width = 170,
+       height = 90,
+       units = "mm")
 
