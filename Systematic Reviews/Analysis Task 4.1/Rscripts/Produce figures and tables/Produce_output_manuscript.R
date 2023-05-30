@@ -1167,7 +1167,22 @@ tempLitGeo <- litter[!duplicated(litter$SW.ID), ]
 
 tempLitGeo <- as.data.frame(table(tempLitGeo$Region))
 colnames(tempLitGeo) <- c("Region", "Number of Articles")
-tempLitGeo$Region <- factor(tempLitGeo$Region, levels = c("Barents Sea", "NE-Atlantic", "Baltic Sea", "Mediterranean Sea"))
+# tempLitGeo$Region <- factor(tempLitGeo$Region, levels = c("Barents Sea", "NE-Atlantic", "Baltic Sea", "Mediterranean Sea"))
+
+regSea <- data.frame(Region = as.factor(unique(data$Region)),
+                     `Number of Articles` = rep(0, times = length(unique(data$Region))))
+
+tempLitGeo <- merge(x = regSea,
+                    y = tempLitGeo,
+                    by = "Region",
+                    all.x = TRUE)
+tempLitGeo$Number.of.Articles <- NULL
+tempLitGeo[is.na(tempLitGeo$`Number of Articles`), "Number of Articles"] <- 0
+
+tempLitGeo$Region <- factor(tempLitGeo$Region,
+                            levels = levels(tempLitGeo$Region)[order(tempLitGeo$`Number of Articles`,
+                                                                     tempLitGeo$Region,
+                                                                     decreasing = c(TRUE, FALSE))])
 
 
 ggsave(filename = paste0(outPath, "litterGeo.png"),
