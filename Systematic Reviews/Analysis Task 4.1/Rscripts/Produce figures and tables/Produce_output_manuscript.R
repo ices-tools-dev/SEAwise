@@ -1002,6 +1002,16 @@ dev.off()
 # Subset to litter only
 litter <- droplevels(data[Pressure.type == "Input of litter", ])
 
+## Extra Data Cleaning - May need to be considered at the database level.
+litter[litter$SW.ID == "SW4_0725" & litter$Ecosystem.component_level1 == "Fish_teleost", "Direction.of.relationship"] <- "Negative"
+litter[litter$SW.ID == "SW4_0725" & litter$Ecosystem.component_level1 == "Cephalopods", "Direction.of.relationship"] <- "Negative"
+litter[litter$SW.ID == "SW4_0144", "Direction.of.relationship"] <- "Positive"
+litter[litter$SW.ID == "SW4_0619" & litter$Response.variable_category == "Damage & entanglement", "Direction.of.relationship"] <- "Positive"
+litter[litter$SW.ID == "SW4_0851" & litter$Response.variable_category == "Damage & entanglement", "Direction.of.relationship"] <- "Positive"
+litter[litter$Response.variable_category == "Biodiversity" & litter$Direction.of.relationship == "Positive",]
+litter[litter$Direction.of.relationship == "Mortality",]
+litter[litter$Response.variable_category == "Biodiversity" & litter$Direction.of.relationship == "Positive",]
+
 # Litter specific data cleaning
 litter[is.na(litter$Gear_level1) & !duplicated(litter$SW.ID), ]
 litter[is.na(litter$Gear_level1), "Gear_level1"] <- "Other"
@@ -1013,6 +1023,9 @@ litter[litter$Pressure.variable_category == "Fishing effort",]
 #-----------------------------------------------#
 # Number of unique papers
 nrow(litter[!duplicated(litter$SW.ID),])
+
+# Number of records
+nrow(litter)
 
 # Earliest paper
 litter[litter$Year == min(litter$Year), ]
@@ -1037,8 +1050,10 @@ table(litter$Study.type)
 #===-
 ### Data cleaning ----
 #====-
+## Unique papers only:
 # tempLit <- litter[!duplicated(litter$SW.ID), c("SW.ID","Ecosystem.component_level1", "Sampling.Method.used.for.data.collection", "Response.variable_category", "Analytical.method.used.for.inference", "Direction.of.relationship")]
-tempLit <- litter[, c("SW.ID","Ecosystem.component_level1", "Sampling.Method.used.for.data.collection", "Response.variable_category", "Analytical.method.used.for.inference", "Direction.of.relationship")]
+# Unique combinations of relevant variables (some duplication of papers)
+tempLit <- litter[, c("SW.ID","Ecosystem.component_level1", "Sampling.Method.used.for.data.collection", "Response.variable_category", "Analytical.method.used.for.inference")]
 tempLit <- atempLit[!duplicated(atempLit), ]
 
 tempLit$Response.variable_category <- ifelse(tempLit$Response.variable_category %in% "Survival","Mortality",
@@ -1087,19 +1102,31 @@ tempLit$Response.variable_category <- reorder(x = as.factor(tempLit$Response.var
 tempLit$AnalyticalMethod <- reorder(x = as.factor(tempLit$AnalyticalMethod),
                                                         X = as.factor(tempLit$Analytical.method.used.for.inference),
                                                         FUN = length)
-tempLit$Direction.of.relationship <- reorder(x = as.factor(tempLit$Direction.of.relationship),
-                                             X = as.factor(tempLit$Direction.of.relationship),
-                                             FUN = length)
 tempLit <- droplevels(tempLit)
 
-## Create long versions for sankeys
-litterMethodsInput <- make_long(tempLit, Ecosystem.component_level1, Sampling.Method.used.for.data.collection, Response.variable_category, AnalyticalMethod)
-litterLinkageInput <- make_long(tempLit, Ecosystem.component_level1, Response.variable_category, Direction.of.relationship)
+
+#=== - 
+### Basic proportions for manuscript ----
+#==== - 
+# Proportion of studies using only descriptive statistics
+nrow(tempLit[tempLit$AnalyticalMethod == "Descriptive\nstatistics", ])/nrow(tempLit)
+# Proportions of studies using correlative approaches
+nrow(tempLit[tempLit$AnalyticalMethod == "Non-parametric\nGroupwise", ])/nrow(tempLit)
+nrow(tempLit[tempLit$AnalyticalMethod == "Linear Models", ])/nrow(tempLit)
+nrow(tempLit[tempLit$AnalyticalMethod == "GLMs GAMs &\nMachine Learning", ])/nrow(tempLit)
+nrow(tempLit[tempLit$AnalyticalMethod == "Multivariate &\nOrdination", ])/nrow(tempLit)
+
+# Proportions of studies using various responses
+nrow(tempLit[tempLit$Response.variable_category == "Growth", ])/nrow(tempLit)
+nrow(tempLit[tempLit$Response.variable_category == "Mortality", ])/nrow(tempLit)
 
 
 #===-
 ### Create sankey diagram ----
 #====-
+## Create long versions for sankeys
+litterMethodsInput <- make_long(tempLit, Ecosystem.component_level1, Sampling.Method.used.for.data.collection, Response.variable_category, AnalyticalMethod)
+
 ## Set colors
 # colorpal                             <- brewer.pal(8,"Paired")[-c(2,4,6,8)]
 colorpal                             <- viridis(8)[-c(1,2,3,6)]
@@ -1107,12 +1134,12 @@ colorpal                             <- viridis(8)[-c(1,2,3,6)]
 
 ## Build sankey
 litterMethods <- ggplot(litterMethodsInput,
-                 mapping = aes(x = x,
-                               next_x = next_x,
-                               node = node,
-                               next_node = next_node,
-                               fill = factor(x),
-                               label = node)) +
+                        mapping = aes(x = x,
+                                      next_x = next_x,
+                                      node = node,
+                                      next_node = next_node,
+                                      fill = factor(x),
+                                      label = node)) +
   scale_x_discrete(labels=c("Ecosystem\nComponent","Sampling\nMethodology","Response\nMeasured","Analytic\nMethod")) +
   # scale_fill_manual(values=colorpal) +
   geom_sankey(flow.fill="grey",
@@ -1133,6 +1160,49 @@ ggsave(plot = litterMethods,
        height = 90,
        units = "mm")
 
+#-----------------------------------------------#
+## Geographic spread ----
+#-----------------------------------------------#
+tempLitGeo <- litter[!duplicated(litter$SW.ID), ]
+
+tempLitGeo <- as.data.frame(table(tempLitGeo$Region))
+colnames(tempLitGeo) <- c("Region", "Number of Articles")
+# tempLitGeo$Region <- factor(tempLitGeo$Region, levels = c("Barents Sea", "NE-Atlantic", "Baltic Sea", "Mediterranean Sea"))
+
+regSea <- data.frame(Region = as.factor(unique(data$Region)),
+                     `Number of Articles` = rep(0, times = length(unique(data$Region))))
+
+tempLitGeo <- merge(x = regSea,
+                    y = tempLitGeo,
+                    by = "Region",
+                    all.x = TRUE)
+tempLitGeo$Number.of.Articles <- NULL
+tempLitGeo[is.na(tempLitGeo$`Number of Articles`), "Number of Articles"] <- 0
+
+tempLitGeo$Region <- factor(tempLitGeo$Region,
+                            levels = levels(tempLitGeo$Region)[order(tempLitGeo$`Number of Articles`,
+                                                                     tempLitGeo$Region,
+                                                                     decreasing = c(TRUE, FALSE))])
+
+
+ggsave(filename = paste0(outPath, "litterGeo.png"),
+       device = "png",
+       dpi = 300,
+       width = 80,
+       height = 90,
+       units = "mm",
+       plot = ggplot()+
+         geom_col(data = tempLitGeo,
+                  mapping = aes(x = Region,
+                                y = `Number of Articles`,
+                                fill = Region)) +
+         theme_few()+
+         theme(text = element_text(size = 10),
+               # axis.title = element_blank(),
+               axis.text = element_text(colour = "black"),
+               axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
+               legend.position = "none")
+         )
 
 #-----------------------------------------------#
 ## Spatial Scales ----
@@ -1374,9 +1444,35 @@ table(litter$Ecosystem.component_level1)
 unique(litter$Ecosystem.component_level2)
 table(litter$Ecosystem.component_level2)
 
+#=== -
+### Data cleaning
+#====-
+tempLitDR <- litter[, c("SW.ID","Ecosystem.component_level1", "Response.variable_category", "Direction.of.relationship")]
+tempLitDR <- atempLitDR[!duplicated(atempLitDR), ]
+
+tempLitDR$Response.variable_category <- ifelse(tempLitDR$Response.variable_category %in% "Survival","Mortality",
+                                               ifelse(tempLitDR$Response.variable_category %in% c("Community composition"), "Biodiversity",
+                                                      tempLitDR$Response.variable_category))  
+
+## Order factors for plotting nicely
+tempLitDR$Ecosystem.component_level1 <- reorder(x = as.factor(tempLitDR$Ecosystem.component_level1),
+                                                X = as.factor(tempLitDR$Ecosystem.component_level1),
+                                                FUN = length)
+tempLitDR$Response.variable_category <- reorder(x = as.factor(tempLitDR$Response.variable_category),
+                                                X = as.factor(tempLitDR$Response.variable_category),
+                                                FUN = length)
+tempLitDR$Direction.of.relationship <- reorder(x = as.factor(tempLitDR$Direction.of.relationship),
+                                               X = as.factor(tempLitDR$Direction.of.relationship),
+                                               FUN = length)
+tempLitDR <- droplevels(tempLitDR)
+
 #===-
 ### Create sankey diagram ----
 #====-
+## Make Sankey compatible data
+litterLinkageInput <- make_long(tempLitDR, Ecosystem.component_level1, Response.variable_category, Direction.of.relationship)
+
+
 ## Build sankey
 litterLinkage <- ggplot(litterLinkageInput,
                         mapping = aes(x = x,
