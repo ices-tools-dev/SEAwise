@@ -1238,7 +1238,7 @@ spatResEx_count <- merge(x = spatResEx_cat,
 spatResEx_count[is.na(spatResEx_count$NumberOfArticles), "NumberOfArticles"] <- 0
 
 ## Plot
-ggsave(filename = paste(outPath, "litter_spatialResVExt.png"),
+ggsave(filename = paste0(outPath, "litter_spatialResVExt.png"),
        device = "png",
        dpi = 300,
        width = 170,
@@ -1298,7 +1298,7 @@ tempResEx_count <- merge(x = tempResEx_cat,
 tempResEx_count[is.na(tempResEx_count$NumberOfArticles), "NumberOfArticles"] <- 0
 
 ## Plot
-ggsave(filename = paste(outPath, "litter_temporalResVExt.png"),
+ggsave(filename = paste0(outPath, "litter_temporalResVExt.png"),
        device = "png",
        dpi = 300,
        width = 170,
@@ -1354,7 +1354,7 @@ spatempEx_count[is.na(spatempEx_count$NumberOfArticles), "NumberOfArticles"] <- 
 
 
 ## Plot
-ggsave(filename = paste(outPath, "litter_spatiotemporalExt.png"),
+ggsave(filename = paste0(outPath, "litter_spatiotemporalExt.png"),
        device = "png",
        dpi = 300,
        width = 170,
@@ -1401,7 +1401,7 @@ spatempRes_count <- merge(x = spatempResEx_cat,
 spatempRes_count[is.na(spatempRes_count$NumberOfArticles), "NumberOfArticles"] <- 0
 
 ## Plot
-ggsave(filename = paste(outPath, "litter_spatiotemporalRes.png"),
+ggsave(filename = paste0(outPath, "litter_spatiotemporalRes.png"),
        device = "png",
        dpi = 300,
        width = 170,

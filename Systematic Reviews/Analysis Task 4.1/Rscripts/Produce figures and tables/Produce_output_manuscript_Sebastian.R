@@ -17,6 +17,7 @@ library(RColorBrewer)
 library(sf)
 library(plotrix)
 library(grDevices)
+library(colorspace)
 
 
 devtools::install_github("davidsjoberg/ggsankey")
@@ -86,29 +87,6 @@ axis(1, at=110, tick=F, line=2, label="Number of papers", cex.axis=2)
 dev.off()
 
 
-#-----------------------------------------------#
-## Barplot for Response variable categories ----
-#-----------------------------------------------#
-
-# First manually combine Survival and Mortality studies (all as Mortality)
-ResVarCats                            <- data
-ResVarCats$Response.variable_category <- with(ResVarCats, ifelse(Response.variable_category %in% "Survival","Mortality",Response.variable_category))                            
-
-ResVarCats                            <- ResVarCats[, .(NrPaps = length(unique(SW.ID))),
-                                                    by = Response.variable_category]
-ResVarCats                            <- ResVarCats[order(NrPaps),,]
-
-tiff(paste0(outPath, "ResVarCats.tiff"), width=1200, height=750, res=100)
-par(mar=c(5, 23, 2, 2))
-b                                     <- barplot(ResVarCats$NrPaps, horiz=TRUE, axes=F, xlim=c(0,265), col=viridis(3)[2])
-box()
-axis(2, at=b, labels=ResVarCats$Response.variable_category, las=1, cex.axis=2)
-axis(1, at= seq(0,250, 25), labels=seq(0, 250, 25), cex.axis=1.5)
-text(x=162, y=0, paste0("Total number of unique papers: ", length(unique(data$SW.ID))), pos=4)
-text(x=ResVarCats$NrPaps+7.5, y=b, ResVarCats$NrPaps, cex = 1.3)
-axis(1, at=125, tick=F, line=2, label="Number of papers", cex.axis=2)
-dev.off()
-
 
 
 
@@ -131,6 +109,36 @@ subset_byc<-data_allScreened[(data_allScreened$Pressure.type%in%c("Catch_and_byc
 
 #combined_subset<-rbind(subset_byc, subset_dis)
 
+#Subset to EPT species or task 4.2 papers
+subset_byc<-subset_byc[subset_byc$WP4.task%in%c("4.2","4.2 _ 4.3","4.2 _ 4.4"),]
+#PET <- rep(NA,nrow(subset_byc)); 
+#PET[subset_byc$WP4.task=="4.2" & subset_byc$WP4.task=="4.2 _ 4.3" & subset_byc$WP4.task=="4.2 _ 4.4"] <- "PETspecies";
+#subset_byc <- data.frame(subset_byc,PET);
+
+#-----------------------------------------------#
+## Barplot for Response variable categories ----
+#-----------------------------------------------#
+
+# First manually combine Survival and Mortality studies (all as Mortality)
+ResVarCats                            <- subset_byc
+ResVarCats$Response.variable_category <- with(ResVarCats, ifelse(Response.variable_category %in% "Survival","Mortality",Response.variable_category))                            
+
+ResVarCats                            <- ResVarCats[, .(NrPaps = length(unique(SW.ID))),
+                                                    by = Response.variable_category]
+ResVarCats                            <- ResVarCats[order(NrPaps),,]
+
+tiff(paste0(outPath, "ResVarCats.png"), width=1200, height=750, res=100)
+par(mar=c(5, 23, 2, 2))
+b                                     <- barplot(ResVarCats$NrPaps, horiz=TRUE, axes=F, xlim=c(0,265), col=viridis(3)[2])
+box()
+axis(2, at=b, labels=ResVarCats$Response.variable_category, las=1, cex.axis=2)
+axis(1, at= seq(0,250, 25), labels=seq(0, 250, 25), cex.axis=1.5)
+text(x=162, y=0, paste0("Total number of unique papers: ", length(unique(subset_byc$SW.ID))), pos=4)
+text(x=ResVarCats$NrPaps+7.5, y=b, ResVarCats$NrPaps, cex = 1.3)
+axis(1, at=125, tick=F, line=2, label="Number of papers", cex.axis=2)
+dev.off()
+
+
 
 #-----------------------------------------------
 ## Barplots of fishing gears studied
@@ -140,7 +148,7 @@ Gears                                <- subset_byc[,.(NrPaps = length(unique(SW.
 Gears$Gear_level1                    <- ifelse(is.na(Gears$Gear_level1)==T, "Not specified", 
                                                ifelse(Gears$Gear_level1 == "Hooks_and_lines", "Hooks and Lines", Gears$Gear_level1))
 
-tiff(paste0(outPath, "GearsStudied.tiff"), width= 2000, height = 1000, res = 100)
+tiff(paste0(outPath, "GearsStudied.png"), width= 2000, height = 1000, res = 100)
 par(mfrow=c(1,4))
 par(mar=c(15,8,15,1))
 for(iType in unique(Gears$Fishery.type)){
@@ -173,14 +181,14 @@ EcoComp                               <- subset_byc[, .(NrPaps = length(unique(S
                                               by = Ecosystem.component_level1]
 EcoComp                               <- EcoComp[order(NrPaps),,]
 
-tiff(paste0(outPath, "EcoComp.tiff"), width=1000, height=750, res=100)
+tiff(paste0(outPath, "EcoComp.png"), width=1000, height=750, res=100)
 par(mar=c(5, 15, 4, 2))
 b                                     <- barplot(EcoComp$NrPaps, horiz=TRUE, axes=F, xlim=c(0,230))
 box()
 axis(2, at=b, labels=EcoComp$Ecosystem.component_level1 , las=1, cex.axis=1.2)
 axis(1, at= seq(0,220, 20), labels=seq(0, 220, 20), cex.axis=1.2)
 title(main="Number of unique papers per ecosystem component (level 1)", cex.main=1.5, font.main=2)
-text(x=160, y=0, paste0("Total number of papers retained: ", length(unique(data$SW.ID))))
+text(x=160, y=0, paste0("Total number of papers retained: ", length(unique(subset_byc$SW.ID))))
 text(x=EcoComp$NrPaps+6, y=b, EcoComp$NrPaps)
 axis(1, at=110, tick=F, line=2, label="Number of unique (retained) papers", cex.axis=1.3)
 dev.off()
@@ -215,7 +223,28 @@ p <- ggplot(EcoComp, aes(NrPaps, Ecosystem.component_level1, fill=CS)) +
         panel.grid = element_blank()) +
   facet_wrap(~Area)
 print(p)
-ggsave("EcoRegion.tiff", p, path=outPath, width = 8, height = 5)
+ggsave("EcoRegion.png", p, path=outPath, width = 8, height = 5)
+
+
+
+#-----------------------------------------------
+## Barplot for ecosystem component (level 1)
+#-----------------------------------------------
+EcoMethod                               <- subset_byc[, .(NrPaps = length(unique(SW.ID))),
+                                                    by = Sampling.Method.used.for.data.collection]
+EcoMethod                              <- EcoMethod[order(NrPaps),,]
+
+tiff(paste0(outPath, "EcoMethod.png"), width=1000, height=750, res=100)
+par(mar=c(5, 15, 4, 2))
+b                                     <- barplot(EcoMethod$NrPaps, horiz=TRUE, axes=F, xlim=c(0,230))
+box()
+axis(2, at=b, labels=EcoMethod$Sampling.Method.used.for.data.collection, las=1, cex.axis=1.2)
+axis(1, at= seq(0,220, 20), labels=seq(0, 220, 20), cex.axis=1.2)
+title(main="Number of unique papers per sampling method", cex.main=1.5, font.main=2)
+text(x=160, y=0, paste0("Total number of papers retained: ", length(unique(subset_byc$SW.ID))))
+text(x=EcoComp$NrPaps+6, y=b, EcoComp$NrPaps)
+axis(1, at=110, tick=F, line=2, label="Number of unique (retained) papers", cex.axis=1.3)
+dev.off()
 
 
 
@@ -245,7 +274,7 @@ p <- ggplot(EcoPressExp, aes(x=Pressure_level, y=Ecosystem.component_level1, fil
         axis.title = element_text(size=12))
 print(p)
 
-ggsave("EcoPress_heatmap.tiff", p, path=outPath, width = 9, height = 7)
+ggsave("EcoPress_heatmap.png", p, path=outPath, width = 9, height = 7)
 
 
 # #-----------------------------------------------
@@ -339,7 +368,7 @@ p <- ggplot(Qual, aes(Region,NrPaps, fill=as.factor(Quality))) +
   theme_bw() +
   theme(axis.text.x = element_text(angle=90, hjust=1))
 print(p)
-ggsave("QualityMethods.tiff", p, path=outPath, width = 8, height = 5)
+ggsave("QualityMethods.png", p, path=outPath, width = 8, height = 5)
 
 
 
@@ -378,195 +407,281 @@ ggsave("Temporalscale&resolution2.png", p, path=outPath, width = 7, height = 6)
 
 
 
+#-----------------------------------------------#
+## Spatial Scales ---- code from Elliot
+#-----------------------------------------------#
+
+# is.na - spatResEx_count[is.na(spatResEx_count$NumberOfArticles), "NumberOfArticles"] <- 0
+
+## Make spatial extent and scale categories
+subset_byc$ScaleSpatial <- factor(x = subset_byc$Scale...Spatial..m.,
+                              levels = c("0-5", "5-10", "10-50", "50-100", "100-500", "500-1,000", "1,000-5,000", "5,000-10,000","10,000-50,000", "50,000-100,000", ">100,000"),
+                              ordered = TRUE)
+subset_byc$ResSpatial <- factor(x = subset_byc$Resolution...Spatial..m.,
+                            levels = c("0-5", "5-10", "10-50", "50-100", "100-500", "500-1,000", "1,000-5,000", "5,000-10,000","10,000-50,000", "50,000-100,000", ">100,000"),
+                            ordered = TRUE)
+
+spatResEx_cat <- expand.grid(levels(subset_byc$ScaleSpatial),
+                             levels(subset_byc$ScaleSpatial))
+
+colnames(spatResEx_cat) <- c("SpatialExtent_m", "SpatialRes_m")
+
+## Make counts of articles in different combinations of SPATIAL EXTENTS & RESOLUTIONS
+spatResEx_count <- aggregate(SW.ID~ScaleSpatial+ResSpatial,
+                             data = subset_byc[!duplicated(subset_byc$SW.ID), ],
+                             FUN = length)
+
+names(spatResEx_count)[names(spatResEx_count) %in% "SW.ID"] <- "NumberOfArticles"
+
+
+spatResEx_count <- merge(x = spatResEx_cat,
+                         y = spatResEx_count,
+                         by.y = c("ScaleSpatial", "ResSpatial"),
+                         by.x = c("SpatialExtent_m", "SpatialRes_m"),
+                         all.x = TRUE)
+
+spatResEx_count[is.na(spatResEx_count$NumberOfArticles), "NumberOfArticles"] <- 0
+
+## Plot
+ggsave(filename = paste(outPath, "subset_byc_spatialResVExt.png"),
+       device = "png",
+       dpi = 300,
+       width = 170,
+       height = 90,
+       units = "mm",
+       plot = 
+         ggplot() +
+         geom_tile(data = spatResEx_count,
+                   mapping = aes(x = SpatialExtent_m,
+                                 y = SpatialRes_m,
+                                 fill = NumberOfArticles)) +
+         scale_fill_continuous_sequential(palette = "blues3",
+                                          rev = TRUE,
+                                          na.value = 0) +
+         scale_x_discrete(drop = FALSE) +
+         scale_y_discrete(drop = FALSE) +
+         ylab("Sampling Resolution (m)") +
+         xlab("Sampling Extent (m)") +
+         theme_few() +
+         theme(text = element_text(size = 9), 
+               # axis.text.x = element_text(hjust = 0.5, vjust = 1),
+               axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
+         )
+)
+
+#-----------------------------------------------#
+## Temporal Scales ----
+#-----------------------------------------------#
+
+## Make temporal extent and scale categories
+subset_byc$ScaleTemporal <- factor(x = subset_byc$Scale...Temporal,
+                                   #levels = c("day", "half year", "year", "two year", "five year",  "decade", "multidecadal"),
+                                   levels = c("snapshot/no repeat sampling", "subday", "day", "week", "two week", "month", "two month", "quarter", "half year", "year", "two year", "five year", "decade", "multidecadal"),
+                               ordered = TRUE)
+subset_byc$ResTemporal <- factor(x = subset_byc$Resolution...Temporal,
+                                 #levels = c("day", "half year", "year", "two year", "five year",  "decade", "multidecadal"),
+                                 levels = c("snapshot/no repeat sampling", "subday", "day", "week", "two week", "month", "two month", "quarter", "half year", "year", "two year", "five year", "decade", "multidecadal"),
+                                 ordered = TRUE)
+
+tempResEx_cat <- expand.grid(levels(subset_byc$ScaleTemporal),
+                             levels(subset_byc$ScaleTemporal))
+
+colnames(tempResEx_cat) <- c("TemporalExtent", "TemporalRes")
+
+## Make counts of articles in different combinations of TEMPORAL EXTENTS & RESOLUTIONS
+tempResEx_count <- aggregate(SW.ID~ScaleTemporal+ResTemporal,
+                             data = subset_byc[!duplicated(subset_byc$SW.ID), ],
+                             FUN = length)
+
+names(tempResEx_count)[names(tempResEx_count) %in% "SW.ID"] <- "NumberOfArticles"
+
+
+tempResEx_count <- merge(x = tempResEx_cat,
+                         y = tempResEx_count,
+                         by.y = c("ScaleTemporal", "ResTemporal"),
+                         by.x = c("TemporalExtent", "TemporalRes"),
+                         all.x = TRUE)
+
+tempResEx_count[is.na(tempResEx_count$NumberOfArticles), "NumberOfArticles"] <- 0
+
+## Plot
+ggsave(filename = paste(outPath, "subset_byc_temporalResVExt.png"),
+       device = "png",
+       dpi = 300,
+       width = 170,
+       height = 90,
+       units = "mm",
+       plot = 
+         ggplot() +
+         geom_tile(data = tempResEx_count,
+                   mapping = aes(x = TemporalExtent,
+                                 y = TemporalRes,
+                                 fill = NumberOfArticles)) +
+         scale_fill_continuous_sequential(palette = "blues3",
+                                          rev = TRUE,
+                                          na.value = 0) +
+         scale_x_discrete(drop = FALSE) +
+         scale_y_discrete(drop = FALSE) +
+         ylab("Sampling Resolution") +
+         xlab("Sampling Extent") +
+         theme_few() +
+         theme(text = element_text(size = 9), 
+               # axis.text.x = element_text(hjust = 0.5, vjust = 1),
+               axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
+         )
+)
+
+
+#-----------------------------------------------#
+## SpatioTemporal Extent ----
+#-----------------------------------------------#
+## Dependent on code above
+
+
+# Make spatio-temperal extent and resolution category matrix in long form
+spatempResEx_cat <- expand.grid(levels(subset_byc$ScaleSpatial),
+                                levels(subset_byc$ScaleTemporal))
+
+colnames(spatempResEx_cat) <- c("SpatialScale_m", "TemporalScale")
+
+## Make counts of articles in different combinations of SPATIAL & TEMPORAL EXTENTS
+spatempEx_count <- aggregate(SW.ID~ScaleSpatial+ScaleTemporal,
+                             data = subset_byc[!duplicated(subset_byc$SW.ID), ],
+                             FUN = length)
+names(spatempEx_count)[names(spatempEx_count) %in% "SW.ID"] <- "NumberOfArticles"
+
+
+spatempEx_count <- merge(x = spatempResEx_cat,
+                         y = spatempEx_count,
+                         by.y = c("ScaleSpatial", "ScaleTemporal"),
+                         by.x = c("SpatialScale_m", "TemporalScale"),
+                         all.x = TRUE)
+
+spatempEx_count[is.na(spatempEx_count$NumberOfArticles), "NumberOfArticles"] <- 0
+
+
+## Plot
+ggsave(filename = paste(outPath, "subset_byc_spatiotemporalExt.png"),
+       device = "png",
+       dpi = 300,
+       width = 170,
+       height = 90,
+       units = "mm",
+       plot = 
+         ggplot() +
+         geom_tile(data = spatempEx_count,
+                   mapping = aes(x = SpatialScale_m,
+                                 y = TemporalScale,
+                                 fill = NumberOfArticles)) +
+         scale_fill_continuous_sequential(palette = "blues3",
+                                          rev = TRUE,
+                                          na.value = 0) +
+         scale_x_discrete(drop = FALSE) +
+         scale_y_discrete(drop = FALSE) +
+         ylab("Temporal Extent") +
+         xlab("Spatial Extent (m)") +
+         theme_few() +
+         theme(text = element_text(size = 9), 
+               # axis.text.x = element_text(hjust = 0.5, vjust = 1),
+               axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
+         )
+)
+
+
+#-----------------------------------------------#
+## SpatioTemporal Resolution ---- code from Elliot
+#-----------------------------------------------#
+## Dependent on code above
+
+## Make counts of articles in different combinations of SPATIAL & TEMPORAL RESOLUTIONS
+spatempRes_count <- aggregate(SW.ID~ResSpatial+ResTemporal,
+                              data = subset_byc[!duplicated(subset_byc$SW.ID), ],
+                              FUN = length)
+names(spatempRes_count)[names(spatempRes_count) %in% "SW.ID"] <- "NumberOfArticles"
+
+
+spatempRes_count <- merge(x = spatempResEx_cat,
+                          y = spatempRes_count,
+                          by.y = c("ResSpatial", "ResTemporal"),
+                          by.x = c("SpatialScale_m", "TemporalScale"),
+                          all.x = TRUE)
+
+spatempRes_count[is.na(spatempRes_count$NumberOfArticles), "NumberOfArticles"] <- 0
+
+## Plot
+ggsave(filename = paste(outPath, "subset_byc_spatiotemporalRes.png"),
+       device = "png",
+       dpi = 300,
+       width = 170,
+       height = 90,
+       units = "mm",
+       plot = 
+         ggplot() +
+         geom_tile(data = spatempRes_count,
+                   mapping = aes(x = SpatialScale_m,
+                                 y = TemporalScale,
+                                 fill = NumberOfArticles)) +
+         scale_fill_continuous_sequential(palette = "blues3",
+                                          rev = TRUE,
+                                          na.value = 0) +
+         scale_x_discrete(drop = FALSE) +
+         scale_y_discrete(drop = FALSE) +
+         ylab("Temporal Resolution") +
+         xlab("Spatial Resolution (m)") +
+         theme_few() +
+         theme(text = element_text(size = 9), 
+               # axis.text.x = element_text(hjust = 0.5, vjust = 1),
+               axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
+         )
+)
+
+#-----------------------------------------------#
+## Pressures & Responses ----
+#-----------------------------------------------#
+# Pressures exerted
+unique(subset_byc$Response.variable_paper)
+unique(subset_byc$Response.variable_category)
+table(subset_byc$Response.variable_category)
+table(subset_byc$Pressure.variable_category)
+
+#-----------------------------------------------#
+## Responses & Ecosystem Components ----
+#-----------------------------------------------#
+unique(subset_byc$Ecosystem.component_level1)
+table(subset_byc$Ecosystem.component_level1)
+unique(subset_byc$Ecosystem.component_level2)
+table(subset_byc$Ecosystem.component_level2)
+
+#===-
+### Create sankey diagram ----
+#====-
+## Build sankey
+subset_bycLinkage <- ggplot(subset_bycLinkageInput,
+                        mapping = aes(x = x,
+                                      next_x = next_x,
+                                      node = node,
+                                      next_node = next_node,
+                                      fill = factor(x),
+                                      label = node)) +
+  scale_x_discrete(labels=c("Ecosystem\nComponent","Response\nMeasured","Direction of\nRelationship")) +
+  # scale_fill_manual(values=colorpal) +
+  geom_sankey(flow.fill="grey",
+              flow.alpha=0.8) +
+  geom_sankey_label(size=2) +
+  theme_few()+
+  theme(text = element_text(size = 10),
+        axis.title = element_blank(),
+        axis.text.y = element_blank(),
+        axis.text = element_text(colour = "black"),
+        legend.position = "none")
+
+ggsave(plot = subset_bycLinkage,
+       filename = paste0(outPath, "subset_bycLinkage.png"),
+       device = "png",
+       dpi = 300,
+       width = 170,
+       height = 90,
+       units = "mm")
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# #-----------------------------------------------
-# ## Heatmap of ecosystem component vs gear_level 1 for Commercial
-# #-----------------------------------------------
-# 
-# EcoFishGear                          <- subset_byc[, .(NrPaps = length(unique(SW.ID))),
-#                                              by = c("Ecosystem.component_level1", "Fishery.type", "Gear_level1")]
-# EcoFishGear                          <- subset(EcoFishGear, Fishery.type %in% "Commercial")
-# EcoFishGear$Gear_level1              <- ifelse(is.na(EcoFishGear$Gear_level1)==T, "Not specified",
-#                                                ifelse(EcoFishGear$Gear_level1 == "Hooks_and_lines", "Hooks and Lines", EcoFishGear$Gear_level1))
-# rCols                                <- data.table(colcode = viridis(max(EcoFishGear$NrPaps)),
-#                                                    value = c(1:max(EcoFishGear$NrPaps)))
-# 
-# EcoFishmat                           <- matrix(nrow = length(unique(EcoFishGear$Ecosystem.component_level1)),
-#                                                ncol = length(unique(EcoFishGear$Gear_level1)))
-# colnames(EcoFishmat)                 <- sort(unique(EcoFishGear$Gear_level1))
-# rownames(EcoFishmat)                 <- sort(unique(EcoFishGear$Ecosystem.component_level1))
-# 
-# for(iRow in c(1:nrow(EcoFishGear))){
-#   subdat                             <- EcoFishGear[iRow,]
-#   EcoFishmat[subdat$Ecosystem.component_level1, subdat$Gear_level1] <- subdat$NrPaps
-# }
-# r                                    <- raster(EcoFishmat)
-# #rCols                                <- colorRampPalette(c("mistyrose", "darkred"))(max(EcoFishmat, na.rm=T))
-# rCols                                <- viridis(n=(max(EcoFishmat, na.rm=T)))
-# 
-# 
-# tiff(paste0(outPath, "EcoFishComm_heatmap.tiff"), width= 1000, height = 1000, res = 100)
-# par(mar=c(19, 1, 5, 7))
-# plot(r, axes=F, col=rCols, legend=F, box=F)
-# segments(x0=0, x1=1, y0=c(0,1), y1=c(0,1))
-# abline(v=c(0,1))
-# abline(v=c(1/9, 2/9, 3/9, 4/9, 5/9, 6/9, 7/9, 8/9), lty=2, col="lightgrey", lwd=0.8)
-# segments(x0=0, x1=1, y0=c(1/11, 2/11, 3/11, 4/11, 5/11, 6/11, 7/11, 8/11, 9/11,10/11),
-#          y1=c(1/11, 2/11, 3/11, 4/11, 5/11, 6/11, 7/11, 8/11, 9/11,10/11), col="lightgrey", lty=2, lwd=0.8)
-# axis(1, at=seq(0.05, 0.95, length.out=9), labels= colnames(EcoFishmat), las=3, cex.axis=1.5)
-# axis(4, at=seq(1/22, 21/22, length.out=11), labels= rev(rownames(EcoFishmat)), las=1, pos=1, cex.axis=1.5)
-# par(fig=c(0,1,0,1), new=TRUE, mar=c(0,1,5,1))
-# plot(c(0,1), c(0,1), type="n", axes=F, ann=F)
-# title(main="Commercial fishing gears studied per ecosystem component", cex.main=1.5, font.main=2)
-# gradient.rect(xleft=0.85, xright=0.95, ybottom=0, ytop=0.3, col=rev(rCols), gradient="y")
-# text("Number of \n papers retained", x=0.9, y=0.35, font=4, cex=1.3)
-# text("1", x=0.97, y=0.3, font=3)
-# text("152", x=0.97, y=0, font=3)
-# text("76", x=0.97, y=0.15, font=3)
-# dev.off()
-# Error in raster(EcoFishmat) : could not find function "raster"
-
-# #-----------------------------------------------
-# ## Heatmap of relation direction for ecosystem components 
-# #-----------------------------------------------
-# RelDirEco                            <- subset_byc[, .(NrPaps = length(unique(SW.ID))),
-#                                              by = c("Direction.of.relationship", "Ecosystem.component_level1")]
-# RelDirEcomat                         <- matrix(nrow = length(unique(subset_byc$Ecosystem.component_level1)),
-#                                                ncol = length(unique(subset_byc$Direction.of.relationship)))
-# colnames(RelDirEcomat)               <- sort(unique(subset_byc$Direction.of.relationship))  
-# rownames(RelDirEcomat)               <- sort(unique(subset_byc$Ecosystem.component_level1))
-# 
-# for(iRow in c(1:nrow(RelDirEco))){
-#   subdat                             <- RelDirEco[iRow,]
-#   RelDirEcomat[subdat$Ecosystem.component_level1, subdat$Direction.of.relationship] <- subdat$NrPaps
-# }
-# r                                    <- raster(RelDirEcomat)
-# 
-# #rCols                                <- colorRampPalette(c("mistyrose", "darkred"))(max(EcoPressmat, na.rm=T))
-# rCols                                <- viridis(n=max(RelDirEcomat, na.rm=T))   
-# 
-# tiff(paste0(outPath, "RelDirEco_heatmap.tiff"), width= 1000, height = 1000, res = 100)
-# par(mar=c(19, 1, 5, 7))
-# plot(r, axes=F,
-#      col=rCols, legend=F, box=F)
-# segments(x0=0, x1=1, y0=c(0,1), y1=c(0,1))
-# abline(v=c(0,1))
-# abline(v=c(1/5, 2/5, 3/5, 4/5), lty=2, col="lightgrey", lwd=0.8)
-# segments(x0=0, x1=1, y0=c(1/11, 2/11, 3/11, 4/11, 5/11, 6/11, 7/11, 8/11, 9/11,10/11), 
-#          y1=c(1/11, 2/11, 3/11, 4/11, 5/11, 6/11, 7/11, 8/11, 9/11,10/11), col="lightgrey", lty=2, lwd=0.8)
-# axis(1, at=seq(1/10, 9/10, length.out=5), labels= colnames(RelDirEcomat), las=3, cex.axis=1.5)
-# axis(4, at=seq(1/22, 21/22, length.out=11), labels= rev(rownames(RelDirEcomat)), las=1, pos=1, cex.axis=1.5)
-# par(fig=c(0,1,0,1), new=TRUE, mar=c(0,1,5,1))
-# plot(c(0,1), c(0,1), type="n", axes=F, ann=F)
-# title(main="Direction of relation per ecosystem component", cex.main=1.5, font.main=2)
-# gradient.rect(xleft=0.85, xright=0.95, ybottom=0, ytop=0.3, col=rev(rCols), gradient="y")
-# text("Number of \n papers retained", x=0.9, y=0.35, font=4, cex=1.3)
-# text("1", x=0.97, y=0.3, font=3)
-# text("120", x=0.97, y=0, font=3)
-# text("60", x=0.97, y=0.15, font=3)
-# dev.off()
-
-
-
-# #-----------------------------------------------
-# ## Heatmaps of relation direction for response variable categories.
-# #-----------------------------------------------
-# RelDirRVC                            <- subset_byc[, .(NrPaps = length(unique(SW.ID))),
-#                                              by = c("Direction.of.relationship", "Response.variable_category")]
-# 
-# RelDirRVCmat                         <- matrix(nrow = length(unique(subset_byc$Response.variable_category)),
-#                                                ncol = length(unique(subset_byc$Direction.of.relationship)))
-# colnames(RelDirRVCmat)               <- sort(unique(subset_byc$Direction.of.relationship))  
-# rownames(RelDirRVCmat)               <- sort(unique(subset_byc$Response.variable_category))
-# 
-# for(iRow in c(1:nrow(RelDirRVC))){
-#   subdat                             <- RelDirRVC[iRow,]
-#   RelDirRVCmat[subdat$Response.variable_category, subdat$Direction.of.relationship] <- subdat$NrPaps
-# }
-# r                                    <- raster(RelDirRVCmat)
-# rCols                                <- viridis(n=max(RelDirRVC$NrPaps))
-# 
-# tiff(paste0(outPath, "RelDirRVC_heatmap.tiff"), width= 1000, height = 1000, res = 100)
-# par(mar=c(15, 3, 7, 20))
-# plot(r, axes=F,
-#      col=rCols, legend=F, box=F)
-# segments(x0=seq(0, 1, length.out=ncol(RelDirRVCmat)+1), x1=seq(0, 1, length.out=ncol(RelDirRVCmat)+1), y0=0, y1=1, lty=2, col="lightgrey", lwd=0.8)
-# segments(x0=0, x1=1, y0=seq(0,1,length.out=nrow(RelDirRVCmat)+1), y1=seq(0,1, length.out=nrow(RelDirRVCmat)+1), col="lightgrey", lty=2, lwd=0.8)
-# segments(x0=0, x1=1, y0=c(0,1), y1=c(0,1))
-# segments(x0=c(0,1), x1=c(0,1), y0=0, y1=1)
-# axis(1, at=seq((1/ncol(RelDirRVCmat))/2, 1-((1/ncol(RelDirRVCmat))/2), length.out=ncol(RelDirRVCmat)), labels= colnames(RelDirRVCmat), las=3, cex.axis=1.5, pos=0)
-# axis(4, at=seq((1/nrow(RelDirRVCmat))/2, 1-((1/nrow(RelDirRVCmat))/2), length.out=nrow(RelDirRVCmat)), labels = rev(rownames(RelDirRVCmat)), las=1, cex.axis=1.5, pos=1)
-# par(fig=c(0,1,0,1), new=TRUE, mar=c(0,1,5,0))
-# plot(c(0,1), c(0,1), type="n", axes=F, ann=F)
-# title(main="Direction of relationship per reponse variable (Category)", cex.main=2, font.main=2, line=0)
-# gradient.rect(xleft=0.75, xright=0.9, ybottom=0.05, ytop=0.15, col=rCols, gradient="x")
-# text("Number of \n papers retained", x=0.825, y=0.2, font=4, cex=1.3)
-# text("1", x=0.745, y=0.1, font=3)
-# text("135", x=0.915, y=0.1, font=3)
-# dev.off()
-# 
