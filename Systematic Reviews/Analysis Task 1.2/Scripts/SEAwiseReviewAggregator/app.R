@@ -34,18 +34,41 @@ wp3$X <- NULL
 wp3$Exclusion.Criteria <- NULL
 
 # wp4 <- read.csv(file = "Systematic Reviews/Analysis Task 1.2/Databases/Database_4_20220829.csv", header = T) # Path when run manually
-wp4 <- read.csv(file = "../../Databases/Database_4_20220829.csv", header = T)
-# wp4 <- readRDS(file = "../../Databases/Database_4_20230131.rds")
-# wp4 <- wp4[is.na(wp4$Exclusion.Criteria),]
+# wp4 <- read.csv(file = "../../Databases/Database_4_20220829.csv", header = T)
+
+# wp4 <- as.data.frame(readRDS(file = "Systematic Reviews/Analysis Task 1.2/Databases/Database_4_20230131.rds")) # Path when run manually
+wp4 <- as.data.frame(readRDS(file = "../../Databases/Database_4_20230131.rds"))
+wp4$X <- NULL
+wp4 <- wp4[is.na(wp4$Exclusion.Criteria), ]
 wp4$Exclusion.Criteria <- NULL
-wp4$Sampling.Method.used.for.data.collection <- ifelse(wp4$Sampling.Method.used.for.data.collection == "other", wp4$Description.Other.Sampling.Method, wp4$Sampling.Method.used.for.data.collection)
+wp4$Sampling.Method.used.for.data.collection <- ifelse(wp4$Sampling.Method.used.for.data.collection == "Other", wp4$Description.Other.Sampling.Method, wp4$Sampling.Method.used.for.data.collection)
 wp4$Description.Other.Sampling.Method <- NULL
 wp4$Study.type <- ifelse(is.na(wp4$Study.type), "Other", wp4$Study.type)
-wp4$Study.type <- ifelse(wp4$Study.type == "combination of field surveys, byctach and over many decades", "Other", wp4$Study.type)
+# wp4$Study.type <- ifelse(wp4$Study.type == "combination of field surveys, byctach and over many decades", "Other", wp4$Study.type)
 wp4$Study.type <- ifelse(wp4$Study.type == "Modelling/simulation", "Modelling or simulation", wp4$Study.type)
+wp4$Study.type <- ifelse(wp4$Study.type == "Questionnaire/interview", "Questionnaire or interview", wp4$Study.type)
+wp4$Study.type <- ifelse(wp4$Study.type == "Field experiment/observations", "Field experiment or observations", wp4$Study.type)
 
-# wp4$Pressure_level <- ifelse(is.na(wp4$Pressure_level), "Not specified", wp4$Pressure_level)
-
+### NEEDS FIXING TO REMOVE ALL NA's THEN APPLY TO ALL WP DATA ----
+# for(i in colnames(wp4)){
+#     wp4[is.na(wp4$i), i] <- "Not specified"
+#     wp4[wp4$i %in% c("<NA>", "NA"), i] <- "Not specified"
+# }
+# 
+# wp4 <- lapply(wp4, function(y) replace(list = is.na(y),
+#                                        values = "Not specified",
+#                                        x = y,))
+# 
+# wp4 <- replace(x = wp4, is.na(.), "Not specified")
+# 
+# wp4 <- as.data.frame(lapply(wp4, function(y) gsub(pattern = "NA",
+#                                      replacement = "Not specified",
+#                                      x = y,
+#                                      ignore.case = T)))
+# wp4 <- as.data.frame(lapply(wp4, function(y) gsub(pattern = "<NA>",
+#                                                   replacement = "Not specified",
+#                                                   x = y,
+#                                                   ignore.case = T)))
 
 # wp5 <- read.csv(file = "Systematic Reviews/Analysis Task 1.2/Databases/Database_5_20220829.csv", header = T) # Path when run manually
 wp5 <- read.csv(file = "../../Databases/Database_5_20220829.csv", header = T)
@@ -375,21 +398,25 @@ ui <- fluidPage(
                     # Checkboxes for selecting by regions
                     checkboxGroupInput(inputId = "wp4region",
                                        label = "Regions",
+                                       # selected = regionlist,
                                        choices = regionlist),
-                    # Dropdown for selecting multiple Study Types
+                # Dropdown for selecting multiple Study Types
                     selectInput(inputId = "wp4ST",
                                 label = "Study Type",
                                 choices = unique(wp4$Study.type),
+                                # selected = unique(wp4$Study.type),
                                 multiple = TRUE),
                     # Dropdown for selecting multiple Ecosystem Component
                     selectInput(inputId = "wp4EC",
                                 label = "Ecosystem Component",
                                 choices = unique(wp4$Ecosystem.component_level1),
+                                # selected = unique(wp4$Ecosystem.component_level1),
                                 multiple = TRUE),
                     # Dropdown for selecting multiple Ecosystem sub-Component
                     selectInput(inputId = "wp4ESC",
                                 label = "Ecosystem sub-Component",
                                 choices = unique(wp4[!is.na(wp4$Ecosystem.component_level2), c("Ecosystem.component_level2")]),
+                                # selected = unique(wp4[!is.na(wp4$Ecosystem.component_level2), c("Ecosystem.component_level2")]),
                                 multiple = TRUE),
                     # # Dropdown for selecting multiple Species             #### Needs more work on categorising species 
                     # selectInput(inputId = "wp4Spp",
@@ -400,21 +427,25 @@ ui <- fluidPage(
                     selectInput(inputId = "wp4RC",
                                 label = "Response Measured (Category)",
                                 choices = unique(wp4$Response.variable_category),
+                                # selected = unique(wp4$Response.variable_category),
                                 multiple = TRUE),
                     # Dropdown for selecting multiple Types of Pressure
                     selectInput(inputId = "wp4ToP",
                                 label = "Pressure Exerted by Fisheries",
                                 choices = unique(wp4$Pressure.type),
+                                # selected = unique(wp4$Pressure.type),
                                 multiple = TRUE),
                     # Dropdown for selecting Target or Non-target Ecosystem Components
                     selectInput(inputId = "wp4TnT",
                                 label = "Target or Non-target Ecosystem Components",
-                                choices = unique(wp4[wp4$Pressure_level != "Not specified" | is.na(wp4$Pressure_level), c("Pressure_level")]),
+                                choices = unique(wp4[wp4$Pressure_level != "Not specified", c("Pressure_level")]),
+                                # selected = unique(wp4[wp4$Pressure_level != "Not specified", c("Pressure_level")]),
                                 multiple = TRUE),
                     # Dropdown for selecting Fishery Type
                     selectInput(inputId = "wp4FT",
                                 label = "Fishery Segment",
                                 choices = unique(wp4$Fishery.type),
+                                # selected = unique(wp4$Fishery.type),
                                 multiple = TRUE),
                     # Create data download button
                     downloadButton(outputId = "wp4Download",
@@ -777,7 +808,7 @@ server <- function(input, output) {
                       x = wp4$Response.variable_category)  &
                 grepl(pattern = paste(input$wp4ToP, collapse = "|"),
                       x = wp4$Pressure.type)  &
-                grepl(pattern = paste(input$wp4TnT, collapse = "|"),
+                grepl(pattern = paste(input$wp4TnT, collapse = "|"),          ### Causing issues?
                       x = wp4$Pressure_level)  &
                 grepl(pattern = paste(input$wp4FT, collapse = "|"),
                       x = wp4$Fishery.type), ]
