@@ -246,8 +246,6 @@ text(x=EcoComp$NrPaps+6, y=b, EcoComp$NrPaps)
 axis(1, at=110, tick=F, line=2, label="Number of unique (retained) papers", cex.axis=1.3)
 dev.off()
 
-
-
 #GGPLOT version
 
 
