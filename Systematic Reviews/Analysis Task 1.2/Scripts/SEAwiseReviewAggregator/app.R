@@ -22,7 +22,7 @@ library(lubridate)
 #===
 # wp2 <- read.csv(file = "Systematic Reviews/Analysis Task 1.2/Databases/Database_2_20220829.csv", header = T) # Path when run manually
 wp2 <- read.csv(file = "../../Databases/Database_2_20220829.csv", header = T)
-wp2$Person <- NULL
+# wp2$Person <- NULL
 wp2$Exclusion.Criteria <- NULL
 wp2$CS...non.CS <- NULL
 wp2$Region.CS.and.non.CS <- NULL
@@ -32,6 +32,16 @@ wp2 <- wp2[wp2$SW.ID != "", ]
 wp3 <- read.csv(file = "../../Databases/Database_3_20220829.csv", header = T)
 wp3$X <- NULL
 wp3$Exclusion.Criteria <- NULL
+wp3$Life.stage <- gsub(pattern = "juv and adults", ignore.case = T, replacement = "Juveniles and Adults", x = wp3$Life.stage)
+wp3$Life.stage <- gsub(pattern = "Young-of-the-year", ignore.case = T, replacement = "Juveniles", x = wp3$Life.stage)
+wp3$Life.stage <- gsub(pattern = "juvenile", ignore.case = T, replacement = "Juveniles", x = wp3$Life.stage)
+wp3$Life.stage <- gsub(pattern = "adult", ignore.case = T, replacement = "Adults", x = wp3$Life.stage)
+wp3$Life.stage <- gsub(pattern = "early", ignore.case = T, replacement = "Eggs or Larvae", x = wp3$Life.stage)
+wp3$Life.stage <- gsub(pattern = "egg", ignore.case = T, replacement = "Eggs or Larvae", x = wp3$Life.stage)
+wp3$Life.stage <- gsub(pattern = "larvae", ignore.case = T, replacement = "Eggs or Larvae", x = wp3$Life.stage)
+
+
+unique(wp3[grepl(pattern = "juvenile", ignore.case = T, x = wp3$Life.stage), "Life.stage"])
 
 # wp4 <- read.csv(file = "Systematic Reviews/Analysis Task 1.2/Databases/Database_4_20220829.csv", header = T) # Path when run manually
 # wp4 <- read.csv(file = "../../Databases/Database_4_20220829.csv", header = T)
@@ -72,7 +82,7 @@ wp4$Study.type <- ifelse(wp4$Study.type == "Field experiment/observations", "Fie
 
 # wp5 <- read.csv(file = "Systematic Reviews/Analysis Task 1.2/Databases/Database_5_20220829.csv", header = T) # Path when run manually
 wp5 <- read.csv(file = "../../Databases/Database_5_20220829.csv", header = T)
-wp5$Name <- NULL
+# wp5$Name <- NULL
 wp5 <- wp5[wp5$Exclusion.Criteria == "K",]
 wp5$Exclusion.Criteria <- NULL
 wp5$Sampling.Method.used.for.data.collection <- ifelse(wp5$Sampling.Method.used.for.data.collection == "Regular & Irregular Fisheries Independent Survey", "Regular Fisheries Independent Survey _ Irregular Fisheries Independent Survey", wp5$Sampling.Method.used.for.data.collection)
@@ -261,13 +271,13 @@ ui <- fluidPage(
                     h1("SEAwise Systematic Reviews"),
                     p(paste0("This app. provides access to the results from the range of SEAwise systematic reviews, with the themes ", paste(labels(allRev), collapse = ", "), "."), " These  are scoping type reviews, because they cover broad topics for which it is not feasible to dive deep into details. Therefore, the qualitative data that can be accessed from these reviews, are designed to make any further data-extraction easier by providing pre-screened, and filterable records.  Subsets of records from these reviews could be used for a systematic meta-analysis, with further specific data extraction, or as a method of selecting the best available data for parameterising broader ecosystem models."),
                     h2("Combined Results"),
-                    p("This front page provides an indication of where and when the articles reviewe for each of the reviews are from, allows you to apply time and space filters and download the resulting filtered data."),
+                    p("This front page provides an indication of where and when the articles reviewed for each of the reviews are from, allows you to apply time and space filters and download the resulting filtered data."),
                     p("The downloaded file from this front page contains bibliographic information for each record, as well as the common fields that were extracted by each of the different reviews.  These fields cover temporal and spatial scale, sampling methods/data sources, broad analytical methods and some quality assessments.  These quality assessments are based on the appropriateness of the different scales of observations and the analyses employed to meet the studies' own stated aims and objectives."),
                     plotOutput("combTS"),
                     plotOutput("combCSTS"),
                     h2("Theme Specific Results"),
                     p("More specific review data can be investigated, filtered and downloaded using the different tabs at the top of the page"),
-                    p("The filters and displays in these pages are works in progress and your feedback will be used to ensure they are further developed to be useful and appropriate.")
+                    p("The filters and displays in these pages are works in progress and feedback will be used to ensure they are further developed to be useful and appropriate.")
                 )
             )
         ),
