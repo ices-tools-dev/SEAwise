@@ -32,16 +32,23 @@ wp2 <- wp2[wp2$SW.ID != "", ]
 wp3 <- read.csv(file = "../../Databases/Database_3_20220829.csv", header = T)
 wp3$X <- NULL
 wp3$Exclusion.Criteria <- NULL
-wp3$Life.stage <- gsub(pattern = "juv and adults", ignore.case = T, replacement = "Juveniles and Adults", x = wp3$Life.stage)
-wp3$Life.stage <- gsub(pattern = "Young-of-the-year", ignore.case = T, replacement = "Juveniles", x = wp3$Life.stage)
-wp3$Life.stage <- gsub(pattern = "juvenile", ignore.case = T, replacement = "Juveniles", x = wp3$Life.stage)
-wp3$Life.stage <- gsub(pattern = "adult", ignore.case = T, replacement = "Adults", x = wp3$Life.stage)
-wp3$Life.stage <- gsub(pattern = "early", ignore.case = T, replacement = "Eggs or Larvae", x = wp3$Life.stage)
-wp3$Life.stage <- gsub(pattern = "egg", ignore.case = T, replacement = "Eggs or Larvae", x = wp3$Life.stage)
-wp3$Life.stage <- gsub(pattern = "larvae", ignore.case = T, replacement = "Eggs or Larvae", x = wp3$Life.stage)
-
-
-unique(wp3[grepl(pattern = "juvenile", ignore.case = T, x = wp3$Life.stage), "Life.stage"])
+wp3$Life.stage <- ifelse(grepl(pattern = paste0(c("Young-of-the-year","juvenile", "Recruits"),
+                                                collapse = "|"),
+                               ignore.case = T,
+                               x = wp3$Life.stage),
+                         "Juvenile",
+                         ifelse(wp3$Life.stage %in% c("Adult", "Adults", "adult", "adults"),
+                                "Adult",
+                                ifelse(wp3$Life.stage %in% c("juv and adults"),
+                                       "Juveniles and Adults",
+                                       ifelse(grepl(pattern = paste0(c("early", "egg", "larvae"),
+                                                                     collapse = "|"),
+                                                    ignore.case = T,
+                                                    x = wp3$Life.stage),
+                                              "Eggs or Larvae",
+                                              ifelse(wp3$Life.stage %in% c("All stages"),
+                                                     "All stages",
+                                                     "Unknown/not relevant")))))
 
 # wp4 <- read.csv(file = "Systematic Reviews/Analysis Task 1.2/Databases/Database_4_20220829.csv", header = T) # Path when run manually
 # wp4 <- read.csv(file = "../../Databases/Database_4_20220829.csv", header = T)
