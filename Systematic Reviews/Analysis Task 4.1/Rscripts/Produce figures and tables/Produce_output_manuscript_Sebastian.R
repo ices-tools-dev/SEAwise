@@ -101,7 +101,7 @@ data_allScreened[data_allScreened == ""] <- NA
 #Pressure.type = 'discarding' or Catch_and_bycatch
 #subset_byc<-data_allScreened[(data_allScreened$Pressure.type%in%c("Catch_and_bycatch","Discarding") & data_allScreened$Pressure_level%in%c("Bycatch", "Non-target", "Not specified", "NA")),]
 
-subset_byc<-data_allScreened[(data_allScreened$Pressure.type%in%c("Catch_and_bycatch")& data_allScreened$Pressure_level%in%c("Bycatch", "Non-target", "Not specified")),]
+subset_byc<-data_allScreened[(data_allScreened$Pressure.type%in%c("Catch_and_bycatch")& data_allScreened$Pressure_level%in%c("Bycatch", "Non-target")),]
 
 #subset_dis<-data_allScreened[(data_allScreened$Pressure.type%in%c("Discarding")),]
 
@@ -140,9 +140,9 @@ dev.off()
 
 
 
-#-----------------------------------------------
-## Barplots of fishing gears studied
-#-----------------------------------------------
+#-----------------------------------------------#
+## Barplots of fishing gears studied ----
+#-----------------------------------------------#
 Gears                                <- subset_byc[,.(NrPaps = length(unique(SW.ID))),
                                              by = c("Fishery.type", "Gear_level1")]
 Gears$Gear_level1                    <- ifelse(is.na(Gears$Gear_level1)==T, "Not specified", 
@@ -174,9 +174,9 @@ dev.off()
 
 
 
-#-----------------------------------------------
-## Barplot for ecosystem component (level 1)
-#-----------------------------------------------
+#-----------------------------------------------#
+## Barplot for ecosystem component (level 1) ----
+#-----------------------------------------------#
 EcoComp                               <- subset_byc[, .(NrPaps = length(unique(SW.ID))),
                                               by = Ecosystem.component_level1]
 EcoComp                               <- EcoComp[order(NrPaps),,]
@@ -194,9 +194,9 @@ axis(1, at=110, tick=F, line=2, label="Number of unique (retained) papers", cex.
 dev.off()
 
 
-#-----------------------------------------------
-## Barplot for ecosystem component (level 1) by Case Study region
-#-----------------------------------------------
+#-----------------------------------------------#
+## Barplot for ecosystem component (level 1) by Case Study region ----
+#-----------------------------------------------#
 
 EcoComp                               <- subset_byc[, .(NrPaps = length(unique(SW.ID))),
                                               by = c("Region","Ecosystem.component_level1")]
@@ -227,9 +227,9 @@ ggsave("EcoRegion.png", p, path=outPath, width = 8, height = 5)
 
 
 
-#-----------------------------------------------
-## Barplot for ecosystem component (level 1)
-#-----------------------------------------------
+#-----------------------------------------------#
+## Barplot for ecosystem component (level 1) ----
+#-----------------------------------------------#
 EcoMethod                               <- subset_byc[, .(NrPaps = length(unique(SW.ID))),
                                                     by = Sampling.Method.used.for.data.collection]
 EcoMethod                              <- EcoMethod[order(NrPaps),,]
@@ -275,9 +275,30 @@ print(p)
 ggsave("EcoPress_heatmap.png", p, path=outPath, width = 9, height = 7)
 
 
-# #-----------------------------------------------
-# ## Heatmap of ecosystem component vs fishery type
-# #-----------------------------------------------
+#-----------------------------------------------#
+## Barplot of ecosystem component level 1 vs pressure type level 1 ----
+#-----------------------------------------------#
+
+EcoPress                             <- subset_byc[, .(NrPaps = length(unique(SW.ID))),
+                                                   by = c("Ecosystem.component_level1", "Pressure_level")]
+EcoTot                               <- EcoPress[, .(TotNrPaps = sum(NrPaps)),
+                                                   by = "Ecosystem.component_level1"]
+EcoPress                             <- merge(EcoPress, EcoTot, by="Ecosystem.component_level1")
+
+
+p <- ggplot(EcoPress, aes(NrPaps, reorder(Ecosystem.component_level1, TotNrPaps), fill=Pressure_level)) +
+  geom_bar(stat="identity") +
+  scale_x_continuous(expand = c(0,0), n.breaks = 10, limits = c(0,max(EcoPress$TotNrPaps+2))) +
+  scale_fill_manual(values=viridis(3), name= "Pressure level") +
+  labs(x="Ecosystem component", y="Number of papers") +
+  theme_bw()
+print(p)
+
+
+
+# #-----------------------------------------------#
+# ## Heatmap of ecosystem component vs fishery type ----
+# #-----------------------------------------------#
 # EcoFish                              <- subset_byc[, .(NrPaps = length(unique(SW.ID))),
 #                                              by = c("Ecosystem.component_level1", "Fishery.type")]
 # EcoFishmat                           <- matrix(nrow = length(unique(subset_byc$Ecosystem.component_level1)),
@@ -319,9 +340,9 @@ ggsave("EcoPress_heatmap.png", p, path=outPath, width = 9, height = 7)
 
 
 
-#-----------------------------------------------
-## Table of quality scores  
-#-----------------------------------------------
+#-----------------------------------------------#
+## Table of quality scores ----
+#-----------------------------------------------#
 
 dataUnique        <- subset_byc[!duplicated(subset_byc$SW.ID),]
 
@@ -347,9 +368,9 @@ write.csv(tab, file=paste0(outPath, "QualityMethodsPercentage.csv"), row.names =
 
 
 
-#-----------------------------------------------
-## Methods applied in literature
-#-----------------------------------------------
+#-----------------------------------------------#
+## Methods applied in literature ----
+#-----------------------------------------------#
 
 ## Methods
 Qual              <- aggregate(SW.ID ~ Region + Quality...Methods, dataUnique, function(x) length(unique(x)))
@@ -371,9 +392,9 @@ ggsave("QualityMethods.png", p, path=outPath, width = 8, height = 5)
 
 
 
-#-----------------------------------------------
-## Plots of Spatial scale & resolution
-#-----------------------------------------------
+#-----------------------------------------------#
+## Plots of Spatial scale & resolution ----
+#-----------------------------------------------#
 
 
 # ggplot2 version
