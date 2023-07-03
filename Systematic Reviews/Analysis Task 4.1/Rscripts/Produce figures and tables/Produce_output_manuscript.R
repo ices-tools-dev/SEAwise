@@ -1830,7 +1830,16 @@ fish_keep                            <- rbind(fish_keep, fish[fish$SW.ID %in% c(
 subset_PET                           <- rbind(subset_PET, fish_keep)
 
 
-## Final PET dataset
+### Final PET dataset ----
+
+# Revert mortality to survival
+table(subset_PET$Response.variable_category, subset_PET$Direction.of.relationship)
+subset_PET$Direction.of.relationship    <- with(subset_PET, ifelse(Response.variable_category %in% "Mortality" & Direction.of.relationship %in% "Negative","Positive",
+                                                                   ifelse(Response.variable_category %in% "Mortality" & Direction.of.relationship %in% "Positive","Negative",Direction.of.relationship)))
+table(subset_PET$Response.variable_category, subset_PET$Direction.of.relationship)
+subset_PET$Response.variable_category   <- with(subset_PET, ifelse(Response.variable_category %in% "Mortality","Survival", Response.variable_category))
+table(subset_PET$Response.variable_category, subset_PET$Direction.of.relationship)
+
 length(unique(subset_PET$SW.ID)) #113 papers
 table(subset_PET$Ecosystem.component_level1)
 
@@ -2046,6 +2055,33 @@ ggsave("GearsEcoComp.png", p, path=outPathPET, width = 7, height = 4)
 
 
 #-----------------------------------------------#
+## Pressure ----
+#-----------------------------------------------#
+
+Press                                <- subset_PET[,.(NrPaps = length(unique(SW.ID))),
+                                                   by = c("Ecosystem.component_level1", "Pressure.variable_category")]
+PressTot                             <- Press[, .(TotNrPaps = sum(NrPaps)),
+                                              by = "Pressure.variable_category"]
+Press                                <- merge(Press, PressTot, by="Pressure.variable_category")
+
+p <- ggplot(Press, aes(NrPaps, reorder(Pressure.variable_category, TotNrPaps), fill=Ecosystem.component_level1)) +
+  geom_bar(stat="identity") +
+  scale_x_continuous(expand = c(0,0), n.breaks = 6, limits = c(0,max(Press$TotNrPaps+2))) +
+  scale_fill_manual(values=viridis(6), name= "Ecosystem component") +
+  labs(x="Number of papers", y="Pressure variable") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 12),
+        strip.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10),
+        panel.grid.minor.x = element_blank())
+print(p)
+
+ggsave("PressEcoComp.png", p, path=outPathPET, width = 9, height = 4)
+
+
+#-----------------------------------------------#
 ## Methods ----
 #-----------------------------------------------#
 
@@ -2076,6 +2112,10 @@ ggsave("MethodsEcoComp.png", p, path=outPathPET, width = 10, height = 4)
 ## Response variable ----
 #-----------------------------------------------#
 
+#-----------------------------------------------#
+### By ecosystem component ----
+#-----------------------------------------------#
+
 Resp                                 <- subset_PET[,.(NrPaps = length(unique(SW.ID))),
                                                    by = c("Response.variable_category","Ecosystem.component_level1")]
 RespTot                              <- Resp[, .(TotNrPaps = sum(NrPaps)),
@@ -2100,5 +2140,328 @@ ggsave("RespVarEcoComp.png", p, path=outPathPET, width = 10, height = 4)
 
 
 #-----------------------------------------------#
+### By Pressure and Direction of relationship ----
+#-----------------------------------------------#
+
+Resp                                 <- subset_PET[,.(NrPaps = length(unique(SW.ID))),
+                                                   by = c("Response.variable_category","Pressure.variable_category","Direction.of.relationship")]
+RespTot                              <- Resp[, .(TotNrPaps = sum(NrPaps)),
+                                             by = "Response.variable_category"]
+Resp                              <- merge(Resp, RespTot, by="Response.variable_category")
+
+p <- ggplot(Resp, aes(NrPaps, reorder(Response.variable_category, TotNrPaps), fill=Direction.of.relationship)) +
+  geom_bar(stat="identity") +
+  scale_x_continuous(expand = c(0,0), n.breaks = 6, limits = c(0,max(Resp$TotNrPaps+2))) +
+  scale_fill_manual(values=viridis(6), name= "Direction of\nrelationship") +
+  labs(x="Number of papers", y="Gear") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 12),
+        strip.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10),
+        panel.grid.minor.x = element_blank()) +
+  facet_wrap(~Pressure.variable_category, scales = "free_x")
+print(p)
+
+ggsave("RespPressDir.png", p, path=outPathPET, width = 10, height = 6)
+
+
+#-----------------------------------------------#
 ## Sankey diagrams ----
 #-----------------------------------------------#
+
+#-----------------------------------------------#
+### Ecosystem component - Response - Direction ----
+#-----------------------------------------------#
+
+#### Data cleaning
+tempPETDR <- subset_PET[, c("SW.ID","Ecosystem.component_level1", "Response.variable_category", "Direction.of.relationship")]
+tempPETDR <- tempPETDR[!duplicated(tempPETDR), ]
+
+# tempPETDR$Response.variable_category <- ifelse(tempPETDR$Response.variable_category %in% "Survival","Mortality",
+#                                                ifelse(tempPETDR$Response.variable_category %in% c("Community composition"), "Biodiversity",
+#                                                       tempPETDR$Response.variable_category))  
+
+## Order factors for plotting nicely
+tempPETDR$Ecosystem.component_level1 <- reorder(x = as.factor(tempPETDR$Ecosystem.component_level1),
+                                                X = as.factor(tempPETDR$Ecosystem.component_level1),
+                                                FUN = length)
+tempPETDR$Response.variable_category <- reorder(x = as.factor(tempPETDR$Response.variable_category),
+                                                X = as.factor(tempPETDR$Response.variable_category),
+                                                FUN = length)
+tempPETDR$Direction.of.relationship <- reorder(x = as.factor(tempPETDR$Direction.of.relationship),
+                                               X = as.factor(tempPETDR$Direction.of.relationship),
+                                               FUN = length)
+tempPETDR <- droplevels(tempPETDR)
+
+
+#### Create sankey diagram
+## Make Sankey compatible data
+petLinkageInput <- make_long(tempPETDR, Ecosystem.component_level1, Response.variable_category, Direction.of.relationship)
+
+## Build sankey
+petLinkage <- ggplot(petLinkageInput,
+                        mapping = aes(x = x,
+                                      next_x = next_x,
+                                      node = node,
+                                      next_node = next_node,
+                                      fill = factor(x),
+                                      label = node)) +
+  scale_x_discrete(labels=c("Ecosystem\nComponent","Response\nMeasured","Direction of\nRelationship")) +
+  # scale_fill_manual(values=colorpal) +
+  geom_sankey(flow.fill="grey",
+              flow.alpha=0.8) +
+  geom_sankey_label(size=2) +
+  theme_few()+
+  theme(text = element_text(size = 10),
+        axis.title = element_blank(),
+        axis.text.y = element_blank(),
+        axis.text = element_text(colour = "black"),
+        legend.position = "none")
+
+ggsave(plot = petLinkage,
+       filename = paste0(outPathPET, "SankeyEcoCompResDir.png"),
+       device = "png",
+       dpi = 300,
+       width = 170,
+       height = 90,
+       units = "mm")
+
+
+
+#-----------------------------------------------#
+### Ecosystem component - Pressure - Response variable - Direction ----
+#-----------------------------------------------#
+
+#### Data cleaning
+tempPETDR <- subset_PET[, c("SW.ID","Ecosystem.component_level1", "Pressure.variable_category", "Response.variable_category", "Direction.of.relationship")]
+tempPETDR <- tempPETDR[!duplicated(tempPETDR), ]
+
+# tempPETDR$Response.variable_category <- ifelse(tempPETDR$Response.variable_category %in% "Survival","Mortality",
+#                                                ifelse(tempPETDR$Response.variable_category %in% c("Community composition"), "Biodiversity",
+#                                                       tempPETDR$Response.variable_category))  
+
+## Order factors for plotting nicely
+tempPETDR$Ecosystem.component_level1 <- reorder(x = as.factor(tempPETDR$Ecosystem.component_level1),
+                                                X = as.factor(tempPETDR$Ecosystem.component_level1),
+                                                FUN = length)
+tempPETDR$Pressure.variable_category <- reorder(x = as.factor(tempPETDR$Pressure.variable_category),
+                                                X = as.factor(tempPETDR$Pressure.variable_category),
+                                                FUN = length)
+tempPETDR$Response.variable_category <- reorder(x = as.factor(tempPETDR$Response.variable_category),
+                                                X = as.factor(tempPETDR$Response.variable_category),
+                                                FUN = length)
+tempPETDR$Direction.of.relationship <- reorder(x = as.factor(tempPETDR$Direction.of.relationship),
+                                               X = as.factor(tempPETDR$Direction.of.relationship),
+                                               FUN = length)
+tempPETDR <- droplevels(tempPETDR)
+
+
+#### Create sankey diagram
+## Make Sankey compatible data
+petLinkageInput <- make_long(tempPETDR, Ecosystem.component_level1, Pressure.variable_category, Response.variable_category, Direction.of.relationship)
+
+## Build sankey
+petLinkage <- ggplot(petLinkageInput,
+                     mapping = aes(x = x,
+                                   next_x = next_x,
+                                   node = node,
+                                   next_node = next_node,
+                                   fill = factor(x),
+                                   label = node)) +
+  scale_x_discrete(labels=c("Ecosystem\nComponent","Pressure","Response\nMeasured","Direction of\nRelationship")) +
+  # scale_fill_manual(values=colorpal) +
+  geom_sankey(flow.fill="grey",
+              flow.alpha=0.8) +
+  geom_sankey_label(size=2) +
+  theme_few()+
+  theme(text = element_text(size = 10),
+        axis.title = element_blank(),
+        axis.text.y = element_blank(),
+        axis.text = element_text(colour = "black"),
+        legend.position = "none")
+
+ggsave(plot = petLinkage,
+       filename = paste0(outPathPET, "SankeyEcoCompPressResDir.png"),
+       device = "png",
+       dpi = 300,
+       width = 170,
+       height = 90,
+       units = "mm")
+
+
+#-----------------------------------------------#
+### Pressure - Direction - Ecosystem component ----
+#-----------------------------------------------#
+
+#### Data cleaning
+tempPETDR <- subset_PET[, c("SW.ID","Pressure.variable_category","Direction.of.relationship","Ecosystem.component_level1")]
+tempPETDR <- tempPETDR[!duplicated(tempPETDR), ]
+
+# tempPETDR$Response.variable_category <- ifelse(tempPETDR$Response.variable_category %in% "Survival","Mortality",
+#                                                ifelse(tempPETDR$Response.variable_category %in% c("Community composition"), "Biodiversity",
+#                                                       tempPETDR$Response.variable_category))  
+
+## Order factors for plotting nicely
+tempPETDR$Ecosystem.component_level1 <- reorder(x = as.factor(tempPETDR$Ecosystem.component_level1),
+                                                X = as.factor(tempPETDR$Ecosystem.component_level1),
+                                                FUN = length)
+tempPETDR$Pressure.variable_category <- reorder(x = as.factor(tempPETDR$Pressure.variable_category),
+                                                X = as.factor(tempPETDR$Pressure.variable_category),
+                                                FUN = length)
+tempPETDR$Direction.of.relationship <- reorder(x = as.factor(tempPETDR$Direction.of.relationship),
+                                               X = as.factor(tempPETDR$Direction.of.relationship),
+                                               FUN = length)
+tempPETDR <- droplevels(tempPETDR)
+
+
+#### Create sankey diagram
+## Make Sankey compatible data
+petLinkageInput <- make_long(tempPETDR,  Pressure.variable_category, Direction.of.relationship, Ecosystem.component_level1)
+
+## Build sankey
+petLinkage <- ggplot(petLinkageInput,
+                     mapping = aes(x = x,
+                                   next_x = next_x,
+                                   node = node,
+                                   next_node = next_node,
+                                   fill = factor(x),
+                                   label = node)) +
+  scale_x_discrete(labels=c("Pressure","Direction of\nRelationship","Ecosystem\nComponent")) +
+  # scale_fill_manual(values=colorpal) +
+  geom_sankey(flow.fill="grey",
+              flow.alpha=0.8) +
+  geom_sankey_label(size=2) +
+  theme_few()+
+  theme(text = element_text(size = 10),
+        axis.title = element_blank(),
+        axis.text.y = element_blank(),
+        axis.text = element_text(colour = "black"),
+        legend.position = "none")
+
+ggsave(plot = petLinkage,
+       filename = paste0(outPathPET, "SankeyPressDirEcoComp.png"),
+       device = "png",
+       dpi = 300,
+       width = 170,
+       height = 90,
+       units = "mm")
+
+
+#-----------------------------------------------#
+### Pressure - Direction - Response ----
+#-----------------------------------------------#
+
+#### Data cleaning
+tempPETDR <- subset_PET[, c("SW.ID","Pressure.variable_category","Direction.of.relationship","Response.variable_category")]
+tempPETDR <- tempPETDR[!duplicated(tempPETDR), ]
+
+# tempPETDR$Response.variable_category <- ifelse(tempPETDR$Response.variable_category %in% "Survival","Mortality",
+#                                                ifelse(tempPETDR$Response.variable_category %in% c("Community composition"), "Biodiversity",
+#                                                       tempPETDR$Response.variable_category))  
+
+## Order factors for plotting nicely
+tempPETDR$Ecosystem.component_level1 <- reorder(x = as.factor(tempPETDR$Response.variable_category),
+                                                X = as.factor(tempPETDR$Response.variable_category),
+                                                FUN = length)
+tempPETDR$Pressure.variable_category <- reorder(x = as.factor(tempPETDR$Pressure.variable_category),
+                                                X = as.factor(tempPETDR$Pressure.variable_category),
+                                                FUN = length)
+tempPETDR$Direction.of.relationship <- reorder(x = as.factor(tempPETDR$Direction.of.relationship),
+                                               X = as.factor(tempPETDR$Direction.of.relationship),
+                                               FUN = length)
+tempPETDR <- droplevels(tempPETDR)
+
+
+#### Create sankey diagram
+## Make Sankey compatible data
+petLinkageInput <- make_long(tempPETDR,  Pressure.variable_category, Direction.of.relationship, Response.variable_category)
+
+## Build sankey
+petLinkage <- ggplot(petLinkageInput,
+                     mapping = aes(x = x,
+                                   next_x = next_x,
+                                   node = node,
+                                   next_node = next_node,
+                                   fill = factor(x),
+                                   label = node)) +
+  scale_x_discrete(labels=c("Pressure","Direction of\nRelationship","Response\nimpacted")) +
+  # scale_fill_manual(values=colorpal) +
+  geom_sankey(flow.fill="grey",
+              flow.alpha=0.8) +
+  geom_sankey_label(size=2) +
+  theme_few()+
+  theme(text = element_text(size = 10),
+        axis.title = element_blank(),
+        axis.text.y = element_blank(),
+        axis.text = element_text(colour = "black"),
+        legend.position = "none")
+
+ggsave(plot = petLinkage,
+       filename = paste0(outPathPET, "SankeyPressDirResp.png"),
+       device = "png",
+       dpi = 300,
+       width = 170,
+       height = 90,
+       units = "mm")
+
+
+#-----------------------------------------------#
+### Ecosystem component - Gear - Pressure - Response variable ----
+#-----------------------------------------------#
+
+#### Data cleaning
+tempPETDR <- subset_PET[, c("SW.ID","Ecosystem.component_level1", "Gear_level1", "Pressure.variable_category", "Response.variable_category")]
+tempPETDR <- tempPETDR[!duplicated(tempPETDR), ]
+
+tempPETDR$Gear_level1                    <- ifelse(is.na(tempPETDR$Gear_level1)==T, "Not specified", 
+                                               ifelse(tempPETDR$Gear_level1 == "Hooks_and_lines", "Hooks and Lines", tempPETDR$Gear_level1))
+
+## Order factors for plotting nicely
+tempPETDR$Ecosystem.component_level1 <- reorder(x = as.factor(tempPETDR$Ecosystem.component_level1),
+                                                X = as.factor(tempPETDR$Ecosystem.component_level1),
+                                                FUN = length)
+tempPETDR$Pressure.variable_category <- reorder(x = as.factor(tempPETDR$Pressure.variable_category),
+                                                X = as.factor(tempPETDR$Pressure.variable_category),
+                                                FUN = length)
+tempPETDR$Response.variable_category <- reorder(x = as.factor(tempPETDR$Response.variable_category),
+                                                X = as.factor(tempPETDR$Response.variable_category),
+                                                FUN = length)
+tempPETDR$Gear_level1 <- reorder(x = as.factor(tempPETDR$Gear_level1),
+                                               X = as.factor(tempPETDR$Gear_level1),
+                                               FUN = length)
+tempPETDR <- droplevels(tempPETDR)
+
+
+#### Create sankey diagram
+## Make Sankey compatible data
+petLinkageInput <- make_long(tempPETDR, Ecosystem.component_level1, Gear_level1, Pressure.variable_category, Response.variable_category)
+
+## Build sankey
+petLinkage <- ggplot(petLinkageInput,
+                     mapping = aes(x = x,
+                                   next_x = next_x,
+                                   node = node,
+                                   next_node = next_node,
+                                   fill = factor(x),
+                                   label = node)) +
+  scale_x_discrete(labels=c("Ecosystem\nComponent","Gear","Pressure","Response\nMeasured")) +
+  # scale_fill_manual(values=colorpal) +
+  geom_sankey(flow.fill="grey",
+              flow.alpha=0.8) +
+  geom_sankey_label(size=2) +
+  theme_few()+
+  theme(text = element_text(size = 10),
+        axis.title = element_blank(),
+        axis.text.y = element_blank(),
+        axis.text = element_text(colour = "black"),
+        legend.position = "none")
+
+ggsave(plot = petLinkage,
+       filename = paste0(outPathPET, "SankeyEcoCompGearPressRes.png"),
+       device = "png",
+       dpi = 300,
+       width = 170,
+       height = 90,
+       units = "mm")
