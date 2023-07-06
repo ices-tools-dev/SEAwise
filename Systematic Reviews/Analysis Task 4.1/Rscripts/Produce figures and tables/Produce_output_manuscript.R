@@ -28,6 +28,10 @@ library(RColorBrewer)
 library(sf)
 library(plotrix)
 library(colorspace)
+library(openxlsx)
+library(worms)
+library(tidyr)
+library(stringr)
 
 
 datPath                               <- "Systematic Reviews/Analysis Task 4.1/Routput/"
@@ -42,8 +46,8 @@ GISpath                               <- "Systematic Reviews/Analysis Task 4.1/G
 #  This section depends on the processed data file produced in step 1.
 # 
 #-----------------------------------------------#
-data                                  <- readRDS(file=paste0(datPath, "data_correctTaxa_PressVar_RespVar_Methods.rds"))
-data_allScreened                      <- readRDS(file=paste0(datPath, "data_AllScreened_correctTaxa_PressVar_RespVar_Methods.rds"))
+data                                  <- readRDS(file=paste0(datPath, "data_correctTaxa_PressVar_RespVar_Methods_ScaleRes.rds"))
+data_allScreened                      <- readRDS(file=paste0(datPath, "data_AllScreened_correctTaxa_PressVar_RespVar_Methods_ScaleRes.rds"))
 
 
 # Add regions by combining CS areas
@@ -53,6 +57,12 @@ data$Region                           <- with(data, ifelse(RegionSEAwise %in% c(
                                                                      ifelse(RegionSEAwise %in% c("CS - Western Waters","Western Waters - non CS"),"Western Waters",
                                                                             ifelse(RegionSEAwise %in% c("CS - Mediterranean", "Mediterranean - non CS"),"Mediterranean Sea", RegionSEAwise)))))
 
+data_allScreened$RegionSEAwise        <- data_allScreened$Region
+data_allScreened$Region               <- with(data_allScreened, ifelse(RegionSEAwise %in% c("CS - North Sea","North Sea - non CS"),"North Sea",
+                                                                       ifelse(RegionSEAwise %in% c("CS - Baltic Sea","Baltic Sea - non CS"),"Baltic Sea",
+                                                                              ifelse(RegionSEAwise %in% c("CS - Western Waters","Western Waters - non CS"),"Western Waters",
+                                                                                     ifelse(RegionSEAwise %in% c("CS - Mediterranean", "Mediterranean - non CS"),"Mediterranean Sea", RegionSEAwise)))))
+
 # Load fate of papers
 load(paste0(datPath, "FatePapers.Rdata"))
 
@@ -60,7 +70,7 @@ load(paste0(datPath, "FatePapers.Rdata"))
 #####################################################################################################################-
 #####################################################################################################################-
 #-----------------------------------------------#
-# General plots across all papers ----
+# PART I - General plots across all papers ----
 #-----------------------------------------------#
 
 #-----------------------------------------------#
@@ -997,7 +1007,7 @@ dev.off()
 #####################################################################################################################-
 #####################################################################################################################-
 #-----------------------------------------------#
-# Case Study Litter: Plots and numbers ----
+# PART II - Case Study Litter: Plots and numbers ----
 #-----------------------------------------------#
 # Subset to litter only
 litter <- droplevels(data[Pressure.type == "Input of litter", ])
@@ -1501,3 +1511,957 @@ ggsave(plot = litterLinkage,
        height = 90,
        units = "mm")
 
+
+
+#####################################################################################################################-
+#####################################################################################################################-
+#-----------------------------------------------#
+# PART III - Case Study: PET species bycatch ----
+#-----------------------------------------------#
+
+# Set path
+outPathPET                           <- "Systematic Reviews/Analysis Task 4.1/Routput/Manuscript/bycatch case study/"
+
+
+#-----------------------------------------------#
+## Load and process PET species list ----
+#-----------------------------------------------#
+
+### Load list of PET species - same used for screening and data extraction
+petList                              <- read.xlsx("Systematic Reviews/Analysis Task 4.1/PET species/PET_list_adjusted.xlsx", sheet = 1)
+
+### Check taxonomy against WoRMS
+
+# Get taxonomy from WoRMS
+speciesList                         <- data.frame(Taxon = sort(unique(petList$Scientific.name.adjusted)))
+speciesList$group                   <- c(rep(1:10, each=32) , rep(10, nrow(speciesList)-320))
+speciesList <- speciesList[!speciesList$Taxon %in% c("Hydrobates castro","Hydrobates monteiroi"),] #exclude for now as they are not in WoRMS
+
+fileName                            <- "taxonomy_PET.csv"
+
+if(!file.exists(paste0("Systematic Reviews/Analysis Task 4.1/PET species/",fileName))){
+  tax                                 <- wormsbymatchnames(subset(speciesList, group==1)$Taxon, marine_only = FALSE)
+  for(iGr in 2:max(speciesList$group)){
+    print(iGr)
+    tax2                           <- wormsbymatchnames(subset(speciesList, group==iGr)$Taxon, marine_only = FALSE)
+    tax                            <- rbind(tax, tax2)
+  }
+  write.csv(tax, paste0("Systematic Reviews/Analysis Task 4.1/PET species/",fileName))
+} else {
+  tax                                 <- read.csv(paste0("Systematic Reviews/Analysis Task 4.1/PET species/",fileName))
+}
+
+# Add valid names to the PET list
+idx                                 <- match(petList$Scientific.name.adjusted, tax$scientificname)
+petList$validName                   <- tax$valid_name[idx]
+petList$validName                   <- with(petList, ifelse(is.na(validName),Scientific.name.adjusted,validName))
+
+
+### Check regions in PET list
+
+sort(unique(petList$`Region/RFMO`))
+
+# OSPAR Region I = Arctic waters -> Norwegian Sea, Barents Sea or NE-Atlantic
+# OSPAR Region II = Greater North Sea -> North Sea
+# OSPAR Region III = Celtic Seas -> Western Waters
+# OSPAR Region IV = Bay of Biscay and Iberian Coast -> Western Waters
+# OSPAR Region V = Wider Atlantic -> NE-Atlantic
+
+petRegions                          <- data.frame(RegionPetList = sort(unique(petList$`Region/RFMO`)), Region = NA)
+petRegionList                       <- sort(unique(petList$`Region/RFMO`))
+petRegionList
+
+tmp                                 <- grep("Baltic", petRegionList, value = TRUE)
+petRegions$Region                   <- with(petRegions, ifelse(RegionPetList %in% tmp,"Baltic Sea",Region))
+petRegions$Region                   <- with(petRegions, ifelse(RegionPetList %in% c("Black Sea","Black sea"),"Black Sea",Region))
+petRegions$Region                   <- with(petRegions, ifelse(RegionPetList %in% "Mediterranean Sea","Mediterranean Sea",Region))
+petRegions$Region                   <- with(petRegions, ifelse(RegionPetList %in% "OSPAR  II","North Sea",Region))
+petRegions$Region                   <- with(petRegions, ifelse(RegionPetList %in% "OSPAR IV","Western Waters",Region))
+petRegions$Region                   <- with(petRegions, ifelse(RegionPetList %in% "OSPAR V","NE-Atlantic",Region))
+petRegions                          <- rbind(petRegions,
+                                             data.frame(RegionPetList = "Baltic Sea and Black",
+                                                        Region        = "Black Sea"),
+                                             data.frame(RegionPetList = "GSA 1.1, 1.2, 1.3 and Black Sea GSA 29",
+                                                        Region        = c("Mediterranean Sea","Black Sea")),
+                                             data.frame(RegionPetList = "Mediterranean Sea and Black Sea; Baltic Sea; OSPAR II, IV",
+                                                        Region        = c("Mediterranean Sea","Black Sea","North Sea","Western Waters")),
+                                             data.frame(RegionPetList = "Mediterranean Sea; OSPAR II, III",
+                                                        Region        = c("Mediterranean Sea","North Sea","Western Waters")),
+                                             data.frame(RegionPetList = "All OSPAR",
+                                                        Region        = c("North Sea","Western Waters","NE-Atlantic","Norwegian Sea","Barents Sea")),
+                                             data.frame(RegionPetList = "OSPAR I",
+                                                        Region        = c("NE-Atlantic","Norwegian Sea","Barents Sea")),
+                                             data.frame(RegionPetList = "OSPAR  I",
+                                                        Region        = c("NE-Atlantic","Norwegian Sea","Barents Sea")),
+                                             data.frame(RegionPetList = "OSPAR I, II,",
+                                                        Region        = c("NE-Atlantic","Norwegian Sea","Barents Sea","North Sea")),
+                                             data.frame(RegionPetList = "OSPAR I, II, III, IV",
+                                                        Region        = c("North Sea","Western Waters","NE-Atlantic","Norwegian Sea","Barents Sea")),
+                                             data.frame(RegionPetList = "OSPAR I, II, III, IV, Baltic sea",
+                                                        Region        = c("North Sea","Western Waters","NE-Atlantic","Norwegian Sea","Barents Sea")),
+                                             data.frame(RegionPetList = "OSPAR I, II, III, IV, Baltic Sea",
+                                                        Region        = c("North Sea","Western Waters","NE-Atlantic","Norwegian Sea","Barents Sea")),
+                                             data.frame(RegionPetList = "OSPAR II, III, IV",
+                                                        Region        = c("North Sea","Western Waters")),
+                                             data.frame(RegionPetList = "OSPAR II, III, IV, V",
+                                                        Region        = c("North Sea","Western Waters","NE-Atlantic")),
+                                             data.frame(RegionPetList = "All areas",
+                                                        Region        = sort(unique(data_allScreened$Region))),
+                                             data.frame(RegionPetList = "All oceans",
+                                                        Region        = sort(unique(data_allScreened$Region))),
+                                             data.frame(RegionPetList = "All oceans and seas",
+                                                        Region        = sort(unique(data_allScreened$Region))),
+                                             data.frame(RegionPetList = "All regions",
+                                                        Region        = sort(unique(data_allScreened$Region))),
+                                             data.frame(RegionPetList = "All oceans + Mediterranean and Black Sea",
+                                                        Region        = sort(unique(data_allScreened$Region))))
+petRegions                          <- petRegions[complete.cases(petRegions),]
+petRegions                          <- petRegions[!duplicated(petRegions),]
+
+# Merge with actual PET species list
+colnames(petRegions)[1]             <- "Region/RFMO"
+petList                             <- merge(petList, petRegions, by = "Region/RFMO")
+
+
+
+#-----------------------------------------------#
+## Subset to bycatch PET papers ----
+#-----------------------------------------------#
+
+# First subset to bycatch papers
+subset_byc                          <- data_allScreened[(data_allScreened$Pressure.type%in%c("Catch_and_bycatch")& data_allScreened$Pressure_level%in%c("Bycatch", "Non-target")),]
+length(unique((subset_byc$SW.ID)))
+
+# Kick out all ecosystem components that are not PET species in the first place
+sort(unique(subset_byc$Ecosystem.component_level1))
+subset_byc                          <- subset(subset_byc, !Ecosystem.component_level1 %in% c("Benthos","Cephalopods","Plankton","Plants")) #but keep food web as these may still include PET species
+length(unique((subset_byc$SW.ID)))
+
+# Split rows in case of multiple species/taxa
+subset_byc_split                    <- cSplit(subset_byc, "Species.taxonomic.group.s.", " _ ", "long")
+length(unique((subset_byc_split$SW.ID)))
+subset_byc_not_split                <- subset_byc[!subset_byc$SW.ID %in% subset_byc_split$SW.ID,]
+length(unique((subset_byc_not_split$SW.ID)))
+subset_byc                          <- rbind(subset_byc_split, subset_byc_not_split)
+subset_byc                          <- subset_byc[order(subset_byc$SW.ID),]
+subset_byc$Species.taxonomic.group.s.[subset_byc$Species.taxonomic.group.s. %in% ""] <- NA
+
+# Create combination of species and region column
+subset_byc$SpeciesRegion            <- paste(subset_byc$Species.taxonomic.group.s., subset_byc$Region)
+petList$SpeciesRegion               <- paste(petList$Scientific.name.adjusted, petList$Region)
+
+subset_byc$SpeciesRegion[grepl("NA",subset_byc$SpeciesRegion)] <- NA
+
+
+# Keep rows with PET species based on whether they are on the list and the region
+
+### Marine mammals ----
+
+# All cetaceans of all regions are included on the PET list, so these can be kept
+subset_PET                          <- subset(subset_byc, Ecosystem.component_level2 %in% "Cetaceans")
+
+# Check out seal species in the database - are they on the PET list and by region?
+seals                               <- subset(subset_byc, Ecosystem.component_level2 %in% "Seals")
+specReg                             <- sort(unique(seals$SpeciesRegion))
+specReg
+specReg %in% petList$SpeciesRegion # all are on it, so add all seals
+
+subset_PET                          <- rbind(subset_PET, seals)
+
+# Marine mammals not further specified?
+subset_byc[subset_byc$Ecosystem.component_level1 %in% "Marine_mammals" & is.na(subset_byc$Ecosystem.component_level2),] #yes, one paper, as it is like dealing with PET species (also marked as T4.2).
+
+# Check rows without species/taxon
+mammals                             <- subset(subset_byc, Ecosystem.component_level1 %in% "Marine_mammals")
+nrow(mammals[is.na(mammals$Species.taxonomic.group.s.),]) #not many
+length(unique(mammals$SW.ID[is.na(mammals$Species.taxonomic.group.s.)])) #from 3 papers
+## let's keep them in, as they likely contain PET species
+
+# So basically all marine mammals in the database are PET
+subset_PET                         <- subset(subset_byc, Ecosystem.component_level1 %in% "Marine_mammals")
+
+
+### Seabirds ----
+seabirds                           <- subset(subset_byc, Ecosystem.component_level1 %in% "Seabirds")
+specReg                             <- sort(unique(seabirds$SpeciesRegion))
+specReg
+specReg %in% petList$SpeciesRegion # not all are on it but this due to mismatch of taxonomic rank.
+specReg[!specReg %in% petList$SpeciesRegion]
+# Alcidae: species from this family are on PET list
+# Anatidae: species from this family are on PET list
+# Calonectris diomedea diomedea: is on PET list without the subspecies name
+# Fulica atra: Eurasian/common coot, NOT ON PET LIST
+# Mergus: species from this genus are on PET list
+# Podiceps: species from this genus are on PET list
+
+# Check rows without species/taxon
+nrow(seabirds[is.na(seabirds$Species.taxonomic.group.s.),]) #not many
+length(unique(seabirds$SW.ID[is.na(seabirds$Species.taxonomic.group.s.)])) #from 3 papers
+## let's keep them in, as they likely contain PET species
+
+# So all seabirds can be kept, except Fulica atra
+subset_PET                          <- rbind(subset_PET, seabirds[!seabirds$Species.taxonomic.group.s. %in% "Fulica atra",])
+
+
+### Reptiles ----
+reptiles                            <- subset(subset_byc, Ecosystem.component_level1 %in% "Reptiles")
+specReg                             <- sort(unique(reptiles$SpeciesRegion))
+specReg
+specReg %in% petList$SpeciesRegion # not all are on it but this due to mismatch of taxonomic rank
+specReg[!specReg %in% petList$SpeciesRegion]
+# "Chelonioidea Mediterranean Sea" - superfamily that has members that are PET, so include
+
+# Check rows without species/taxon
+nrow(reptiles[is.na(reptiles$Species.taxonomic.group.s.),]) #not many
+length(unique(reptiles$SW.ID[is.na(reptiles$Species.taxonomic.group.s.)])) #from 3 papers
+## let's keep them in, as they likely contain PET species
+
+# So include all rows on reptiles in the PET dataset
+subset_PET                          <- rbind(subset_PET, reptiles)
+
+
+### Cartilaginous fish ----
+cart                                <- subset(subset_byc, Ecosystem.component_level1 %in% "Fish_cartilaginous")
+specReg                             <- sort(unique(cart$SpeciesRegion))
+specReg
+specReg %in% petList$SpeciesRegion # not all are on PET list
+specRegNotListed                    <- specReg[!specReg %in% petList$SpeciesRegion] #check out those that are not
+specRegNotListed
+## Not on list
+# [1] "Aetomylaeus bovinus Mediterranean Sea" - not on  list
+# [2] "Dasyatis pastinaca Mediterranean Sea" - only in Black Sea   
+# [3] "Dipturus oxyrinchus Mediterranean Sea" - not on list  
+# [6] "Leucoraja naevus Western Waters" - not on list
+# [8] "Myliobatis aquila Mediterranean Sea" - not on list
+# [9] "Oxynotus centrina Mediterranean Sea" - not on list (but other species of same genus is)
+# [10] "Raja asterias Mediterranean Sea" - not on list   
+# [12] "Raja radula Mediterranean Sea" - not on list
+# [15] "Scyliorhinus canicula Mediterranean Sea" - only in Baltic Sea
+# [16] "Scyliorhinus canicula Western Waters" - only in Baltic Sea     
+# [17] "Scyliorhinus stellaris Mediterranean Sea" - not on list
+# [18] "Scyliorhinus stellaris Western Waters" - not on list
+# [19] "Squalus blainville Mediterranean Sea" 
+# [20] "Squalus Mediterranean Sea" - not on list
+# [21] "Tetronarce nobiliana Mediterranean Sea" - not on list
+# [22] "Torpedo marmorata Mediterranean Sea" - only in Baltic Sea    
+# [23] "Torpedo torpedo Mediterranean Sea" - not on list    
+
+## On list so should be included
+# [4] "Elasmobranchii North Sea" - no specific species from this area on the list, but likely entails species that are listed under 'All oceans'                 
+# [5] "Elasmobranchii Western Waters" - no specific species from this area on the list, but likely entails species that are listed under 'All oceans' 
+# [7] "Mustelus Mediterranean Sea" - only genus, but species are on the list
+# [11] "Raja North Sea" - only genus, but species are on the list
+# [13] "Raja Western Waters" - only genus, but species are on the list
+# [14] "Rajidae North Sea" - only family, but species are on the list
+# [20] "Squalus Mediterranean Sea" - only genus, but species are on the list
+
+# Double-check species list with IUCN
+## Listed as at least near threatened?
+# [1] "Aetomylaeus bovinus Mediterranean Sea" - CE
+# [9] "Oxynotus centrina Mediterranean Sea" - EN
+# [2] "Dasyatis pastinaca Mediterranean Sea" - VU
+# [3] "Dipturus oxyrinchus Mediterranean Sea" - NT
+# [8] "Myliobatis aquila Mediterranean Sea" - VU in Europe
+# [10] "Raja asterias Mediterranean Sea" - NT  
+# [12] "Raja radula Mediterranean Sea" - EN
+# [17] "Scyliorhinus stellaris Mediterranean Sea" - NT in Med
+# [18] "Scyliorhinus stellaris Western Waters" - NT in Europe
+# [19] "Squalus blainville Mediterranean Sea" - data deficient, but assume status is not good
+
+## Least concern, so they can be excluded
+# [6] "Leucoraja naevus Western Waters" - LC (but endangered in Med)
+# [15] "Scyliorhinus canicula Mediterranean Sea" - LC in Europe
+# [16] "Scyliorhinus canicula Western Waters" - LC in Europe
+# [21] "Tetronarce nobiliana Mediterranean Sea" - LC
+# [22] "Torpedo marmorata Mediterranean Sea" - LC in Med   
+# [23] "Torpedo torpedo Mediterranean Sea" - LC in Europe                       
+
+specRegNotListedDrop                 <- specRegNotListed[c(6,15,16,21,22,23)]
+idx                                  <- match(specRegNotListedDrop, specReg)
+specRegKeep                          <- specReg[-idx]
+cart_keep                            <- subset(cart, SpeciesRegion %in% specRegKeep)
+
+# Check rows without species/taxon
+nrow(cart[is.na(cart$Species.taxonomic.group.s.),]) #not many
+length(unique(cart$SW.ID[is.na(cart$Species.taxonomic.group.s.)])) #from 5 papers
+## let's keep them in, as they likely contain PET species
+cart_keep                            <- rbind(cart_keep, cart[is.na(cart$Species.taxonomic.group.s.),])
+
+# Add to dataframe
+subset_PET                           <- rbind(subset_PET, cart_keep)
+
+
+### Bony fish ----
+fish                                <- subset(subset_byc, Ecosystem.component_level1 %in% "Fish_teleost")
+specReg                             <- sort(unique(fish$SpeciesRegion))
+specReg
+specReg %in% petList$SpeciesRegion # not all are on PET list
+specRegListed                       <- specReg[specReg %in% petList$SpeciesRegion] #check those that are listed
+specRegListed
+specRegNotListed                    <- specReg[!specReg %in% petList$SpeciesRegion] #check out those that are not
+specRegNotListed
+# Check those that have a higher taxonomic rank with members that are on the PET list - include those
+# [9] "Epinephelinae Mediterranean Sea"
+# [10] "Epinephelus marginatus Mediterranean Sea"
+# [41] "Sebastes Barents Sea" 
+# Add these to the listed species as well
+specRegListed                       <- c(specRegListed,
+                                         "Epinephelinae Mediterranean Sea",
+                                         "Epinephelus marginatus Mediterranean Sea",
+                                         "Sebastes Barents Sea")
+
+# Check rows without species/taxon
+nrow(fish[is.na(fish$Species.taxonomic.group.s.),]) #quite some
+length(unique(fish$SW.ID[is.na(cart$Species.taxonomic.group.s.)])) #from 7 papers
+unique(fish$SW.ID[is.na(cart$Species.taxonomic.group.s.)])
+#"SW4_0111" - Anarhichas lupus not on PET list
+#"SW4_0494" - several species on PET list, so include this paper
+#"SW4_0501" - several species on PET list, so include this paper
+#"SW4_0502" - species on PET list but not in the right area
+#"SW4_0633" - several species on PET list, so include this paper
+#"SW4_1313" - several species on PET list, so include this paper
+#"SW4_1841" - fish species not on PET list (only elasmobranchs)
+
+# Select papers and species to keep
+fish_keep                            <- subset(fish, SpeciesRegion %in% specRegListed)
+fish_keep                            <- rbind(fish_keep, fish[fish$SW.ID %in% c("SW4_0494","SW4_0501","SW4_0633","SW4_1313")])
+
+# Add to PET dataset
+subset_PET                           <- rbind(subset_PET, fish_keep)
+
+
+### Final PET dataset ----
+
+# Revert mortality to survival
+table(subset_PET$Response.variable_category, subset_PET$Direction.of.relationship)
+subset_PET$Direction.of.relationship    <- with(subset_PET, ifelse(Response.variable_category %in% "Mortality" & Direction.of.relationship %in% "Negative","Positive",
+                                                                   ifelse(Response.variable_category %in% "Mortality" & Direction.of.relationship %in% "Positive","Negative",Direction.of.relationship)))
+table(subset_PET$Response.variable_category, subset_PET$Direction.of.relationship)
+subset_PET$Response.variable_category   <- with(subset_PET, ifelse(Response.variable_category %in% "Mortality","Survival", Response.variable_category))
+table(subset_PET$Response.variable_category, subset_PET$Direction.of.relationship)
+
+length(unique(subset_PET$SW.ID)) #113 papers
+table(subset_PET$Ecosystem.component_level1)
+
+
+#-----------------------------------------------#
+## Basic Numbers ----
+#-----------------------------------------------#
+# Number of unique papers
+nrow(subset_PET[!duplicated(subset_PET$SW.ID),])
+
+# Number of records
+nrow(subset_PET)
+
+# Earliest paper
+subset_PET[subset_PET$Year == min(subset_PET$Year), ]
+subset_PET[subset_PET$Year == min(subset_PET$Year), "Year"]
+
+#-----------------------------------------------#
+### Gears ----
+#-----------------------------------------------#
+unique(subset_PET$Gear_level1)
+table(subset_PET$Gear_level1)
+unique(subset_PET$Gear_level2)
+table(subset_PET$Gear_level2)
+
+#-----------------------------------------------#
+### Methods ----
+#-----------------------------------------------#
+unique(subset_PET$Sampling.Method.used.for.data.collection)
+table(subset_PET$Sampling.Method.used.for.data.collection)
+table(subset_PET$Analytical.method.used.for.inference)
+table(subset_PET$Study.type)
+
+
+#-----------------------------------------------#
+## Ecosystem components ----
+#-----------------------------------------------#
+
+#-----------------------------------------------#
+### By Pressure level/catch category ----
+#-----------------------------------------------#
+
+EcoPress                             <- subset_PET[, .(NrPaps = length(unique(SW.ID))),
+                                                   by = c("Ecosystem.component_level1", "Pressure_level")]
+EcoTot                               <- EcoPress[, .(TotNrPaps = sum(NrPaps)),
+                                                 by = "Ecosystem.component_level1"]
+EcoPress                             <- merge(EcoPress, EcoTot, by="Ecosystem.component_level1")
+
+
+p <- ggplot(EcoPress, aes(NrPaps, reorder(Ecosystem.component_level1, TotNrPaps), fill=Pressure_level)) +
+  geom_bar(stat="identity") +
+  scale_x_continuous(expand = c(0,0), n.breaks = 10, limits = c(0,max(EcoPress$TotNrPaps+2))) +
+  scale_fill_manual(values=viridis(3), name= "Catch category") +
+  labs(x="Number of papers", y="Ecosystem component") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 12),
+        strip.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10),
+        panel.grid.minor.x = element_blank())
+print(p)
+
+ggsave("EcoCompPressLevel.png", p, path=outPathPET, width = 8, height = 5)
+
+
+#-----------------------------------------------#
+### By region ----
+#-----------------------------------------------#
+
+EcoComp                              <- subset_PET[, .(NrPaps = length(unique(SW.ID))),
+                                                   by = c("Ecosystem.component_level1", "Region")]
+EcoTot                               <- EcoComp[, .(TotNrPaps = sum(NrPaps)),
+                                                 by = "Ecosystem.component_level1"]
+EcoComp                              <- merge(EcoComp, EcoTot, by="Ecosystem.component_level1")
+
+p <- ggplot(EcoComp, aes(NrPaps, reorder(Ecosystem.component_level1, TotNrPaps), fill=Region)) +
+  geom_bar(stat="identity") +
+  scale_x_continuous(expand = c(0,0), n.breaks = 10, limits = c(0,max(EcoPress$TotNrPaps+2))) +
+  scale_fill_manual(values=viridis(8), name= "Region") +
+  labs(x="Number of papers", y="Ecosystem component") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 12),
+        strip.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10),
+        panel.grid.minor.x = element_blank())
+print(p)
+
+ggsave("EcoCompRegion1.png", p, path=outPathPET, width = 8, height = 5)
+
+
+# Plot by region individually
+EcoComp                              <- subset_PET[, .(NrPaps = length(unique(SW.ID))),
+                                                   by = c("Ecosystem.component_level1", "Region")]
+EcoTot                               <- EcoComp[, .(TotNrPaps = sum(NrPaps)),
+                                                by = "Ecosystem.component_level1"]
+EcoComp                              <- merge(EcoComp, EcoTot, by="Ecosystem.component_level1")
+
+p <- ggplot(EcoComp, aes(NrPaps, reorder(Ecosystem.component_level1, TotNrPaps), fill=Ecosystem.component_level1)) +
+  geom_bar(stat="identity") +
+  scale_x_continuous(expand = c(0,0), n.breaks = 6, limits = c(0,25)) +
+  scale_fill_manual(values=viridis(6), name= "Region") +
+  labs(x="Number of papers", y="Ecosystem component") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 12),
+        strip.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.position = "none",
+        panel.grid.minor.x = element_blank()) +
+  facet_wrap(~Region, nrow = 2)
+print(p)
+
+ggsave("EcoCompRegion2.png", p, path=outPathPET, width = 10, height = 5)
+
+
+#-----------------------------------------------#
+## Gears ----
+#-----------------------------------------------#
+
+#-----------------------------------------------#
+### Fishery type and gear ----
+#-----------------------------------------------#
+
+Gears                                <- subset_PET[,.(NrPaps = length(unique(SW.ID))),
+                                                   by = c("Fishery.type", "Gear_level1")]
+Gears$Gear_level1                    <- ifelse(is.na(Gears$Gear_level1)==T, "Not specified", 
+                                               ifelse(Gears$Gear_level1 == "Hooks_and_lines", "Hooks and Lines", Gears$Gear_level1))
+GearTot                              <- Gears[, .(TotNrPaps = sum(NrPaps)),
+                                                by = "Gear_level1"]
+Gears                                <- merge(Gears, GearTot, by="Gear_level1")
+
+p <- ggplot(Gears, aes(NrPaps, reorder(Gear_level1, TotNrPaps), fill=Fishery.type)) +
+  geom_bar(stat="identity") +
+  scale_x_continuous(expand = c(0,0), n.breaks = 6, limits = c(0,max(Gears$TotNrPaps+2))) +
+  scale_fill_manual(values=viridis(4), name= "Fishery type") +
+  labs(x="Number of papers", y="Gear") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 12),
+        strip.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10),
+        panel.grid.minor.x = element_blank())
+print(p)
+
+ggsave("FisheryTypeGears.png", p, path=outPathPET, width = 6, height = 4)
+
+
+#-----------------------------------------------#
+### Gear and gear level 2 ----
+#-----------------------------------------------#
+
+Gears                                <- subset_PET[,.(NrPaps = length(unique(SW.ID))),
+                                                   by = c("Gear_level1","Gear_level2")]
+Gears$Gear_level1                    <- ifelse(is.na(Gears$Gear_level1)==T, "Not specified", 
+                                               ifelse(Gears$Gear_level1 == "Hooks_and_lines", "Hooks and Lines", Gears$Gear_level1))
+Gears$Gear_level2                    <- ifelse(is.na(Gears$Gear_level2)==T, "Not specified", Gears$Gear_level2)
+GearTot                              <- Gears[, .(TotNrPaps = sum(NrPaps)),
+                                              by = "Gear_level1"]
+Gears                                <- merge(Gears, GearTot, by="Gear_level1")
+
+noCol                                <- length(unique(Gears$Gear_level2))
+mycolors                             <- sample(colorRampPalette(brewer.pal(12,"Paired"))(noCol))
+
+
+p <- ggplot(Gears, aes(NrPaps, reorder(Gear_level1, TotNrPaps), fill=Gear_level2)) +
+  geom_bar(stat="identity") +
+  scale_x_continuous(expand = c(0,0), n.breaks = 6, limits = c(0,max(Gears$TotNrPaps+2))) +
+  scale_fill_manual(values = mycolors) +
+  # scale_fill_manual(values=viridis(13), name= "Specific gear") +
+  labs(x="Number of papers", y="Gear") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 12),
+        strip.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10),
+        panel.grid.minor.x = element_blank())
+print(p)
+
+ggsave("GearTypeGears.png", p, path=outPathPET, width = 8, height = 4)
+
+
+#-----------------------------------------------#
+### Gear and ecosystem component ----
+#-----------------------------------------------#
+
+Gears                                <- subset_PET[,.(NrPaps = length(unique(SW.ID))),
+                                                   by = c("Ecosystem.component_level1", "Gear_level1")]
+Gears$Gear_level1                    <- ifelse(is.na(Gears$Gear_level1)==T, "Not specified", 
+                                               ifelse(Gears$Gear_level1 == "Hooks_and_lines", "Hooks and Lines", Gears$Gear_level1))
+GearTot                              <- Gears[, .(TotNrPaps = sum(NrPaps)),
+                                              by = "Gear_level1"]
+Gears                                <- merge(Gears, GearTot, by="Gear_level1")
+
+p <- ggplot(Gears, aes(NrPaps, reorder(Gear_level1, TotNrPaps), fill=Ecosystem.component_level1)) +
+  geom_bar(stat="identity") +
+  scale_x_continuous(expand = c(0,0), n.breaks = 6, limits = c(0,max(Gears$TotNrPaps+2))) +
+  scale_fill_manual(values=viridis(6), name= "Ecosystem component") +
+  labs(x="Number of papers", y="Gear") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 12),
+        strip.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10),
+        panel.grid.minor.x = element_blank())
+print(p)
+
+ggsave("GearsEcoComp.png", p, path=outPathPET, width = 7, height = 4)
+
+
+#-----------------------------------------------#
+## Pressure ----
+#-----------------------------------------------#
+
+Press                                <- subset_PET[,.(NrPaps = length(unique(SW.ID))),
+                                                   by = c("Ecosystem.component_level1", "Pressure.variable_category")]
+PressTot                             <- Press[, .(TotNrPaps = sum(NrPaps)),
+                                              by = "Pressure.variable_category"]
+Press                                <- merge(Press, PressTot, by="Pressure.variable_category")
+
+p <- ggplot(Press, aes(NrPaps, reorder(Pressure.variable_category, TotNrPaps), fill=Ecosystem.component_level1)) +
+  geom_bar(stat="identity") +
+  scale_x_continuous(expand = c(0,0), n.breaks = 6, limits = c(0,max(Press$TotNrPaps+2))) +
+  scale_fill_manual(values=viridis(6), name= "Ecosystem component") +
+  labs(x="Number of papers", y="Pressure variable") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 12),
+        strip.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10),
+        panel.grid.minor.x = element_blank())
+print(p)
+
+ggsave("PressEcoComp.png", p, path=outPathPET, width = 9, height = 4)
+
+
+#-----------------------------------------------#
+## Methods ----
+#-----------------------------------------------#
+
+Methods                              <- subset_PET[,.(NrPaps = length(unique(SW.ID))),
+                                                   by = c("Sampling.Method.used.for.data.collection","Ecosystem.component_level1")]
+MethTot                              <- Methods[, .(TotNrPaps = sum(NrPaps)),
+                                              by = "Sampling.Method.used.for.data.collection"]
+Methods                              <- merge(Methods, MethTot, by="Sampling.Method.used.for.data.collection")
+
+p <- ggplot(Methods, aes(NrPaps, reorder(Sampling.Method.used.for.data.collection, TotNrPaps), fill=Ecosystem.component_level1)) +
+  geom_bar(stat="identity") +
+  scale_x_continuous(expand = c(0,0), n.breaks = 6, limits = c(0,max(Methods$TotNrPaps+2))) +
+  scale_fill_manual(values=viridis(6), name= "Ecosystem component") +
+  labs(x="Number of papers", y="Gear") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 12),
+        strip.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10),
+        panel.grid.minor.x = element_blank())
+print(p)
+
+ggsave("MethodsEcoComp.png", p, path=outPathPET, width = 10, height = 4)
+
+
+#-----------------------------------------------#
+## Response variable ----
+#-----------------------------------------------#
+
+#-----------------------------------------------#
+### By ecosystem component ----
+#-----------------------------------------------#
+
+Resp                                 <- subset_PET[,.(NrPaps = length(unique(SW.ID))),
+                                                   by = c("Response.variable_category","Ecosystem.component_level1")]
+RespTot                              <- Resp[, .(TotNrPaps = sum(NrPaps)),
+                                                by = "Response.variable_category"]
+Resp                              <- merge(Resp, RespTot, by="Response.variable_category")
+
+p <- ggplot(Resp, aes(NrPaps, reorder(Response.variable_category, TotNrPaps), fill=Ecosystem.component_level1)) +
+  geom_bar(stat="identity") +
+  scale_x_continuous(expand = c(0,0), n.breaks = 6, limits = c(0,max(Resp$TotNrPaps+2))) +
+  scale_fill_manual(values=viridis(6), name= "Ecosystem component") +
+  labs(x="Number of papers", y="Gear") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 12),
+        strip.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10),
+        panel.grid.minor.x = element_blank())
+print(p)
+
+ggsave("RespVarEcoComp.png", p, path=outPathPET, width = 10, height = 4)
+
+
+#-----------------------------------------------#
+### By Pressure and Direction of relationship ----
+#-----------------------------------------------#
+
+Resp                                 <- subset_PET[,.(NrPaps = length(unique(SW.ID))),
+                                                   by = c("Response.variable_category","Pressure.variable_category","Direction.of.relationship")]
+RespTot                              <- Resp[, .(TotNrPaps = sum(NrPaps)),
+                                             by = "Response.variable_category"]
+Resp                              <- merge(Resp, RespTot, by="Response.variable_category")
+
+p <- ggplot(Resp, aes(NrPaps, reorder(Response.variable_category, TotNrPaps), fill=Direction.of.relationship)) +
+  geom_bar(stat="identity") +
+  scale_x_continuous(expand = c(0,0), n.breaks = 6, limits = c(0,max(Resp$TotNrPaps+2))) +
+  scale_fill_manual(values=viridis(6), name= "Direction of\nrelationship") +
+  labs(x="Number of papers", y="Gear") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 12),
+        strip.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10),
+        panel.grid.minor.x = element_blank()) +
+  facet_wrap(~Pressure.variable_category, scales = "free_x")
+print(p)
+
+ggsave("RespPressDir.png", p, path=outPathPET, width = 10, height = 6)
+
+
+#-----------------------------------------------#
+## Sankey diagrams ----
+#-----------------------------------------------#
+
+#-----------------------------------------------#
+### Ecosystem component - Response - Direction ----
+#-----------------------------------------------#
+
+#### Data cleaning
+tempPETDR <- subset_PET[, c("SW.ID","Ecosystem.component_level1", "Response.variable_category", "Direction.of.relationship")]
+tempPETDR <- tempPETDR[!duplicated(tempPETDR), ]
+
+# tempPETDR$Response.variable_category <- ifelse(tempPETDR$Response.variable_category %in% "Survival","Mortality",
+#                                                ifelse(tempPETDR$Response.variable_category %in% c("Community composition"), "Biodiversity",
+#                                                       tempPETDR$Response.variable_category))  
+
+## Order factors for plotting nicely
+tempPETDR$Ecosystem.component_level1 <- reorder(x = as.factor(tempPETDR$Ecosystem.component_level1),
+                                                X = as.factor(tempPETDR$Ecosystem.component_level1),
+                                                FUN = length)
+tempPETDR$Response.variable_category <- reorder(x = as.factor(tempPETDR$Response.variable_category),
+                                                X = as.factor(tempPETDR$Response.variable_category),
+                                                FUN = length)
+tempPETDR$Direction.of.relationship <- reorder(x = as.factor(tempPETDR$Direction.of.relationship),
+                                               X = as.factor(tempPETDR$Direction.of.relationship),
+                                               FUN = length)
+tempPETDR <- droplevels(tempPETDR)
+
+
+#### Create sankey diagram
+## Make Sankey compatible data
+petLinkageInput <- make_long(tempPETDR, Ecosystem.component_level1, Response.variable_category, Direction.of.relationship)
+
+## Build sankey
+petLinkage <- ggplot(petLinkageInput,
+                        mapping = aes(x = x,
+                                      next_x = next_x,
+                                      node = node,
+                                      next_node = next_node,
+                                      fill = factor(x),
+                                      label = node)) +
+  scale_x_discrete(labels=c("Ecosystem\nComponent","Response\nMeasured","Direction of\nRelationship")) +
+  # scale_fill_manual(values=colorpal) +
+  geom_sankey(flow.fill="grey",
+              flow.alpha=0.8) +
+  geom_sankey_label(size=2) +
+  theme_few()+
+  theme(text = element_text(size = 10),
+        axis.title = element_blank(),
+        axis.text.y = element_blank(),
+        axis.text = element_text(colour = "black"),
+        legend.position = "none")
+
+ggsave(plot = petLinkage,
+       filename = paste0(outPathPET, "SankeyEcoCompResDir.png"),
+       device = "png",
+       dpi = 300,
+       width = 170,
+       height = 90,
+       units = "mm")
+
+
+
+#-----------------------------------------------#
+### Ecosystem component - Pressure - Response variable - Direction ----
+#-----------------------------------------------#
+
+#### Data cleaning
+tempPETDR <- subset_PET[, c("SW.ID","Ecosystem.component_level1", "Pressure.variable_category", "Response.variable_category", "Direction.of.relationship")]
+tempPETDR <- tempPETDR[!duplicated(tempPETDR), ]
+
+# tempPETDR$Response.variable_category <- ifelse(tempPETDR$Response.variable_category %in% "Survival","Mortality",
+#                                                ifelse(tempPETDR$Response.variable_category %in% c("Community composition"), "Biodiversity",
+#                                                       tempPETDR$Response.variable_category))  
+
+## Order factors for plotting nicely
+tempPETDR$Ecosystem.component_level1 <- reorder(x = as.factor(tempPETDR$Ecosystem.component_level1),
+                                                X = as.factor(tempPETDR$Ecosystem.component_level1),
+                                                FUN = length)
+tempPETDR$Pressure.variable_category <- reorder(x = as.factor(tempPETDR$Pressure.variable_category),
+                                                X = as.factor(tempPETDR$Pressure.variable_category),
+                                                FUN = length)
+tempPETDR$Response.variable_category <- reorder(x = as.factor(tempPETDR$Response.variable_category),
+                                                X = as.factor(tempPETDR$Response.variable_category),
+                                                FUN = length)
+tempPETDR$Direction.of.relationship <- reorder(x = as.factor(tempPETDR$Direction.of.relationship),
+                                               X = as.factor(tempPETDR$Direction.of.relationship),
+                                               FUN = length)
+tempPETDR <- droplevels(tempPETDR)
+
+
+#### Create sankey diagram
+## Make Sankey compatible data
+petLinkageInput <- make_long(tempPETDR, Ecosystem.component_level1, Pressure.variable_category, Response.variable_category, Direction.of.relationship)
+
+## Build sankey
+petLinkage <- ggplot(petLinkageInput,
+                     mapping = aes(x = x,
+                                   next_x = next_x,
+                                   node = node,
+                                   next_node = next_node,
+                                   fill = factor(x),
+                                   label = node)) +
+  scale_x_discrete(labels=c("Ecosystem\nComponent","Pressure","Response\nMeasured","Direction of\nRelationship")) +
+  # scale_fill_manual(values=colorpal) +
+  geom_sankey(flow.fill="grey",
+              flow.alpha=0.8) +
+  geom_sankey_label(size=2) +
+  theme_few()+
+  theme(text = element_text(size = 10),
+        axis.title = element_blank(),
+        axis.text.y = element_blank(),
+        axis.text = element_text(colour = "black"),
+        legend.position = "none")
+
+ggsave(plot = petLinkage,
+       filename = paste0(outPathPET, "SankeyEcoCompPressResDir.png"),
+       device = "png",
+       dpi = 300,
+       width = 170,
+       height = 90,
+       units = "mm")
+
+
+#-----------------------------------------------#
+### Pressure - Direction - Ecosystem component ----
+#-----------------------------------------------#
+
+#### Data cleaning
+tempPETDR <- subset_PET[, c("SW.ID","Pressure.variable_category","Direction.of.relationship","Ecosystem.component_level1")]
+tempPETDR <- tempPETDR[!duplicated(tempPETDR), ]
+
+# tempPETDR$Response.variable_category <- ifelse(tempPETDR$Response.variable_category %in% "Survival","Mortality",
+#                                                ifelse(tempPETDR$Response.variable_category %in% c("Community composition"), "Biodiversity",
+#                                                       tempPETDR$Response.variable_category))  
+
+## Order factors for plotting nicely
+tempPETDR$Ecosystem.component_level1 <- reorder(x = as.factor(tempPETDR$Ecosystem.component_level1),
+                                                X = as.factor(tempPETDR$Ecosystem.component_level1),
+                                                FUN = length)
+tempPETDR$Pressure.variable_category <- reorder(x = as.factor(tempPETDR$Pressure.variable_category),
+                                                X = as.factor(tempPETDR$Pressure.variable_category),
+                                                FUN = length)
+tempPETDR$Direction.of.relationship <- reorder(x = as.factor(tempPETDR$Direction.of.relationship),
+                                               X = as.factor(tempPETDR$Direction.of.relationship),
+                                               FUN = length)
+tempPETDR <- droplevels(tempPETDR)
+
+
+#### Create sankey diagram
+## Make Sankey compatible data
+petLinkageInput <- make_long(tempPETDR,  Pressure.variable_category, Direction.of.relationship, Ecosystem.component_level1)
+
+## Build sankey
+petLinkage <- ggplot(petLinkageInput,
+                     mapping = aes(x = x,
+                                   next_x = next_x,
+                                   node = node,
+                                   next_node = next_node,
+                                   fill = factor(x),
+                                   label = node)) +
+  scale_x_discrete(labels=c("Pressure","Direction of\nRelationship","Ecosystem\nComponent")) +
+  # scale_fill_manual(values=colorpal) +
+  geom_sankey(flow.fill="grey",
+              flow.alpha=0.8) +
+  geom_sankey_label(size=2) +
+  theme_few()+
+  theme(text = element_text(size = 10),
+        axis.title = element_blank(),
+        axis.text.y = element_blank(),
+        axis.text = element_text(colour = "black"),
+        legend.position = "none")
+
+ggsave(plot = petLinkage,
+       filename = paste0(outPathPET, "SankeyPressDirEcoComp.png"),
+       device = "png",
+       dpi = 300,
+       width = 170,
+       height = 90,
+       units = "mm")
+
+
+#-----------------------------------------------#
+### Pressure - Direction - Response ----
+#-----------------------------------------------#
+
+#### Data cleaning
+tempPETDR <- subset_PET[, c("SW.ID","Pressure.variable_category","Direction.of.relationship","Response.variable_category")]
+tempPETDR <- tempPETDR[!duplicated(tempPETDR), ]
+
+# tempPETDR$Response.variable_category <- ifelse(tempPETDR$Response.variable_category %in% "Survival","Mortality",
+#                                                ifelse(tempPETDR$Response.variable_category %in% c("Community composition"), "Biodiversity",
+#                                                       tempPETDR$Response.variable_category))  
+
+## Order factors for plotting nicely
+tempPETDR$Ecosystem.component_level1 <- reorder(x = as.factor(tempPETDR$Response.variable_category),
+                                                X = as.factor(tempPETDR$Response.variable_category),
+                                                FUN = length)
+tempPETDR$Pressure.variable_category <- reorder(x = as.factor(tempPETDR$Pressure.variable_category),
+                                                X = as.factor(tempPETDR$Pressure.variable_category),
+                                                FUN = length)
+tempPETDR$Direction.of.relationship <- reorder(x = as.factor(tempPETDR$Direction.of.relationship),
+                                               X = as.factor(tempPETDR$Direction.of.relationship),
+                                               FUN = length)
+tempPETDR <- droplevels(tempPETDR)
+
+
+#### Create sankey diagram
+## Make Sankey compatible data
+petLinkageInput <- make_long(tempPETDR,  Pressure.variable_category, Direction.of.relationship, Response.variable_category)
+
+## Build sankey
+petLinkage <- ggplot(petLinkageInput,
+                     mapping = aes(x = x,
+                                   next_x = next_x,
+                                   node = node,
+                                   next_node = next_node,
+                                   fill = factor(x),
+                                   label = node)) +
+  scale_x_discrete(labels=c("Pressure","Direction of\nRelationship","Response\nimpacted")) +
+  # scale_fill_manual(values=colorpal) +
+  geom_sankey(flow.fill="grey",
+              flow.alpha=0.8) +
+  geom_sankey_label(size=2) +
+  theme_few()+
+  theme(text = element_text(size = 10),
+        axis.title = element_blank(),
+        axis.text.y = element_blank(),
+        axis.text = element_text(colour = "black"),
+        legend.position = "none")
+
+ggsave(plot = petLinkage,
+       filename = paste0(outPathPET, "SankeyPressDirResp.png"),
+       device = "png",
+       dpi = 300,
+       width = 170,
+       height = 90,
+       units = "mm")
+
+
+#-----------------------------------------------#
+### Ecosystem component - Gear - Pressure - Response variable ----
+#-----------------------------------------------#
+
+#### Data cleaning
+tempPETDR <- subset_PET[, c("SW.ID","Ecosystem.component_level1", "Gear_level1", "Pressure.variable_category", "Response.variable_category")]
+tempPETDR <- tempPETDR[!duplicated(tempPETDR), ]
+
+tempPETDR$Gear_level1                    <- ifelse(is.na(tempPETDR$Gear_level1)==T, "Not specified", 
+                                               ifelse(tempPETDR$Gear_level1 == "Hooks_and_lines", "Hooks and Lines", tempPETDR$Gear_level1))
+
+## Order factors for plotting nicely
+tempPETDR$Ecosystem.component_level1 <- reorder(x = as.factor(tempPETDR$Ecosystem.component_level1),
+                                                X = as.factor(tempPETDR$Ecosystem.component_level1),
+                                                FUN = length)
+tempPETDR$Pressure.variable_category <- reorder(x = as.factor(tempPETDR$Pressure.variable_category),
+                                                X = as.factor(tempPETDR$Pressure.variable_category),
+                                                FUN = length)
+tempPETDR$Response.variable_category <- reorder(x = as.factor(tempPETDR$Response.variable_category),
+                                                X = as.factor(tempPETDR$Response.variable_category),
+                                                FUN = length)
+tempPETDR$Gear_level1 <- reorder(x = as.factor(tempPETDR$Gear_level1),
+                                               X = as.factor(tempPETDR$Gear_level1),
+                                               FUN = length)
+tempPETDR <- droplevels(tempPETDR)
+
+
+#### Create sankey diagram
+## Make Sankey compatible data
+petLinkageInput <- make_long(tempPETDR, Ecosystem.component_level1, Gear_level1, Pressure.variable_category, Response.variable_category)
+
+## Build sankey
+petLinkage <- ggplot(petLinkageInput,
+                     mapping = aes(x = x,
+                                   next_x = next_x,
+                                   node = node,
+                                   next_node = next_node,
+                                   fill = factor(x),
+                                   label = node)) +
+  scale_x_discrete(labels=c("Ecosystem\nComponent","Gear","Pressure","Response\nMeasured")) +
+  # scale_fill_manual(values=colorpal) +
+  geom_sankey(flow.fill="grey",
+              flow.alpha=0.8) +
+  geom_sankey_label(size=2) +
+  theme_few()+
+  theme(text = element_text(size = 10),
+        axis.title = element_blank(),
+        axis.text.y = element_blank(),
+        axis.text = element_text(colour = "black"),
+        legend.position = "none")
+
+ggsave(plot = petLinkage,
+       filename = paste0(outPathPET, "SankeyEcoCompGearPressRes.png"),
+       device = "png",
+       dpi = 300,
+       width = 170,
+       height = 90,
+       units = "mm")
