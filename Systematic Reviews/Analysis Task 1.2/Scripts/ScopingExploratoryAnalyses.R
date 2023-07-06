@@ -233,6 +233,20 @@ indicatorLong <- melt(data = indicators,
 #===
 # Generate Scoping results figures ----
 #===
+## Table of Stakeholder Scoping Priorities
+scopingNB <- scopingGeneral[scopingGeneral$BroadCategory != "Broad", ]
+scopingNB$ACTot <- rowSums(scopingNB[, c("BSAC", "NSAC", "NWWAC", "SWWAC", "MEDAC.national", "PELAC")], na.rm = T)
+scopingNB$MeanProp 
+
+scopingNB$BSscopingNB$BSAC/sum(scopingNB$BSAC)
+scopingNB$ACTot/sum(scopingNB$ACTot)
+scopingNB$ACTot/sum(scopingNB$ACTot)
+scopingNB$ACTot/sum(scopingNB$ACTot)
+scopingNB$ACTot/sum(scopingNB$ACTot)
+
+  
+scopingP <- order()
+
 ## Broad Scoping -----
 tempdf <- scopingLong[scopingLong$BroadCategory == "Broad" & scopingLong$FAO_Category != "Total",]
 
