@@ -933,6 +933,381 @@ data_allScreened$Scale...Temporal[data_allScreened$SW.ID %in% "SW4_1714"] <- "tw
 
 
 #-----------------------------------------------#
+# Check again missing values ----
+#-----------------------------------------------#
+
+datNA <- data[is.na(data$Scale...Spatial..m.) | is.na(data$Scale...Temporal) | is.na(data$Resolution...Spatial..m.) | is.na(data$Resolution...Temporal),]
+length(unique(datNA$SW.ID)) #45 papers
+unique(datNA$SW.ID)
+
+# Check manually
+
+## SW4_0013
+# For data used (logbook and observer) not clear what spatial resolution is. But inference seems to be done at the scale of the entire area.
+# Model predictions are done at scale of fishing areas, of which the centres are 5,000-10,000 m apart, looking at the map in the paper.
+# Map also shows that spatial scale is 10,000-50,000 m rather than 5,000-10,000 m.
+data$Scale...Spatial..m.[data$SW.ID %in% "SW4_0013"]                         <- "10,000-50,000"
+data$ScaleSpatial[data$SW.ID %in% "SW4_0013"]                                <- "10,000-50,000"
+data_allScreened$Scale...Spatial..m.[data_allScreened$SW.ID %in% "SW4_0013"] <- "10,000-50,000"
+
+data$Resolution...Spatial..m.[data$SW.ID %in% "SW4_0013"]                         <- "5,000-10,000"
+data$ResSpatial[data$SW.ID %in% "SW4_0013"]                                       <- "5,000-10,000"
+data_allScreened$Resolution...Spatial..m.[data_allScreened$SW.ID %in% "SW4_0013"] <- "5,000-10,000"
+
+## SW4_0098
+# Paper states that model was developed for period 2010-2014, so temporal scale is five year. 
+#Model provides snapshot so that is the resolution.
+data$Scale...Temporal[data$SW.ID %in% "SW4_0098"]                         <- "five year"
+data$ScaleTemporal[data$SW.ID %in% "SW4_0098"]                            <- "five year"
+data_allScreened$Scale...Temporal[data_allScreened$SW.ID %in% "SW4_0098"] <- "five year"
+
+data$Resolution...Temporal[data$SW.ID %in% "SW4_0098"]                         <- "snapshot/no repeat sampling"
+data$ResTemporal[data$SW.ID %in% "SW4_0098"]                                   <- "snapshot/no repeat sampling"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_0098"] <- "snapshot/no repeat sampling"
+
+## SW4_0100
+# Experiment done in small tanks, so spatial scale is 0-5 m.
+data$Scale...Spatial..m.[data$SW.ID %in% "SW4_0100"]                         <- "0-5"
+data$ScaleSpatial[data$SW.ID %in% "SW4_0100"]                                <- "0-5"
+data_allScreened$Scale...Spatial..m.[data_allScreened$SW.ID %in% "SW4_0100"] <- "0-5"
+
+## SW4_0193
+# Analysis does not take any spatial aspects into account, but it done for the overall population that spans northwest Europe.
+# So spatial scale is indeed >100,000 m. Let's take resolution than also at this distance. 
+# Predictions are made for multiple decades by year. So temporal resolution is year.
+data$Resolution...Spatial..m.[data$SW.ID %in% "SW4_0193"]                         <- ">100,000"
+data$ResSpatial[data$SW.ID %in% "SW4_0193"]                                       <- ">100,000"
+data_allScreened$Resolution...Spatial..m.[data_allScreened$SW.ID %in% "SW4_0193"] <- ">100,000"
+
+data$Resolution...Temporal[data$SW.ID %in% "SW4_0193"]                         <- "year"
+data$ResTemporal[data$SW.ID %in% "SW4_0193"]                                   <- "year"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_0193"] <- "year"
+
+## Sw4_0251
+# Spatial scale around 2 km based on map of study area, so 1,000-5,000 m.
+data$Scale...Spatial..m.[data$SW.ID %in% "SW4_0251"]                         <- "1,000-5,000"
+data$ScaleSpatial[data$SW.ID %in% "SW4_0251"]                                <- "1,000-5,000"
+data_allScreened$Scale...Spatial..m.[data_allScreened$SW.ID %in% "SW4_0251"] <- "1,000-5,000"
+
+## Sw4_0272
+# 1-D model that goes up to 100 m depth, but not horizontal. Otherwise model and inference represents entire regional sea, spatial 
+# scale is correct. Have this also as the resolution then.
+data$Resolution...Spatial..m.[data$SW.ID %in% "SW4_0272"]                         <- ">100,000"
+data$ResSpatial[data$SW.ID %in% "SW4_0272"]                                       <- ">100,000"
+data_allScreened$Resolution...Spatial..m.[data_allScreened$SW.ID %in% "SW4_0272"] <- ">100,000"
+
+## SW4_0303
+# Location between areas where trial were done seem to be >100 km apart, so take this as spatial resolution.
+# Trials done in 2 years with around 1 year in between, so temporal scale and resolution are two year and year respectively.
+data$Resolution...Spatial..m.[data$SW.ID %in% "SW4_0303"]                         <- ">100,000"
+data$ResSpatial[data$SW.ID %in% "SW4_0303"]                                       <- ">100,000"
+data_allScreened$Resolution...Spatial..m.[data_allScreened$SW.ID %in% "SW4_0303"] <- ">100,000"
+
+data$Scale...Temporal[data$SW.ID %in% "SW4_0303"]                         <- "two year"
+data$ScaleTemporal[data$SW.ID %in% "SW4_0303"]                            <- "two year"
+data_allScreened$Scale...Temporal[data_allScreened$SW.ID %in% "SW4_0303"] <- "two year"
+
+data$Resolution...Temporal[data$SW.ID %in% "SW4_0303"]                         <- "year"
+data$ResTemporal[data$SW.ID %in% "SW4_0303"]                                   <- "year"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_0303"] <- "year"
+
+## Sw4_0330
+# Temporal resolution is year.
+data$Resolution...Temporal[data$SW.ID %in% "SW4_0330"]                         <- "year"
+data$ResTemporal[data$SW.ID %in% "SW4_0330"]                                   <- "year"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_0330"] <- "year"
+
+## SW4_0355
+# Trawling time was 45 minutes, so could well be that trawling distance was around 1-5 km. 
+# But nowhere mentioned what the distance trawled was nor the total area size where experimental trawling took place.
+# So leave spatial scale and resolution blank.
+
+## Sw4_0359
+# For the impact of Posidonia beds, mean hours of fishing per year per seabed habitat type were assessed. VMS data were used for that
+# from 2007-2015, so temporal scale of a decade, and temporal resolution of one year.
+# For seabottom impacts, sensor recordings were used from a selection of fishing hauls from a database with recordings from 2004 to 2013.
+# So scale is decade but the resolution is unknown.
+data$Scale...Temporal[data$SW.ID %in% "SW4_0359"]                         <- "decade"
+data$ScaleTemporal[data$SW.ID %in% "SW4_0359"]                            <- "decade"
+data_allScreened$Scale...Temporal[data_allScreened$SW.ID %in% "SW4_0359"] <- "decade"
+
+data$Resolution...Temporal[data$SW.ID %in% "SW4_0359" & data$Ecosystem.component_level1 %in% "Plants"]                                     <- "year"
+data$ResTemporal[data$SW.ID %in% "SW4_0359" & data$Ecosystem.component_level1 %in% "Plants"]                                               <- "year"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_0359" & data_allScreened$Ecosystem.component_level1 %in% "Plants"] <- "year"
+
+## SW4_0402
+# Spatial scale is indeed Ionian Sea, thus very large, but it is not mentioned/presented where the eight trawls within this large area were taken.
+# Spatial resolution is thus unknown.
+
+## SW4_0429
+# Experiment performed in small tanks, so both scale and resolution 0-5 m.
+data$Scale...Spatial..m.[data$SW.ID %in% "SW4_0429"]                         <- "0-5"
+data$ScaleSpatial[data$SW.ID %in% "SW4_0429"]                                <- "0-5"
+data_allScreened$Scale...Spatial..m.[data_allScreened$SW.ID %in% "SW4_0429"] <- "0-5"
+
+data$Resolution...Spatial..m.[data$SW.ID %in% "SW4_0429"]                         <- "0-5"
+data$ResSpatial[data$SW.ID %in% "SW4_0429"]                                       <- "0-5"
+data_allScreened$Resolution...Spatial..m.[data_allScreened$SW.ID %in% "SW4_0429"] <- "0-5"
+
+## SW4_0516
+# Spatial resolution is large due to strandings occurring across entire coastline of Sicily, so 50,000-100,000 m.
+# Although observations could have been ranging from subday to multiple years, the data are presents on a year and on a six-year period basis.
+# Let's take five year as resolution.
+data$Resolution...Spatial..m.[data$SW.ID %in% "SW4_0516"]                         <- "50,000-100,000"
+data$ResSpatial[data$SW.ID %in% "SW4_0516"]                                       <- "50,000-100,000"
+data_allScreened$Resolution...Spatial..m.[data_allScreened$SW.ID %in% "SW4_0516"] <- "50,000-100,000"
+
+data$Resolution...Temporal[data$SW.ID %in% "SW4_0516"]                         <- "five year"
+data$ResTemporal[data$SW.ID %in% "SW4_0516"]                                   <- "five year"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_0516"] <- "five year"
+
+## SW4_0611
+# Experiment performed in small tanks, so both scale and resolution 0-5 m.
+data$Scale...Spatial..m.[data$SW.ID %in% "SW4_0611"]                         <- "0-5"
+data$ScaleSpatial[data$SW.ID %in% "SW4_0611"]                                <- "0-5"
+data_allScreened$Scale...Spatial..m.[data_allScreened$SW.ID %in% "SW4_0611"] <- "0-5"
+
+data$Resolution...Spatial..m.[data$SW.ID %in% "SW4_0611"]                         <- "0-5"
+data$ResSpatial[data$SW.ID %in% "SW4_0611"]                                       <- "0-5"
+data_allScreened$Resolution...Spatial..m.[data_allScreened$SW.ID %in% "SW4_0611"] <- "0-5"
+
+## SW4_0665
+# Add temporal resolution of month just as for the other rows (as it is the same observations, just from another area).
+data$Scale...Temporal[data$SW.ID %in% "SW4_0665"]                         <- "month"
+data$ScaleTemporal[data$SW.ID %in% "SW4_0665"]                            <- "month"
+data_allScreened$Scale...Temporal[data_allScreened$SW.ID %in% "SW4_0665"] <- "month"
+
+## SW4_0679
+# No information on the exact location of hauls is given, so spatial resolution is indeed unknown.
+
+## SW4_0943
+# EwE model without spatial component, so indeed no spatial resolution. Yet, interpretation of results is basin-wide, so let's say >100,000 m.
+data$Resolution...Spatial..m.[data$SW.ID %in% "SW4_0943"]                         <- ">100,000"
+data$ResSpatial[data$SW.ID %in% "SW4_0943"]                                       <- ">100,000"
+data_allScreened$Resolution...Spatial..m.[data_allScreened$SW.ID %in% "SW4_0943"] <- ">100,000"
+
+## SW4_0955
+# Model simulations with input from bottom trawl survey data. Model simulations do not contain spatial component but interpretation
+# is done at scale of the entire basin. So resolution is >100,000 m.
+data$Resolution...Spatial..m.[data$SW.ID %in% "SW4_0955"]                         <- ">100,000"
+data$ResSpatial[data$SW.ID %in% "SW4_0955"]                                       <- ">100,000"
+data_allScreened$Resolution...Spatial..m.[data_allScreened$SW.ID %in% "SW4_0955"] <- ">100,000"
+
+## SW4_0961
+# Fisheries dependent data were collected to derive to an annual index of fishing effort by three fishing grounds.
+# Take distance between these fishing grounds as spatial resolution, so >100,000
+data$Resolution...Spatial..m.[data$SW.ID %in% "SW4_0961" & data$Sampling.Method.used.for.data.collection %in% "Fisheries Dependent Data"]                                     <- ">100,000"
+data$ResSpatial[data$SW.ID %in% "SW4_0961" & data$Sampling.Method.used.for.data.collection %in% "Fisheries Dependent Data"]                                                   <- ">100,000"
+data_allScreened$Resolution...Spatial..m.[data_allScreened$SW.ID %in% "SW4_0961" & data_allScreened$Sampling.Method.used.for.data.collection %in% "Fisheries Dependent Data"] <- ">100,000"
+
+##SW4_1182
+# Study includes many variables from many different sources for which the spatial resolution is not provided.
+# Results are interpreted at the basin level, so let's take resolution as >100,000 m.
+data$Resolution...Spatial..m.[data$SW.ID %in% "SW4_1182"]                         <- ">100,000"
+data$ResSpatial[data$SW.ID %in% "SW4_1182"]                                       <- ">100,000"
+data_allScreened$Resolution...Spatial..m.[data_allScreened$SW.ID %in% "SW4_1182"] <- ">100,000"
+
+## SW4_1233
+# Temporal resolution of CPR is monthly. Temporal resolution of stock assessment data is year.
+# No spatial component is included in the analysis, but results are interpreted at the basin scale, so spatial resolution is >100,000 m.
+data$Resolution...Spatial..m.[data$SW.ID %in% "SW4_1233"]                         <- ">100,000"
+data$ResSpatial[data$SW.ID %in% "SW4_1233"]                                       <- ">100,000"
+data_allScreened$Resolution...Spatial..m.[data_allScreened$SW.ID %in% "SW4_1233"] <- ">100,000"
+
+data$Resolution...Temporal[data$SW.ID %in% "SW4_1233" & data$Description.Other.Sampling.Method %in% "Continuous Plankton Recorder"]                                     <- "month"
+data$ResTemporal[data$SW.ID %in% "SW4_1233" & data$Description.Other.Sampling.Method %in% "Continuous Plankton Recorder"]                                               <- "month"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1233" & data_allScreened$Description.Other.Sampling.Method %in% "Continuous Plankton Recorder"] <- "month"
+
+data$Resolution...Temporal[data$SW.ID %in% "SW4_1233" & data$Description.Other.Sampling.Method %in% "ICES stock assessment database"]                                     <- "year"
+data$ResTemporal[data$SW.ID %in% "SW4_1233" & data$Description.Other.Sampling.Method %in% "ICES stock assessment database"]                                               <- "year"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1233" & data_allScreened$Description.Other.Sampling.Method %in% "ICES stock assessment database"] <- "year"
+
+## SW4_1238
+# Paper does not mention when the tows exactly have been taken, so temporal scale is unknown. 
+
+## SW4_1271
+# Hauls were collected during several cruises between 1991 and 2007. So let's take five year as temporal resolution.
+data$Resolution...Temporal[data$SW.ID %in% "SW4_1271"]                                     <- "five year"
+data$ResTemporal[data$SW.ID %in% "SW4_1271"]                                               <- "five year"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1271"]             <- "five year"
+
+## SW4_1332
+# No information provided on the exact location of trawl hauls, other than it being in the eastern Ionian Sea.
+# So spatial resolution is unknown.
+
+## SW4_1382
+# EwE model where it is unclear what the spatial and resolution is. No spatial component to the model, but inference made at the level of the
+# entire region, so let's take spatial resolution of >100,000 m. Temporal scale is a decade but no comparison made with other decades. Keep it blank.
+data$Resolution...Spatial..m.[data$SW.ID %in% "SW4_1382"]                         <- ">100,000"
+data$ResSpatial[data$SW.ID %in% "SW4_1382"]                                       <- ">100,000"
+data_allScreened$Resolution...Spatial..m.[data_allScreened$SW.ID %in% "SW4_1382"] <- ">100,000"
+
+## Sw4_1394
+# Model based on two stations that are >100,000 m apart, so take that as spatial resolution.
+# Stations were sampled in two years, and model inference is also done at the year level (e.g. recovery times).
+# So take year as temporal resolution.
+data$Resolution...Spatial..m.[data$SW.ID %in% "SW4_1394"]                         <- ">100,000"
+data$ResSpatial[data$SW.ID %in% "SW4_1394"]                                       <- ">100,000"
+data_allScreened$Resolution...Spatial..m.[data_allScreened$SW.ID %in% "SW4_1394"] <- ">100,000"
+
+data$Resolution...Temporal[data$SW.ID %in% "SW4_1394"]                                     <- "year"
+data$ResTemporal[data$SW.ID %in% "SW4_1394"]                                               <- "year"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1394"]             <- "year"
+
+## SW4_1457
+# Although information on gillnet location was collected, this is not presented in the paper.
+# Spatial resolution is therefore unknown.
+
+## SW4_1469
+# Size of fishing ground is provided in map without scale. Measured distance from Google maps indicates spatial scale to be 50,000-100,000 m.
+# Location of actual hauls is not provided, so spatial resolution is unknown.
+data$Scale...Spatial..m.[data$SW.ID %in% "SW4_1469"]                         <- "50,000-100,000"
+data$ScaleSpatial[data$SW.ID %in% "SW4_1469"]                                <- "50,000-100,000"
+data_allScreened$Scale...Spatial..m.[data_allScreened$SW.ID %in% "SW4_1469"] <- "50,000-100,000"
+
+## SW4_1528
+# No map of the actual hauls used from the IBTS are provided, but sampling protocol is taken 1-2 hauls per rectangle.
+# So let's take the width of a rectangle as the spatial resolution, being between 50,000-100,000 m.
+data$Resolution...Spatial..m.[data$SW.ID %in% "SW4_1528"]                         <- "50,000-100,000"
+data$ResSpatial[data$SW.ID %in% "SW4_1528"]                                       <- "50,000-100,000"
+data_allScreened$Resolution...Spatial..m.[data_allScreened$SW.ID %in% "SW4_1528"] <- "50,000-100,000"
+
+## SW4_1531
+# EwE model without spatial component, so indeed no spatial resolution. Yet, interpretation of results is basin-wide, so let's say >100,000 m.
+# They explored impact of a management measure before and after a certain year, with 10-20 years of data. So let's take a decade as temporal resolution.
+data$Resolution...Spatial..m.[data$SW.ID %in% "SW4_1531"]                         <- ">100,000"
+data$ResSpatial[data$SW.ID %in% "SW4_1531"]                                       <- ">100,000"
+data_allScreened$Resolution...Spatial..m.[data_allScreened$SW.ID %in% "SW4_1531"] <- ">100,000"
+
+data$Resolution...Temporal[data$SW.ID %in% "SW4_1531"]                         <- "decade"
+data$ResTemporal[data$SW.ID %in% "SW4_1531"]                                   <- "decade"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1531"] <- "decade"
+
+## SW4_1662
+# Model without spatial component, but some inferences are made in the discussion on a wider area (e.g. softbottom habitats in North Sea).
+# So let's take distance from spatial scale as resolution: 100,000 m.
+# No clear temporal component in model, other than that they look at trawling frequency per hour but also per year. Some other variables are in day
+# Therefore leave temporal resolution blank as this is not clear and homogeneous. Temporal scale is in the same way not clear either.
+data$Resolution...Spatial..m.[data$SW.ID %in% "SW4_1662"]                         <- ">100,000"
+data$ResSpatial[data$SW.ID %in% "SW4_1662"]                                       <- ">100,000"
+data_allScreened$Resolution...Spatial..m.[data_allScreened$SW.ID %in% "SW4_1662"] <- ">100,000"
+
+## SW4_1663
+# For the visual diving surveys, number of surveys per year varied between 4 and 20. Let's take one month as temporal resolution.
+# Data one size structure were taken from three tows but unclear when they were taken, and neither how far apart they were with data from the
+# compared tow from 2000. So leave temporal resolution blank.
+data$Resolution...Temporal[data$SW.ID %in% "SW4_1663" & data$Scale...Temporal %in% "decade"]                                     <- "month"
+data$ResTemporal[data$SW.ID %in% "SW4_1663" & data$Scale...Temporal %in% "decade"]                                               <- "month"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1663" & data_allScreened$Scale...Temporal %in% "decade"] <- "month"
+
+## SW4_1684
+# Spatial resolution estimated from the map to be 10,000-50,000 m.
+data$Resolution...Spatial..m.[data$SW.ID %in% "SW4_1684"]                         <- "10,000-50,000"
+data$ResSpatial[data$SW.ID %in% "SW4_1684"]                                       <- "10,000-50,000"
+data_allScreened$Resolution...Spatial..m.[data_allScreened$SW.ID %in% "SW4_1684"] <- "10,000-50,000"
+
+## SW4_1689
+# Total study area is presented, but not the exact location of observations. Spatial resolution is therefore unknown.
+
+## SW4_1707
+# Global meta-analysis, with data from Europe, North America and Oceania. Let's therefore take the same large distance for spatial scale
+# as for resolution: 100,000 m.
+# Studies range from 1983 to 1998, so temporal scale is multi-decadal. Temporal resolution is unknown.
+data$Resolution...Spatial..m.[data$SW.ID %in% "SW4_1707"]                         <- ">100,000"
+data$ResSpatial[data$SW.ID %in% "SW4_1707"]                                       <- ">100,000"
+data_allScreened$Resolution...Spatial..m.[data_allScreened$SW.ID %in% "SW4_1707"] <- ">100,000"
+
+data$Scale...Temporal[data$SW.ID %in% "SW4_1707"]                         <- "multidecadal"
+data$ScaleTemporal[data$SW.ID %in% "SW4_1707"]                            <- "multidecadal"
+data_allScreened$Scale...Temporal[data_allScreened$SW.ID %in% "SW4_1707"] <- "multidecadal"
+
+## SW4_1719
+# Repeated observations were taken either daily or or two weeks, depending on the treatment. So take week as temporal resolution (as middle ground).
+# Paper does not provide exact locations of the plots neither at which reef (and size of the reef) measurements were done. So spatial resolution unknown.
+data$Resolution...Temporal[data$SW.ID %in% "SW4_1719"]                         <- "two week"
+data$ResTemporal[data$SW.ID %in% "SW4_1719"]                                   <- "two week"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1719"] <- "two week"
+
+## SW4_1727
+# Duration of trap experiment is two days, so choose day as temporal scale.
+# No repeated measurements, so choose that as temporal resolution
+data$Scale...Temporal[data$SW.ID %in% "SW4_1727"]                         <- "day"
+data$ScaleTemporal[data$SW.ID %in% "SW4_1727"]                            <- "day"
+data_allScreened$Scale...Temporal[data_allScreened$SW.ID %in% "SW4_1727"] <- "day"
+
+data$Resolution...Temporal[data$SW.ID %in% "SW4_1727"]                         <- "snapshot/no repeat sampling"
+data$ResTemporal[data$SW.ID %in% "SW4_1727"]                                   <- "snapshot/no repeat sampling"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1727"] <- "snapshot/no repeat sampling"
+
+## SW4_1788
+# Based on interviews conducted once, so no repeated sampling - take this as temporal resolution.
+data$Resolution...Temporal[data$SW.ID %in% "SW4_1788"]                         <- "snapshot/no repeat sampling"
+data$ResTemporal[data$SW.ID %in% "SW4_1788"]                                   <- "snapshot/no repeat sampling"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1788"] <- "snapshot/no repeat sampling"
+
+## SW4_1803
+# Distance between hauls within experimental areas is unknown, but distance between the two experimental areas,
+# based on map, is 5,000-10,000 m, so take that as spatial resolution.
+data$Resolution...Spatial..m.[data$SW.ID %in% "SW4_1803"]                         <- "5,000-10,000"
+data$ResSpatial[data$SW.ID %in% "SW4_1803"]                                       <- "5,000-10,000"
+data_allScreened$Resolution...Spatial..m.[data_allScreened$SW.ID %in% "SW4_1803"] <- "5,000-10,000"
+
+## Sw4_1833
+# Measure peninsula on Google maps, spatial scale is 5,000-10,000 m. Spatial resolution is unknown, other than it is smaller than the spatial scale.
+data$Scale...Spatial..m.[data$SW.ID %in% "SW4_1833"]                         <- "5,000-10,000"
+data$ScaleSpatial[data$SW.ID %in% "SW4_1833"]                                <- "5,000-10,000"
+data_allScreened$Scale...Spatial..m.[data_allScreened$SW.ID %in% "SW4_1833"] <- "5,000-10,000"
+
+## SW4_1867
+# The coordinates are provided and with help from Google maps, stations are >100,000 m apart, so this is the spatial resolution.
+data$Resolution...Spatial..m.[data$SW.ID %in% "SW4_1867"]                         <- ">100,000"
+data$ResSpatial[data$SW.ID %in% "SW4_1867"]                                       <- ">100,000"
+data_allScreened$Resolution...Spatial..m.[data_allScreened$SW.ID %in% "SW4_1867"] <- ">100,000"
+
+## SW4_1942
+# Paper describes that some information has been collected weekly, presumably throughout the year - other information annually 
+# within the second quarter, likely with higher interval, e.g. weekly or so. Take temporal resolution as week.
+# Data source is market sampling where samples can come from all over the fishing distributional area. So spatial resolution is unknown.
+data$Resolution...Temporal[data$SW.ID %in% "SW4_1942"]                         <- "two week"
+data$ResTemporal[data$SW.ID %in% "SW4_1942"]                                   <- "two week"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1942"] <- "two week"
+
+## SW4_1952
+# EwE model without spatial component, but inference done at the scale of entire basin, so take >100,000 m as spatial resolution.
+# Model developed for period 2004-2005, where underlying data were averaged across years. So temporal resolution is snapshot.
+data$Resolution...Spatial..m.[data$SW.ID %in% "SW4_1952"]                         <- ">100,000"
+data$ResSpatial[data$SW.ID %in% "SW4_1952"]                                       <- ">100,000"
+data_allScreened$Resolution...Spatial..m.[data_allScreened$SW.ID %in% "SW4_1952"] <- ">100,000"
+
+data$Resolution...Temporal[data$SW.ID %in% "SW4_1952"]                         <- "snapshot/no repeat sampling"
+data$ResTemporal[data$SW.ID %in% "SW4_1952"]                                   <- "snapshot/no repeat sampling"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1952"] <- "snapshot/no repeat sampling"
+
+## SW4_1953
+# Inference done by comparing the three areas, not hauls within each area. So take distance between areas as spatial resolution,
+# which is based on map >100,000 m.
+data$Resolution...Spatial..m.[data$SW.ID %in% "SW4_1953"]                         <- ">100,000"
+data$ResSpatial[data$SW.ID %in% "SW4_1953"]                                       <- ">100,000"
+data_allScreened$Resolution...Spatial..m.[data_allScreened$SW.ID %in% "SW4_1953"] <- ">100,000"
+
+## SW4_1994
+# Based on map, spatial scale is 10,000-50,000 m. Exact location of sampling not provided, so spatial resolution is unknown.
+data$Scale...Spatial..m.[data$SW.ID %in% "SW4_1994"]                         <- "10,000-50,000"
+data$ScaleSpatial[data$SW.ID %in% "SW4_1994"]                                <- "10,000-50,000"
+data_allScreened$Scale...Spatial..m.[data_allScreened$SW.ID %in% "SW4_1994"] <- "10,000-50,000"
+
+# Check how many still are missing
+datNA <- data[is.na(data$Scale...Spatial..m.) | is.na(data$Scale...Temporal) | is.na(data$Resolution...Spatial..m.) | is.na(data$Resolution...Temporal),]
+length(unique(datNA$SW.ID)) #17 papers
+unique(datNA$SW.ID)
+
+# Rename remaining NAs as 'Not specified'
+data[c("Scale...Spatial..m.","Scale...Temporal","Resolution...Spatial..m.","Resolution...Temporal")][is.na(data[c("Scale...Spatial..m.","Scale...Temporal","Resolution...Spatial..m.","Resolution...Temporal")])] <- "Not specified"
+data_allScreened[c("Scale...Spatial..m.","Scale...Temporal","Resolution...Spatial..m.","Resolution...Temporal")][is.na(data_allScreened[c("Scale...Spatial..m.","Scale...Temporal","Resolution...Spatial..m.","Resolution...Temporal")])] <- "Not specified"
+
+
+
+#-----------------------------------------------#
 # Plotting after checking and corrections ----
 #-----------------------------------------------#
 
@@ -1129,19 +1504,6 @@ ggsave(filename = paste0(outPath, "spatiotemporalRes.png"),
                      axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
                )
 )
-
-
-
-#-----------------------------------------------#
-# Check again missing values ----
-#-----------------------------------------------#
-
-datNA <- data[is.na(data$Scale...Spatial..m.) | is.na(data$Scale...Temporal) | is.na(data$Resolution...Spatial..m.) | is.na(data$Resolution...Temporal),]
-length(unique(datNA$SW.ID)) #45 papers
-
-# Rename NAs as 'Not specified'
-data[c("Scale...Spatial..m.","Scale...Temporal","Resolution...Spatial..m.","Resolution...Temporal")][is.na(data[c("Scale...Spatial..m.","Scale...Temporal","Resolution...Spatial..m.","Resolution...Temporal")])] <- "Not specified"
-data_allScreened[c("Scale...Spatial..m.","Scale...Temporal","Resolution...Spatial..m.","Resolution...Temporal")][is.na(data_allScreened[c("Scale...Spatial..m.","Scale...Temporal","Resolution...Spatial..m.","Resolution...Temporal")])] <- "Not specified"
 
 
 
