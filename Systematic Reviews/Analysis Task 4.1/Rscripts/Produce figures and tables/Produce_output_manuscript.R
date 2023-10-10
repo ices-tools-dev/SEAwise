@@ -32,6 +32,7 @@ library(openxlsx)
 library(worms)
 library(tidyr)
 library(stringr)
+library(ggforce)
 
 
 datPath                               <- "Systematic Reviews/Analysis Task 4.1/Routput/"
@@ -206,6 +207,13 @@ ggsave("SankeyFateRecords.tiff", sankey, path=outPath,
        width = 400,
        height = 200,
        units = "mm")
+
+
+#===#
+# Create alternative sankey diagram using ggforce
+#====#
+
+
 
 
 
@@ -872,6 +880,11 @@ ggsave("Sankey5.png", sankey, path=outPath,
        units = "mm")
 
 
+#===-
+# Create alternative sankey diagram using ggforce
+#====-
+
+
 
 
 #####################################################################################################################-
@@ -1064,7 +1077,7 @@ table(litter$Study.type)
 # tempLit <- litter[!duplicated(litter$SW.ID), c("SW.ID","Ecosystem.component_level1", "Sampling.Method.used.for.data.collection", "Response.variable_category", "Analytical.method.used.for.inference", "Direction.of.relationship")]
 # Unique combinations of relevant variables (some duplication of papers)
 tempLit <- litter[, c("SW.ID","Ecosystem.component_level1", "Sampling.Method.used.for.data.collection", "Response.variable_category", "Analytical.method.used.for.inference")]
-tempLit <- atempLit[!duplicated(atempLit), ]
+tempLit <- tempLit[!duplicated(tempLit), ]
 
 tempLit$Response.variable_category <- ifelse(tempLit$Response.variable_category %in% "Survival","Mortality",
                                              ifelse(tempLit$Response.variable_category %in% c("Community composition"), "Biodiversity",
@@ -1078,7 +1091,7 @@ tempLit$AnalyticalMethod <- ifelse(tempLit$Analytical.method.used.for.inference 
                                                                                        "Deacriptive statistics (Percentage abundance; Frequeny´cy of occurrence)",
                                                                                        "questionnaire (Local Ecological Knowledge), chemical digestion analysis of guts, polymer identification",
                                                                                        "occurrence _ abundance",
-                                                                                       "NA",
+                                                                                       NA,
                                                                                        "Digital Elevation Models (DEMs) _ ROV video images _ SIS",
                                                                                        "Video data", "postmortem examination of species, sex, body mass, external measures and pathoanatomical dissection using protocol",
                                                                                        "MATLAB _ Rainbow Click software package "),
@@ -1169,6 +1182,45 @@ ggsave(plot = litterMethods,
        width = 170,
        height = 90,
        units = "mm")
+
+
+#===-
+### Create alternative sankey diagram with ggforce ----
+#====-
+
+# Prepare data
+tempLitNoDupl       <- tempLit[!duplicated(tempLit), ]
+tempLitNoDupl$value <- 1
+tempLitNoDupl$Analytical.method.used.for.inference <- NULL
+
+# Transform data so that it can be handled by ggplot2
+tempLitTr           <- gather_set_data(tempLitNoDupl, 
+                                       x = c("Ecosystem.component_level1", "Sampling.Method.used.for.data.collection", "Response.variable_category", "AnalyticalMethod"), 
+                                       id_name = "SW.ID")
+
+# Plot Sankey diagram
+p <- ggplot(tempLitTr, aes(x, id = SW.ID, split = y, value = value)) +
+  geom_parallel_sets(aes(fill = Ecosystem.component_level1), alpha = 0.3, axis.width = 0.1, show.legend = FALSE) +
+  geom_parallel_sets_axes(axis.width = 0.1, fill = "gray60") +
+  geom_parallel_sets_labels(colour = 'black', angle = 0, size = 2.4) +
+  scale_x_continuous(breaks = c(2:5),
+                     labels = c("Ecosystem\ncomponent","Sampling\nMethodology","Response\nmeasured","Analytic\nmethod")) +
+  scale_fill_viridis_d(direction = -1) +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        axis.title = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank())
+
+ggsave(plot = p,
+       filename = paste0(outPath, "litterMethods_altn.png"),
+       device = "png",
+       dpi = 300,
+       width = 170,
+       height = 100,
+       units = "mm")
+
+
 
 #-----------------------------------------------#
 ## Geographic spread ----
@@ -1458,7 +1510,7 @@ table(litter$Ecosystem.component_level2)
 ### Data cleaning
 #====-
 tempLitDR <- litter[, c("SW.ID","Ecosystem.component_level1", "Response.variable_category", "Direction.of.relationship")]
-tempLitDR <- atempLitDR[!duplicated(atempLitDR), ]
+tempLitDR <- tempLitDR[!duplicated(tempLitDR), ]
 
 tempLitDR$Response.variable_category <- ifelse(tempLitDR$Response.variable_category %in% "Survival","Mortality",
                                                ifelse(tempLitDR$Response.variable_category %in% c("Community composition"), "Biodiversity",
@@ -1855,15 +1907,15 @@ nrow(subset_PET)
 
 # Earliest paper
 subset_PET[subset_PET$Year == min(subset_PET$Year), ]
-subset_PET[subset_PET$Year == min(subset_PET$Year), "Year"]
+subset_PET[subset_PET$Year == min(subset_PET$Year), "Year"] #1992
 
 #-----------------------------------------------#
 ### Gears ----
 #-----------------------------------------------#
 unique(subset_PET$Gear_level1)
-table(subset_PET$Gear_level1)
+table(subset_PET$Gear_level1, useNA = "always")
 unique(subset_PET$Gear_level2)
-table(subset_PET$Gear_level2)
+table(subset_PET$Gear_level2, useNA = "always")
 
 #-----------------------------------------------#
 ### Methods ----
@@ -2465,3 +2517,328 @@ ggsave(plot = petLinkage,
        width = 170,
        height = 90,
        units = "mm")
+
+
+#-----------------------------------------------#
+### Try-out other packages/approaches ----
+#-----------------------------------------------#
+
+#-----------------------------------------------#
+#### parallel_sets with ggforce ----
+#-----------------------------------------------#
+
+# Data prepping
+tempPETDR       <- subset_PET[, c("SW.ID","Ecosystem.component_level1", "Response.variable_category", "Direction.of.relationship")]
+tempPETDR       <- tempPETDR[!duplicated(tempPETDR), ]
+tempPETDR$value <- 1
+
+# Transform data so that it can be handled by ggplot2
+datTr           <- gather_set_data(tempPETDR, x = c("Ecosystem.component_level1", "Response.variable_category", "Direction.of.relationship"), id_name = "SW.ID")
+
+# Plot Sankey diagram
+p <- ggplot(datTr, aes(x, id = SW.ID, split = y, value = value)) +
+  geom_parallel_sets(aes(fill = Ecosystem.component_level1), alpha = 0.3, axis.width = 0.1, show.legend = FALSE) +
+  geom_parallel_sets_axes(axis.width = 0.1, fill = "gray60") +
+  geom_parallel_sets_labels(colour = 'black', angle = 0, size=2.4) +
+  scale_x_continuous(breaks = c(2:4),
+                     labels = c("Ecosystem\ncomponent","Response\nvariable","Direction\nof relationship")) +
+  scale_fill_viridis_d() +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        axis.title = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank())
+
+ggsave(plot = p,
+       filename = paste0(outPathPET, "SankeyPrl_EcoCompResDir.png"),
+       device = "png",
+       dpi = 300,
+       width = 170,
+       height = 100,
+       units = "mm")
+
+## Try adding labels
+ggplot(datTr, aes(x, id = SW.ID, split = y, value = value)) +
+  geom_parallel_sets(aes(fill = Ecosystem.component_level1), alpha = 0.3, axis.width = 0.1, show.legend = FALSE) +
+  geom_parallel_sets_axes(axis.width = 0.1, fill = "gray60") +
+  geom_parallel_sets_labels(aes(label = after_stat(paste(value, sep = "\n"))),colour = 'black', angle = 0, fill="red") +
+  scale_x_continuous(breaks = c(2:4),
+                     labels = c("Ecosystem\ncomponent","Response\nvariable","Direction\nof relationship")) +
+  scale_fill_viridis_d() +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        axis.title = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank())
+
+
+#-----------------------------------------------#
+#### ggalluvial ----
+#-----------------------------------------------#
+
+library(ggalluvial)
+
+# Data prepping
+tempPET       <- subset_PET[, c("SW.ID","Ecosystem.component_level1", "Response.variable_category", "Direction.of.relationship")]
+tempPET       <- tempPET[!duplicated(tempPET), ]
+tempPET$value <- 1
+
+# Check if format is OK
+is_alluvia_form(tempPET)
+
+# Plot
+p <- ggplot(tempPET, aes(y = value, 
+                    axis1 = Ecosystem.component_level1, 
+                    axis2 = Response.variable_category,
+                    axis3 = Direction.of.relationship)) +
+  geom_flow(aes(fill = Ecosystem.component_level1), 
+            aes.bind="flows") +
+  geom_stratum(width = 1/3, 
+               fill = "black", 
+               color = "grey") +
+  geom_label(stat = "stratum", 
+             aes(label = after_stat(stratum)),
+            size=2.4) +
+  scale_x_discrete(limits = c("Ecosystem.component_level1","Response.variable_category","Direction.of.relationship"), 
+                   labels = c("Ecosystem\ncomponent","Response\nvariable","Direction\nof relationship"),
+                   expand = c(0, 0)) +
+  labs(y = "Number of papers") +
+  scale_fill_viridis_d() +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        axis.title.x = element_blank(),
+        # axis.text.y = element_blank(),
+        # axis.ticks.y = element_blank(),
+        legend.position = "none")
+  
+ggsave(plot = p,
+       filename = paste0(outPathPET, "SankeyAlluv_EcoCompResDir.png"),
+       device = "png",
+       dpi = 300,
+       width = 170,
+       height = 100,
+       units = "mm")
+
+
+
+#-----------------------------------------------#
+## Spatial Scales ----
+#-----------------------------------------------#
+
+## Make spatial extent and scale categories
+subset_PET$ScaleSpatial <- factor(x = subset_PET$Scale...Spatial..m.,
+                              levels = c("0-5", "5-10", "10-50", "50-100", "100-500", "500-1,000", "1,000-5,000", "5,000-10,000", "10,000-50,000", "50,000-100,000", ">100,000"),
+                              ordered = TRUE)
+subset_PET$ResSpatial <- factor(x = subset_PET$Resolution...Spatial..m.,
+                            levels = c("0-5", "5-10", "10-50", "50-100", "100-500", "500-1,000", "1,000-5,000", "5,000-10,000", "10,000-50,000", "50,000-100,000", ">100,000"),
+                            ordered = TRUE)
+
+spatResEx_cat <- expand.grid(levels(subset_PET$ScaleSpatial),
+                             levels(subset_PET$ScaleSpatial))
+
+colnames(spatResEx_cat) <- c("SpatialExtent_m", "SpatialRes_m")
+
+## Make counts of articles in different combinations of SPATIAL EXTENTS & RESOLUTIONS
+spatResEx_count <- aggregate(SW.ID~ScaleSpatial+ResSpatial,
+                             data = subset_PET[!duplicated(subset_PET$SW.ID), ],
+                             FUN = length)
+
+names(spatResEx_count)[names(spatResEx_count) %in% "SW.ID"] <- "NumberOfArticles"
+
+
+spatResEx_count <- merge(x = spatResEx_cat,
+                         y = spatResEx_count,
+                         by.y = c("ScaleSpatial", "ResSpatial"),
+                         by.x = c("SpatialExtent_m", "SpatialRes_m"),
+                         all.x = TRUE)
+
+spatResEx_count[is.na(spatResEx_count$NumberOfArticles), "NumberOfArticles"] <- 0
+
+## Plot
+ggsave(filename = paste0(outPathPET, "spatialResVExt.png"),
+       device = "png",
+       dpi = 300,
+       width = 170,
+       height = 90,
+       units = "mm",
+       plot = 
+         ggplot() +
+         geom_tile(data = spatResEx_count,
+                   mapping = aes(x = SpatialExtent_m,
+                                 y = SpatialRes_m,
+                                 fill = NumberOfArticles)) +
+         scale_fill_continuous_sequential(palette = "blues3",
+                                          rev = TRUE,
+                                          na.value = 0) +
+         scale_x_discrete(drop = FALSE) +
+         scale_y_discrete(drop = FALSE) +
+         ylab("Sampling Resolution (m)") +
+         xlab("Sampling Extent (m)") +
+         theme_few() +
+         theme(text = element_text(size = 9), 
+               # axis.text.x = element_text(hjust = 0.5, vjust = 1),
+               axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
+         )
+)
+
+#-----------------------------------------------#
+## Temporal Scales ----
+#-----------------------------------------------#
+
+## Make temporal extent and scale categories
+subset_PET$ScaleTemporal <- factor(x = subset_PET$Scale...Temporal,
+                               levels = c("snapshot/no repeat sampling", "subday", "day", "week", "two week", "month", "two month", "quarter", "half year", "year", "two year", "five year", "decade", "multidecadal"),
+                               ordered = TRUE)
+subset_PET$ResTemporal <- factor(x = subset_PET$Resolution...Temporal,
+                             levels = c("snapshot/no repeat sampling", "subday", "day", "week", "two week", "month", "two month", "quarter", "half year", "year", "two year", "five year", "decade", "multidecadal"),
+                             ordered = TRUE)
+
+tempResEx_cat <- expand.grid(levels(subset_PET$ScaleTemporal),
+                             levels(subset_PET$ScaleTemporal))
+
+colnames(tempResEx_cat) <- c("TemporalExtent", "TemporalRes")
+
+## Make counts of articles in different combinations of TEMPORAL EXTENTS & RESOLUTIONS
+tempResEx_count <- aggregate(SW.ID~ScaleTemporal+ResTemporal,
+                             data = subset_PET[!duplicated(subset_PET$SW.ID), ],
+                             FUN = length)
+
+names(tempResEx_count)[names(tempResEx_count) %in% "SW.ID"] <- "NumberOfArticles"
+
+
+tempResEx_count <- merge(x = tempResEx_cat,
+                         y = tempResEx_count,
+                         by.y = c("ScaleTemporal", "ResTemporal"),
+                         by.x = c("TemporalExtent", "TemporalRes"),
+                         all.x = TRUE)
+
+tempResEx_count[is.na(tempResEx_count$NumberOfArticles), "NumberOfArticles"] <- 0
+
+## Plot
+ggsave(filename = paste0(outPathPET, "temporalResVExt.png"),
+       device = "png",
+       dpi = 300,
+       width = 170,
+       height = 90,
+       units = "mm",
+       plot = 
+         ggplot() +
+         geom_tile(data = tempResEx_count,
+                   mapping = aes(x = TemporalExtent,
+                                 y = TemporalRes,
+                                 fill = NumberOfArticles)) +
+         scale_fill_continuous_sequential(palette = "blues3",
+                                          rev = TRUE,
+                                          na.value = 0) +
+         scale_x_discrete(drop = FALSE) +
+         scale_y_discrete(drop = FALSE) +
+         ylab("Sampling Resolution") +
+         xlab("Sampling Extent") +
+         theme_few() +
+         theme(text = element_text(size = 9), 
+               # axis.text.x = element_text(hjust = 0.5, vjust = 1),
+               axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
+         )
+)
+
+
+#-----------------------------------------------#
+## SpatioTemporal Extent ----
+#-----------------------------------------------#
+## Dependent on code above
+
+# Make spatio-temperal extent and resolution category matrix in long form
+spatempResEx_cat <- expand.grid(levels(subset_PET$ScaleSpatial),
+                                levels(subset_PET$ScaleTemporal))
+
+colnames(spatempResEx_cat) <- c("SpatialScale_m", "TemporalScale")
+
+## Make counts of articles in different combinations of SPATIAL & TEMPORAL EXTENTS
+spatempEx_count <- aggregate(SW.ID~ScaleSpatial+ScaleTemporal,
+                             data = subset_PET[!duplicated(subset_PET$SW.ID), ],
+                             FUN = length)
+names(spatempEx_count)[names(spatempEx_count) %in% "SW.ID"] <- "NumberOfArticles"
+
+
+spatempEx_count <- merge(x = spatempResEx_cat,
+                         y = spatempEx_count,
+                         by.y = c("ScaleSpatial", "ScaleTemporal"),
+                         by.x = c("SpatialScale_m", "TemporalScale"),
+                         all.x = TRUE)
+
+spatempEx_count[is.na(spatempEx_count$NumberOfArticles), "NumberOfArticles"] <- 0
+
+
+## Plot
+ggsave(filename = paste0(outPathPET, "spatiotemporalExt.png"),
+       device = "png",
+       dpi = 300,
+       width = 170,
+       height = 90,
+       units = "mm",
+       plot = 
+         ggplot() +
+         geom_tile(data = spatempEx_count,
+                   mapping = aes(x = SpatialScale_m,
+                                 y = TemporalScale,
+                                 fill = NumberOfArticles)) +
+         scale_fill_continuous_sequential(palette = "blues3",
+                                          rev = TRUE,
+                                          na.value = 0) +
+         scale_x_discrete(drop = FALSE) +
+         scale_y_discrete(drop = FALSE) +
+         ylab("Temporal Extent") +
+         xlab("Spatial Extent (m)") +
+         theme_few() +
+         theme(text = element_text(size = 9), 
+               # axis.text.x = element_text(hjust = 0.5, vjust = 1),
+               axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
+         )
+)
+
+#-----------------------------------------------#
+## SpatioTemporal Resolution ----
+#-----------------------------------------------#
+## Dependent on code above
+
+## Make counts of articles in different combinations of SPATIAL & TEMPORAL RESOLUTIONS
+spatempRes_count <- aggregate(SW.ID~ResSpatial+ResTemporal,
+                              data = subset_PET[!duplicated(subset_PET$SW.ID), ],
+                              FUN = length)
+names(spatempRes_count)[names(spatempRes_count) %in% "SW.ID"] <- "NumberOfArticles"
+
+
+spatempRes_count <- merge(x = spatempResEx_cat,
+                          y = spatempRes_count,
+                          by.y = c("ResSpatial", "ResTemporal"),
+                          by.x = c("SpatialScale_m", "TemporalScale"),
+                          all.x = TRUE)
+
+spatempRes_count[is.na(spatempRes_count$NumberOfArticles), "NumberOfArticles"] <- 0
+
+## Plot
+ggsave(filename = paste0(outPathPET, "spatiotemporalRes.png"),
+       device = "png",
+       dpi = 300,
+       width = 170,
+       height = 90,
+       units = "mm",
+       plot = 
+         ggplot() +
+         geom_tile(data = spatempRes_count,
+                   mapping = aes(x = SpatialScale_m,
+                                 y = TemporalScale,
+                                 fill = NumberOfArticles)) +
+         scale_fill_continuous_sequential(palette = "blues3",
+                                          rev = TRUE,
+                                          na.value = 0) +
+         scale_x_discrete(drop = FALSE) +
+         scale_y_discrete(drop = FALSE) +
+         ylab("Temporal Resolution") +
+         xlab("Spatial Resolution (m)") +
+         theme_few() +
+         theme(text = element_text(size = 9), 
+               # axis.text.x = element_text(hjust = 0.5, vjust = 1),
+               axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
+         )
+)
