@@ -78,6 +78,7 @@ data                                  <- tab[SW.ID %in% retained,,]
 #rm(tab, contributors, retained, excluded)
 
 ## For easyness, skip the long-text columns.
+## !!!! SKIP THIS STEP FOR PROCESSING THE DATA INCLUDING ALL COLUMNS !!!!
 data                                  <- data[,c(1, 5, 19:29, 32:49, 51:52)]
 
 ## Check the regions (all fine)
@@ -244,7 +245,8 @@ if(ncol(data) > 50){
 saveRDS(data, file=paste0(outPath, "data.rds"))
 
 ## Paste back excluded papers and save -> make sure you first undo dropping columns in data and removing tab and retained
-data_allScreened                     <- rbind(data, tab[!SW.ID %in% retained,]) #IMPORTANT NOTE: ROWID does not match between data & tab and data_allScreened!
+## !!!! ONLY WHEN YOU ARE PROCESSING THE DATA INCLUDING ALL COLUMNS !!!!
+data_allScreened                     <- rbind(data, tab[!SW.ID %in% retained,], fill=TRUE) #IMPORTANT NOTE: ROWID does not match between data & tab and data_allScreened!
 saveRDS(data_allScreened, file=paste0(outPath, "data_allScreened.rds"))
 
 

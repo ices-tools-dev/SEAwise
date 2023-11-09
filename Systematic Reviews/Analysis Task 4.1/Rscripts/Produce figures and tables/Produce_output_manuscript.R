@@ -1883,6 +1883,46 @@ fish_keep                            <- rbind(fish_keep, fish[fish$SW.ID %in% c(
 subset_PET                           <- rbind(subset_PET, fish_keep)
 
 
+
+### Have a closer look at Pressure Catch ----
+
+# Select those papers that have 'Catch' as Pressure variable category - are these really on bycatch?
+catch                 <- subset(subset_byc, Pressure.variable_category %in% "Catch")
+
+# Number of papers
+length(unique(catch$SW.ID)) #5
+unique(catch$SW.ID)
+
+# SW4_0081
+## Not on Bycatch, as it studies how catches of small-pelagics affect food availability of dolphins.
+## Exclude from case study.
+subset_byc            <- subset(subset_byc, !(SW.ID %in% "SW4_0081" & Pressure.variable_category %in% "Catch" & 
+                                                Ecosystem.component_level1 %in% "Marine_mammals"))
+
+# SW4_0633
+## Studies trait composition of catches, including target and non-target species.
+## Non-target species are specifically addressed as bycatch, so the pressure category for non-target
+## species should be changed to Bycatch. This is done in Step 4 data processing script.
+
+# Sw4_1033
+## The entered fish and elasmobranch species are classified as non-target and are also on the PET species list.
+## Pressure variable category should therefore be Bycatch instead of Catch.
+## This is done in Step 4 data processing script.
+
+# SW4_1094
+## Paper in distributional shifts of plaice and sole in the North Sea. The data come mostly from otter 
+## trawler landings where sole and plaice are bycatch. This is reported in the database, BUT: the actual
+## fishing effects are studied by taking fishing mortality from stock assesssments and modelling that
+## as a variable of fishing pressure against distribution. So this records should be changed to report
+## this fishing impact instead. Will be done in the data extraction file directly.
+## After that, this paper will not be part of the bycatch case study.
+
+# SW4_1229
+## Several species on PET species list, but some also target. Rows for target and non-target have the same
+## impact, so change pressure variable category for non-target from Catch to Bycatch,
+
+
+
 ### Final PET dataset ----
 
 # Revert mortality to survival
@@ -2894,3 +2934,9 @@ pTemporal <- ggplot() +
 p <- pSpatial / pTemporal + plot_annotation(tag_levels = 'A')
 
 ggsave("spatialTemporalScales.png", p, path=outPathPET, width = 7, height = 7)
+
+
+
+
+
+

@@ -134,8 +134,9 @@ datPressvar$Pressure.variable_category    <- with(datPressvar, ifelse(Pressure_v
 datPressvar$Pressure.variable_category    <- with(datPressvar, ifelse(SW.ID %in% "SW4_0081" & is.na(Pressure.variable_category),
                                                                       "Catch",Pressure.variable_category))
 
-# Add paper that assesses trait composition of fished assemblages
-datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(grepl("Biological trait removal by fishing", datPressvar$Pressure_variable) & is.na(datPressvar$Pressure.variable_category) &
+# Add paper that assesses trait composition of fished assemblages for where Pressure level is 'Target'
+datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(grepl("Biological trait removal by fishing", datPressvar$Pressure_variable) & 
+                                                                       is.na(datPressvar$Pressure.variable_category) & Pressure_level %in% "Target" &
                                                                        SW.ID %in% "SW4_0633", "Catch",Pressure.variable_category))
 
 # Add paper that studies effect of biomass removal (besides fishing mortality and fishing effort)
@@ -326,6 +327,23 @@ datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(Pressure_va
                                                                                               "number of interaction") &
                                                                        is.na(datPressvar$Pressure.variable_category) &
                                                                        SW.ID %in% "SW4_0065", "Bycatch",Pressure.variable_category))
+
+# Add paper that assesses trait composition of fished assemblages for where Pressure level is 'Non-target'
+datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(grepl("Biological trait removal by fishing", datPressvar$Pressure_variable) & 
+                                                                       is.na(datPressvar$Pressure.variable_category) & Pressure_level %in% "Non-target" &
+                                                                       SW.ID %in% "SW4_0633", "Bycatch",Pressure.variable_category))
+
+## Also change Study type for this papers - this should be Fisheries Dependent Survey instead of Modelling/simulation
+datPressvar$Study.type[datPressvar$SW.ID %in% "SW4.0633"] <- "Fisheries dependent survey"
+
+# Add rows of paper that look at catch of non-target species which are PET species - now classified as Catch, but better as Bycatch
+datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(Pressure_level %in% "Non-target" & 
+                                                                       SW.ID %in% "SW4_1033", "Bycatch",Pressure.variable_category))
+
+# Add row of paper that looks at catch of target and non-target species, of which are PET species - now classified as Catch, but better as Bycatch for non-target
+datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(Pressure_level %in% "Non-target" & 
+                                                                       SW.ID %in% "SW4_1229", "Bycatch",Pressure.variable_category))
+
 
 PV_bycatch                                  <- subset(datPressvar, Pressure.variable_category %in% "Bycatch")
 ## NOTE: studies on bycatch exclusion devices will  go under another category

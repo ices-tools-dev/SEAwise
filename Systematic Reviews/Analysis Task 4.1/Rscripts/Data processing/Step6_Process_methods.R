@@ -563,9 +563,6 @@ rowIDdupl               <- datDescr$ROWID[duplicated(datDescr$ROWID)]
 datDupl                 <- subset(datDescr, ROWID %in% rowIDdupl) #this is because rows were split or duplicated and got a new Sampling Method
 datDescr$ROWID          <- c(1:nrow(datDescr)) #give new unique row ID
 
-# A mistake was found in the year of one paper - correct here manually if not been corrected elsewhere
-datDescr$Year[datDescr$SW.ID %in% "SW4_0864"] <- 2014
-
 # Save
 saveRDS(datDescr, paste0(datPath,"data_correctTaxa_PressVar_RespVar_Methods.rds"))
 write.xlsx(datDescr, file=paste0(datPath, "data_correctTaxa_PressVar_RespVar_Methods.xlsx"))

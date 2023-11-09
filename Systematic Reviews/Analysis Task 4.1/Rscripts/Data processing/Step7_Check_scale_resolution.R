@@ -1302,8 +1302,15 @@ length(unique(datNA$SW.ID)) #17 papers
 unique(datNA$SW.ID)
 
 # Rename remaining NAs as 'Not specified'
-data[c("Scale...Spatial..m.","Scale...Temporal","Resolution...Spatial..m.","Resolution...Temporal")][is.na(data[c("Scale...Spatial..m.","Scale...Temporal","Resolution...Spatial..m.","Resolution...Temporal")])] <- "Not specified"
-data_allScreened[c("Scale...Spatial..m.","Scale...Temporal","Resolution...Spatial..m.","Resolution...Temporal")][is.na(data_allScreened[c("Scale...Spatial..m.","Scale...Temporal","Resolution...Spatial..m.","Resolution...Temporal")])] <- "Not specified"
+data$Scale...Spatial..m.[is.na(data$Scale...Spatial..m.)]             <- "Not specified"
+data$Scale...Temporal[is.na(data$Scale...Temporal)]                   <- "Not specified"
+data$Resolution...Spatial..m.[is.na(data$Resolution...Spatial..m.)]   <- "Not specified"
+data$Resolution...Temporal[is.na(data$Resolution...Temporal)]         <- "Not specified"
+ 
+data_allScreened$Scale...Spatial..m.[is.na(data_allScreened$Scale...Spatial..m.) & is.na(data_allScreened$Exclusion.Criteria)]             <- "Not specified"
+data_allScreened$Scale...Temporal[is.na(data_allScreened$Scale...Temporal) & is.na(data_allScreened$Exclusion.Criteria)]                   <- "Not specified"
+data_allScreened$Resolution...Spatial..m.[is.na(data_allScreened$Resolution...Spatial..m.) & is.na(data_allScreened$Exclusion.Criteria)]   <- "Not specified"
+data_allScreened$Resolution...Temporal[is.na(data_allScreened$Resolution...Temporal) & is.na(data_allScreened$Exclusion.Criteria)]         <- "Not specified"
 
 
 
