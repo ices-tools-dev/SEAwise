@@ -1,17 +1,17 @@
-;Abundance/biomass/density;Behaviour;Biodiversity;Community composition;Damage & entanglement;Growth;Mortality;Other;Physiology;Production/productivity;Reproduction;Sediment & physical properties;Size/age structure;Survival;Trophic structure
-Active Acoustic Sampling Survey;3;1;0;2;2;0;0;0;1;0;0;6;0;0;0
-Behavioural observations;0;1;0;0;0;0;0;0;0;0;0;0;0;0;0
-Behavioural Observations;7;14;0;0;2;0;5;0;9;0;0;0;0;4;0
-Data Storage, GPS, Acoustic Taggin;1;9;0;1;0;0;5;0;1;0;0;2;0;0;0
-Fisheries Dependent Data;192;5;13;21;16;6;53;3;9;15;5;16;50;21;42
-In situ structural growth;1;0;0;0;0;0;0;0;0;0;0;0;0;0;0
-Interview/questionnaire;15;1;0;0;1;0;9;0;0;5;0;0;1;1;0
-Irregular Fisheries Independent Survey;182;8;61;72;9;7;28;0;16;13;1;32;25;5;50
-Mark Recapture;4;0;0;0;0;0;1;0;0;0;0;0;0;3;0
-Other;23;0;10;2;1;1;13;0;1;0;5;0;1;0;7
-Physiological Growth Indicators;0;0;0;0;1;1;0;0;0;0;0;0;0;1;0
-Regular Fisheries Independent Survey;127;4;43;41;7;2;15;0;2;1;7;3;36;7;24
-Simulated dynamics;61;0;5;1;0;0;11;1;0;11;0;6;1;4;19
-Stomach Contents Analyses;1;1;0;3;0;0;0;0;0;0;0;0;0;0;21
-Strandings;6;0;0;1;0;0;6;0;0;0;0;0;0;2;1
-Visual Analyses of Quadrats/Transects;59;8;12;17;14;3;1;0;5;0;2;9;7;2;10
+"Abundance/biomass/density";"Behaviour";"Biodiversity";"Community composition";"Damage & entanglement";"Growth";"Mortality";"Other";"Physiology";"Production/productivity";"Reproduction";"Sediment & physical properties";"Size/age structure";"Survival";"Trophic structure"
+"Active Acoustic Sampling Survey";3;1;0;2;2;0;0;0;1;0;0;6;0;0;0
+"Behavioural observations";0;1;0;0;0;0;0;0;0;0;0;0;0;0;0
+"Behavioural Observations";7;14;0;0;2;0;5;0;9;0;0;0;0;4;0
+"Data Storage, GPS, Acoustic Taggin";1;9;0;1;0;0;5;0;1;0;0;2;0;0;0
+"Fisheries Dependent Data";190;5;13;21;16;6;54;3;1;15;5;16;49;21;38
+"In situ structural growth";1;0;0;0;0;0;0;0;0;0;0;0;0;0;0
+"Interview/questionnaire";15;1;0;0;1;0;9;0;0;5;0;0;1;1;0
+"Irregular Fisheries Independent Survey";184;8;61;73;9;7;28;0;12;13;1;32;25;5;49
+"Mark Recapture";4;0;0;0;0;0;1;0;0;0;0;0;0;3;0
+"Other";23;0;10;2;1;1;13;0;1;0;5;0;1;0;7
+"Physiological Growth Indicators";0;0;0;0;1;1;0;0;0;0;0;0;0;1;0
+"Regular Fisheries Independent Survey";127;4;43;41;7;2;15;0;2;1;7;3;37;7;24
+"Simulated dynamics";61;0;5;1;0;0;11;1;0;11;0;6;1;4;19
+"Stomach Contents Analyses";1;1;0;3;0;0;0;0;0;0;0;0;0;0;22
+"Strandings";6;0;0;1;0;0;6;0;0;0;0;0;0;2;1
+"Visual Analyses of Quadrats/Transects";59;8;12;17;14;3;1;0;5;0;2;9;7;2;10

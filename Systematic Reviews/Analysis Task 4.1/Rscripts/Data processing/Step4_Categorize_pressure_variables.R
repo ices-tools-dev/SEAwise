@@ -445,7 +445,9 @@ datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(Pressure_va
 
 sort(unique(datPressvar[which(grepl("Number", datPressvar$Pressure_variable) & is.na(datPressvar$Pressure.variable_category)),]$Pressure_variable)) #several directly related to effort only
 datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(Pressure_variable %in% c("Number of fleet",
-                                                                                              "Number of vessels"),
+                                                                                              "Number of vessels",
+                                                                                              "Number of purse-seines",
+                                                                                              "Number of bottom trawlers"),
                                                                      "Fishing effort",Pressure.variable_category))
 
 sort(unique(datPressvar[which(grepl("speed", datPressvar$Pressure_variable) & is.na(datPressvar$Pressure.variable_category)),]$Pressure_variable)) #all (only one)
@@ -803,7 +805,8 @@ datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(Pressure_va
 sort(unique(datPressvar[which(grepl("area", datPressvar$Pressure_variable) & is.na(datPressvar$Pressure.variable_category)),]$Pressure_variable)) #all 
 datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(Pressure_variable %in% c("fishery/no fishery area",
                                                                                               "Fishing pressure: untrawled vs. trawled areas",
-                                                                                              "Untrawled area"),
+                                                                                              "Untrawled area",
+                                                                                              "Marine protected area"),
                                                                      "Closure",Pressure.variable_category))
 
 sort(unique(datPressvar[which(grepl("reduc", datPressvar$Pressure_variable) & is.na(datPressvar$Pressure.variable_category)),]$Pressure_variable)) #all but one
@@ -886,6 +889,14 @@ datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(Pressure_va
                                                                        is.na(datPressvar$Pressure.variable_category) & SW.ID %in% "SW4_1320",
                                                                      "Bycatch reduction & selectivity",Pressure.variable_category))
 ##This paper should also go under Gear comparison, so will be added manually to that category below
+
+datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(Pressure_variable %in% "Bycatch of Seals" & SW.ID %in% "SW4_0715",
+                                                                     "Bycatch reduction & selectivity", Pressure.variable_category))
+##The row reporting the impact of using NO bycatch reduction device can be dropped for this paper:
+datPressvar                               <- subset(datPressvar, !(SW.ID %in% "SW4_0715" & Target.species_metier %in% "Cod_fish pots without seal exculusion device"))
+
+## Change reported response variable for this paper and add row below on Gear comparison
+datPressvar$Pressure_variable[datPressvar$SW.ID %in% "SW4_1991"]  <- "increase in mesh size"
 
 PV_bycatchRedSel                         <- subset(datPressvar, Pressure.variable_category %in% "Bycatch reduction & selectivity")
 
@@ -1002,11 +1013,23 @@ datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(Pressure_va
                                                                        is.na(datPressvar$Pressure.variable_category) & SW.ID %in% "SW4_1714",
                                                                      "Gear comparison",Pressure.variable_category))
 
+# Change for the following paper also some other columns so that the impact is logically reported 
+datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(SW.ID %in% "SW4_0314",
+                                                                     "Gear comparison", Pressure.variable_category))
+datPressvar$Pressure_variable[datPressvar$SW.ID %in% "SW4_0314"]   <- "Lure vs. bait angling"
+datPressvar$Pressure_other[datPressvar$SW.ID %in% "SW4_0314"]      <- NA
+datPressvar$Direction.of.relationship[datPressvar$SW.ID %in% "SW4_0314" & datPressvar$Response.variable_category %in% "Community composition"] <- "Negative"
+
 # SW4_1320 already under Bycatch reduction & selectivity, but add also to Gear comparison
 SW4_1320                              <- subset(datPressvar, SW.ID %in% "SW4_1320")
 SW4_1320$Pressure.variable_category   <- "Gear comparison"
 datPressvar                           <- rbind(datPressvar, SW4_1320)
 rm(SW4_1320)
+
+# SW4_1991 already under Bycatch reduction & selectivity, but add also to Gear comparison
+SW4_1991                              <- subset(datPressvar, SW.ID %in% "SW4_1991")
+SW4_1991$Pressure.variable_category   <- "Gear comparison"
+datPressvar                           <- rbind(datPressvar, SW4_1991)
 
 PV_gear                        <- subset(datPressvar, Pressure.variable_category %in% "Gear comparison")
 
@@ -1093,13 +1116,24 @@ for(iRow in unique(datPressvar$ROWID)){
 # Put Pressure variable category column after Pressure variable
 data_collapsed <- cbind(data_collapsed[,c(1:23)], data_collapsed[,34], data_collapsed[,c(24:33)])
 
+# Check duplicated ROWID
+rowIDdupl               <- data_collapsed$ROWID[duplicated(data_collapsed$ROWID)]
+datDupl                 <- subset(data_collapsed, ROWID %in% rowIDdupl) #this is because rows were split or duplicated and got a new response variable category
+data_collapsed$ROWID    <- c(1:nrow(data_collapsed)) #give new unique row ID
+
 # Save
 saveRDS(data_collapsed, paste0(datPath,"data_correctTaxa_PressVar.rds"))
 write.xlsx(data_collapsed, file=paste0(datPath, "data_correctTaxa_PressVar.xlsx"))
 
 
-# # In case you're running it with the entire dataset (incl. all columns)
+# # !!! In case you're running it with the entire dataset (incl. all columns) !!!
 # data_collapsed <- cbind(data_collapsed[,c(1:41)], data_collapsed[,53], data_collapsed[,c(42:52)])
+# 
+# # Check duplicated ROWID
+# rowIDdupl               <- data_collapsed$ROWID[duplicated(data_collapsed$ROWID)]
+# datDupl                 <- subset(data_collapsed, ROWID %in% rowIDdupl) #this is because rows were split or duplicated and got a new response variable category
+# data_collapsed$ROWID    <- c(1:nrow(data_collapsed)) #give new unique row ID
+# 
 # saveRDS(data_collapsed, paste0(datPath,"data_AllScreened_correctTaxa_PressVar.rds"))
 # write.xlsx(data_collapsed, file=paste0(datPath,"data_AllScreened_correctTaxa_PressVar.xlsx"))
 

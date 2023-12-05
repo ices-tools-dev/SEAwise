@@ -209,6 +209,11 @@ ggsave("SankeyFateRecords.tiff", sankey, path=outPath,
        height = 200,
        units = "mm")
 
+ggsave("SankeyFateRecords.png", sankey, path=outPath,
+       width = 400,
+       height = 200,
+       units = "mm")
+
 
 #===#
 # Create alternative sankey diagram using ggforce
@@ -1887,7 +1892,7 @@ subset_PET                           <- rbind(subset_PET, fish_keep)
 ### Have a closer look at Pressure Catch ----
 
 # Select those papers that have 'Catch' as Pressure variable category - are these really on bycatch?
-catch                 <- subset(subset_byc, Pressure.variable_category %in% "Catch")
+catch                 <- subset(subset_PET, Pressure.variable_category %in% "Catch")
 
 # Number of papers
 length(unique(catch$SW.ID)) #5
@@ -1896,7 +1901,7 @@ unique(catch$SW.ID)
 # SW4_0081
 ## Not on Bycatch, as it studies how catches of small-pelagics affect food availability of dolphins.
 ## Exclude from case study.
-subset_byc            <- subset(subset_byc, !(SW.ID %in% "SW4_0081" & Pressure.variable_category %in% "Catch" & 
+subset_PET            <- subset(subset_PET, !(SW.ID %in% "SW4_0081" & Pressure.variable_category %in% "Catch" & 
                                                 Ecosystem.component_level1 %in% "Marine_mammals"))
 
 # SW4_0633
@@ -1933,7 +1938,8 @@ table(subset_PET$Response.variable_category, subset_PET$Direction.of.relationshi
 subset_PET$Response.variable_category   <- with(subset_PET, ifelse(Response.variable_category %in% "Mortality","Survival", Response.variable_category))
 table(subset_PET$Response.variable_category, subset_PET$Direction.of.relationship)
 
-length(unique(subset_PET$SW.ID)) #113 papers
+# Check final number of papers
+length(unique(subset_PET$SW.ID)) #112 papers
 table(subset_PET$Ecosystem.component_level1)
 
 
@@ -1958,9 +1964,18 @@ table(subset_PET$Gear_level1, useNA = "always")
 unique(subset_PET$Gear_level2)
 table(subset_PET$Gear_level2, useNA = "always")
 
+Gears                                <- subset_PET[,.(NrPaps = length(unique(SW.ID))),
+                                                   by = c("Gear_level1")]
+Gears
+
 # Check gears by fishery type
 Gears                                <- subset_PET[,.(NrPaps = length(unique(SW.ID))),
                                                    by = c("Fishery.type", "Gear_level1")]
+Gears
+
+# Check fisheries type only
+Gears                                <- subset_PET[,.(NrPaps = length(unique(SW.ID))),
+                                                   by = c("Fishery.type")]
 Gears
 
 #-----------------------------------------------#
@@ -1974,11 +1989,11 @@ table(subset_PET$Study.type)
 Methods                              <- subset_PET[, .(NrPaps = length(unique(SW.ID))),
                                                  by = c("Sampling.Method.used.for.data.collection")]
 Methods
-sum(Methods$NrPaps) #127, so more than the 113 unique papers, meaning that several studies used multiple sampling methods
+sum(Methods$NrPaps) #126, so more than the 112 unique papers, meaning that several studies used multiple sampling methods
 
 # Check exactly how many papers have more than one study type
-MethNrPap                         <- aggregate(Sampling.Method.used.for.data.collection ~ SW.ID, subset_byc, function(x) length(unique(x)))
-nrow(MethNrPap[MethNrPap$Sampling.Method.used.for.data.collection > 1,]) #19 papers with more than one method
+MethNrPap                         <- aggregate(Sampling.Method.used.for.data.collection ~ SW.ID, subset_PET, function(x) length(unique(x)))
+nrow(MethNrPap[MethNrPap$Sampling.Method.used.for.data.collection > 1,]) #13 papers with more than one method
 
 
 #-----------------------------------------------#
@@ -1986,10 +2001,10 @@ nrow(MethNrPap[MethNrPap$Sampling.Method.used.for.data.collection > 1,]) #19 pap
 #-----------------------------------------------#
 
 # Create unique combinations of paper ID and ecosystem component
-subset_byc$Eco.ID         <- paste0(subset_byc$SW.ID, subset_byc$Ecosystem.component_level1)
+subset_PET$Eco.ID         <- paste0(subset_PET$SW.ID, subset_PET$Ecosystem.component_level1)
 
 # Create dataset where each row represents unique ID
-PETpapers                 <- subset_byc[!duplicated(subset_byc$Eco.ID),]
+PETpapers                 <- subset_PET[!duplicated(subset_PET$Eco.ID),]
 
 # Check number of papers by ecosystem component
 table(PETpapers$Ecosystem.component_level1)
@@ -2012,10 +2027,10 @@ Region
 Study                              <- subset_PET[, .(NrPaps = length(unique(SW.ID))),
                                                   by = c("Study.type")]
 Study
-sum(Study$NrPaps) #118, so a bit more than the 113 unique papers, meaning that a few studies have multiple study types
+sum(Study$NrPaps) #117, so a bit more than the 112 unique papers, meaning that a few studies have multiple study types
 
 # Check exactly how many papers have more than one study type
-StudyNrPap                         <- aggregate(Study.type ~ SW.ID, subset_byc, function(x) length(unique(x)))
+StudyNrPap                         <- aggregate(Study.type ~ SW.ID, subset_PET, function(x) length(unique(x)))
 StudyNrPap[order(StudyNrPap$Study.type),] #five papers with two study types
 
 
@@ -2026,12 +2041,12 @@ StudyNrPap[order(StudyNrPap$Study.type),] #five papers with two study types
 Pressure                           <- subset_PET[, .(NrPaps = length(unique(SW.ID))),
                                                  by = c("Pressure.variable_category")]
 Pressure
-sum(Pressure$NrPaps) #118, so a few more than the 113 unique papers, meaning that a few studies have multiple study types
+sum(Pressure$NrPaps) #117, so a few more than the 112 unique papers, meaning that a few studies have multiple study types
 
 # Check exactly how many papers 
-PressNrPap                         <- aggregate(Pressure.variable_category ~ SW.ID, subset_byc, function(x) length(unique(x)))
+PressNrPap                         <- aggregate(Pressure.variable_category ~ SW.ID, subset_PET, function(x) length(unique(x)))
 PressNrPap[order(PressNrPap$Pressure.variable_category),] 
-nrow(PressNrPap[PressNrPap$Pressure.variable_category > 1,]) #6 papers with more than 1 pressure variable
+nrow(PressNrPap[PressNrPap$Pressure.variable_category > 1,]) #4 papers with more than 1 pressure variable
 
 
 #-----------------------------------------------#
@@ -2041,12 +2056,12 @@ nrow(PressNrPap[PressNrPap$Pressure.variable_category > 1,]) #6 papers with more
 Response                           <- subset_PET[, .(NrPaps = length(unique(SW.ID))),
                                                  by = c("Response.variable_category")]
 Response
-sum(Response$NrPaps) #128, so more than the 113 unique papers, meaning that a few studies have multiple response variables
+sum(Response$NrPaps) #127, so more than the 112 unique papers, meaning that a few studies have multiple response variables
 
 # Check exactly how many papers
-RespNrPap                         <- aggregate(Response.variable_category ~ SW.ID, subset_byc, function(x) length(unique(x)))
+RespNrPap                         <- aggregate(Response.variable_category ~ SW.ID, subset_PET, function(x) length(unique(x)))
 RespNrPap[order(RespNrPap$Response.variable_category),] 
-nrow(RespNrPap[RespNrPap$Response.variable_category > 1,]) #24papers with more than 1 response variable
+nrow(RespNrPap[RespNrPap$Response.variable_category > 1,]) #15 papers with more than 1 response variable
 
 
 
@@ -2167,6 +2182,69 @@ ggsave("FisheryTypeGears.png", p, path=outPathPET, width = 6, height = 4)
 
 
 #-----------------------------------------------#
+### COMBINED PLOT: Ecosystem compoenent by region and Fishery type and gear ----
+#-----------------------------------------------#
+
+# First plot
+EcoComp                              <- subset_PET[, .(NrPaps = length(unique(SW.ID))),
+                                                   by = c("Ecosystem.component_level1", "Region")]
+EcoTot                               <- EcoComp[, .(TotNrPaps = sum(NrPaps)),
+                                                by = "Ecosystem.component_level1"]
+EcoComp                              <- merge(EcoComp, EcoTot, by="Ecosystem.component_level1")
+
+p1 <- ggplot(EcoComp, aes(NrPaps, reorder(Ecosystem.component_level1, TotNrPaps), fill=Region)) +
+  geom_bar(stat="identity") +
+  scale_x_continuous(expand = c(0,0), n.breaks = 10, limits = c(0,max(EcoComp$TotNrPaps+2))) +
+  scale_fill_manual(values=viridis(7), name= "Region") +
+  labs(x="Number of papers", y="Ecosystem component") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 12),
+        strip.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10),
+        panel.grid.minor.x = element_blank(),
+        legend.box.background = element_rect(colour = "black"),
+        legend.position = c(0.86,0.34),
+        legend.key.size = unit(0.75,"line"))
+print(p1)
+
+# Second plot
+Gears                                <- subset_PET[,.(NrPaps = length(unique(SW.ID))),
+                                                   by = c("Fishery.type", "Gear_level1")]
+Gears$Gear_level1                    <- ifelse(is.na(Gears$Gear_level1)==T, "Not specified", 
+                                               ifelse(Gears$Gear_level1 == "Hooks_and_lines", "Hooks and Lines", Gears$Gear_level1))
+GearTot                              <- Gears[, .(TotNrPaps = sum(NrPaps)),
+                                              by = "Gear_level1"]
+Gears                                <- merge(Gears, GearTot, by="Gear_level1")
+
+p2 <- ggplot(Gears, aes(NrPaps, reorder(Gear_level1, TotNrPaps), fill=Fishery.type)) +
+  geom_bar(stat="identity") +
+  scale_x_continuous(expand = c(0,0), n.breaks = 6, limits = c(0,max(Gears$TotNrPaps+2))) +
+  scale_fill_manual(values=viridis(4), name= "Fishery type") +
+  labs(x="Number of papers", y="Gear") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 12),
+        strip.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10),
+        panel.grid.minor.x = element_blank(),
+        legend.box.background = element_rect(colour = "black"),
+        legend.position = c(0.89,0.21),
+        legend.key.size = unit(0.75,"line"))
+print(p2)
+
+# Combine plots and save
+p <- p1 / p2 + plot_annotation(tag_levels = 'A')
+
+print(p)
+
+ggsave("EcoCompRegion_FisheryTypeGears.png", p, path=outPathPET, width = 8, height = 6)
+
+
+
+#-----------------------------------------------#
 ### Gear and gear level 2 ----
 #-----------------------------------------------#
 
@@ -2261,6 +2339,10 @@ ggsave("PressEcoComp.png", p, path=outPathPET, width = 9, height = 4)
 ## Methods ----
 #-----------------------------------------------#
 
+#-----------------------------------------------#
+### By ecosystem component ----
+#-----------------------------------------------#
+
 Methods                              <- subset_PET[,.(NrPaps = length(unique(SW.ID))),
                                                    by = c("Sampling.Method.used.for.data.collection","Ecosystem.component_level1")]
 MethTot                              <- Methods[, .(TotNrPaps = sum(NrPaps)),
@@ -2285,6 +2367,33 @@ ggsave("MethodsEcoComp.png", p, path=outPathPET, width = 10, height = 4)
 
 
 #-----------------------------------------------#
+### By response variable ----
+#-----------------------------------------------#
+
+Methods                              <- subset_PET[,.(NrPaps = length(unique(SW.ID))),
+                                                   by = c("Sampling.Method.used.for.data.collection","Response.variable_category")]
+MethTot                              <- Methods[, .(TotNrPaps = sum(NrPaps)),
+                                                by = "Sampling.Method.used.for.data.collection"]
+Methods                              <- merge(Methods, MethTot, by="Sampling.Method.used.for.data.collection")
+
+p <- ggplot(Methods, aes(NrPaps, reorder(Sampling.Method.used.for.data.collection, TotNrPaps), fill=Response.variable_category)) +
+  geom_bar(stat="identity") +
+  scale_x_continuous(expand = c(0,0), n.breaks = 6, limits = c(0,max(Methods$TotNrPaps+2))) +
+  scale_fill_manual(values=viridis(11), name= "Response") +
+  labs(x="Number of papers", y="Sampling method") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 12),
+        strip.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10),
+        panel.grid.minor.x = element_blank())
+print(p)
+
+ggsave("MethodsRes.png", p, path=outPathPET, width = 10, height = 4)
+
+
+#-----------------------------------------------#
 ## Response variable ----
 #-----------------------------------------------#
 
@@ -2302,7 +2411,7 @@ p <- ggplot(Resp, aes(NrPaps, reorder(Response.variable_category, TotNrPaps), fi
   geom_bar(stat="identity") +
   scale_x_continuous(expand = c(0,0), n.breaks = 6, limits = c(0,max(Resp$TotNrPaps+2))) +
   scale_fill_manual(values=viridis(6), name= "Ecosystem component") +
-  labs(x="Number of papers", y="Gear") +
+  labs(x="Number of papers", y="Response measured") +
   theme_bw() +
   theme(axis.text = element_text(size = 12),
         strip.text = element_text(size = 12),
@@ -2313,6 +2422,63 @@ p <- ggplot(Resp, aes(NrPaps, reorder(Response.variable_category, TotNrPaps), fi
 print(p)
 
 ggsave("RespVarEcoComp.png", p, path=outPathPET, width = 10, height = 4)
+
+
+#-----------------------------------------------#
+### By sampling method ----
+#-----------------------------------------------#
+
+Resp                              <- subset_PET[,.(NrPaps = length(unique(SW.ID))),
+                                                   by = c("Response.variable_category","Sampling.Method.used.for.data.collection")]
+RespTot                           <- Resp[, .(TotNrPaps = sum(NrPaps)),
+                                             by = "Response.variable_category"]
+Resp                              <- merge(Resp, RespTot, by="Response.variable_category")
+
+p <- ggplot(Resp, aes(NrPaps, reorder(Response.variable_category, TotNrPaps), fill=Sampling.Method.used.for.data.collection)) +
+  geom_bar(stat="identity") +
+  scale_x_continuous(expand = c(0,0), n.breaks = 6, limits = c(0,max(Resp$TotNrPaps+2))) +
+  # scale_fill_manual(values=viridis(11), name= "Sampling method") +
+  scale_fill_manual(values = brewer.pal(12,"Paired")[-11], name = "Sampling method") +
+  labs(x="Number of papers", y="Response measured") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 12),
+        strip.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.title = element_text(size=12),
+        legend.text = element_text(size=10),
+        panel.grid.minor.x = element_blank(),
+        legend.position = c(0.73,0.35),
+        legend.key.size = unit(0.85,"line"),
+        legend.box.background = element_rect(colour = "black"))
+print(p)
+
+ggsave("RespVarMethods.png", p, path=outPathPET, width = 8, height = 4)
+
+
+## Alternative plot
+Resp                              <- subset_PET[,.(NrPaps = length(unique(SW.ID))),
+                                                by = c("Response.variable_category","Pressure.variable_category","Sampling.Method.used.for.data.collection")]
+RespTot                           <- Resp[, .(TotNrPaps = sum(NrPaps)),
+                                          by = "Response.variable_category"]
+Resp                              <- merge(Resp, RespTot, by="Response.variable_category")
+
+p <- ggplot(Resp, aes(reorder(Pressure.variable_category, TotNrPaps), NrPaps, fill=Sampling.Method.used.for.data.collection)) +
+  geom_bar(stat="identity") +
+  # scale_x_continuous(expand = c(0,0), n.breaks = 6, limits = c(0,max(Resp$TotNrPaps+2))) +
+  # scale_fill_manual(values=viridis(11), name= "Sampling method") +
+  scale_fill_manual(values = brewer.pal(12,"Paired")[-11], name = "Sampling method") +
+  labs(x="Number of papers", y="Response measured") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 12, angle=90, hjust=1, vjust=1),
+        strip.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10),
+        panel.grid.minor.x = element_blank()) +
+  facet_wrap(~Response.variable_category)
+print(p)
+
+ggsave("RespVarMethodsPress.png", p, path=outPathPET, width = 10, height = 6)
 
 
 #-----------------------------------------------#
@@ -2341,6 +2507,158 @@ p <- ggplot(Resp, aes(NrPaps, reorder(Response.variable_category, TotNrPaps), fi
 print(p)
 
 ggsave("RespPressDir.png", p, path=outPathPET, width = 10, height = 6)
+
+
+
+#-----------------------------------------------#
+## Explore direction of relationship ----
+#-----------------------------------------------#
+
+# For several pressures, we do not expect a positive direction of relationship with most of the response variables: 
+# - Bycatch
+# - Mortality
+# - Presence of fishing activity
+# - Fishing effort (no positive direction)
+# - Fleet capacity (no positive direction)
+# Therefore, check out their relationships in more detail.
+
+# Select cases
+datPos                  <- subset(subset_PET, Pressure.variable_category %in% c("Bycatch","Mortality","Presence of fishing activity") &
+                                    Direction.of.relationship %in% "Positive")
+
+# Check number of papers
+length(unique(datPos$SW.ID)) #8 papers
+
+
+# Explore pressure Bycatch
+datPosByc               <- subset(datPos, Pressure.variable_category %in% "Bycatch")
+
+length(unique(datPosByc$SW.ID)) # 4 papers
+unique(datPosByc$SW.ID)
+
+## SW4_0703
+# Response is number of stranded dolphins, which has a positive relationship with the pressure. The Response category is Abundance,
+# so but this is misleading, as this should be interpreted as the Abundance of the population. So change direction of relationship
+# to negative.
+# Manually changed in data processing script Step 5.
+
+## SW4_0715
+# The pressure is not bycatch, but bycatch excluding device, so the pressure variable category should be changed accordingly.
+# This will show that using the device has a positive relationship with Abundance, as using the device leads to a higher population
+# abundance compared not using the device (which lowers the population abundance). Furthermore, the row that now reports the impact
+# of using NO device can be dropped.
+# Manually changed in the data processing script Step 4.
+
+## SW4_1355
+# Response variable is entanglement in nets, so makes sense there's a positive relationship between Bycatch as pressure and
+# Damange & entanglement as response variable.
+
+## SW4_0314
+# Pressure reported as catch (target species) and bycatch (bycatch species), but paper is actually a gear comparison: lure vs bait
+# recreational angling. So pressure variable category has to be changed to Bycatch reduction & selectivity.
+# Manually changed in the data processing script Step 4.
+
+
+# Explore pressure Presence of fishing activity
+datPosAct               <- subset(datPos, Pressure.variable_category %in% "Presence of fishing activity")
+
+length(unique(datPosAct$SW.ID)) # 3 papers
+unique(datPosAct$SW.ID)
+
+## SW4_0285
+# Changed response variable from Abundance to Behaviour as it was about the size of aggregations of dolphins rather than actual
+# population size. The link with bycatch is only made implicitly.
+# Manually changed in the data extraction file.
+
+## SW4_1457
+# Positive relationship between the presence of gillnets and the time spent by dolphins in the study area, so makes sense.
+
+## SW4_1223
+# Instead of looking at the presence of fishing activity, it looks at the effect of an MPA on the fish community.
+# So pressure variable should be changed to Closure. One elasmobranch species decreased in mean size since the MPA was
+# established, while other species increased. Hence, the negative relationship between Closure and size/age structure.
+# But, the decline could be caused by other factors not accounted for, so this is marked in quality of the methods.
+# Manually changed in the data extraction file.
+
+
+# Explore pressure Mortality
+datPosMor               <- subset(datPos, Pressure.variable_category %in% "Mortality")
+
+length(unique(datPosMor$SW.ID)) # 1 paper
+unique(datPosMor$SW.ID)
+
+## SW4_0209
+# Although total mortality is estimated, this is done based on several analyses, including modelling the spatial overlap
+# between at-sea origin of stranded dolphins and fishing effort from VMS data. So the pressure variable should be changed to
+# fishing effort rather than mortality. 
+# The response variable is density of bycaught dead dolphins. This can be reflected either as Mortality or Abundance (in terms 
+# of population) size as response variable category. As the paper focuses on estimating mortality rather than any 
+# subsequent effects of that mortality on population size, the response variable category will be changed to Mortality.
+# Manually changed in the data extraction file.
+
+
+
+# For other pressures, we do not necessarily expect a negative direction of relationship with most of the response variables: 
+# - Closure
+# - Bycatch reduction & selectivity
+# Therefore, check out their relationships in more detail.
+
+# Select cases
+datNeg                  <- subset(subset_PET, Pressure.variable_category %in% c("Closure","Bycatch reduction & selectivity") &
+                                    Direction.of.relationship %in% "Negative")
+
+# Check number of papers
+length(unique(datNeg$SW.ID)) #5 papers
+
+
+# Explore pressure Closure
+datNegClo               <- subset(datNeg, Pressure.variable_category %in% "Closure")
+
+length(unique(datNegClo$SW.ID)) # 1 paper
+unique(datNegClo$SW.ID)
+
+## SW4_1531
+# A mistake was made in reporting the directions of relationship, as biomass is predicted to increase for elasmobranchs.
+# Manually changed in data extraction file.
+
+
+# Explore pressure Bycatch reduction & selectivity
+datNegByc               <- subset(datNeg, Pressure.variable_category %in% "Bycatch reduction & selectivity")
+
+length(unique(datNegByc$SW.ID)) # 4 papers
+unique(datNegByc$SW.ID)
+
+## SW4_0333
+# Paper reports on negative relationship between use of excluding device and presence of turtles in the catch, meaning
+# that when the device was used, no turtles were caught. So makes sense to have negative relationship with Behaviour
+# as response variable.
+
+## SW4_1107
+# In the database, a negative relationship between the use of an excluding device and catch rate of turtles is reported.
+# This is categorized as Abundance as response variable, but this implies a negative relationship between the device
+# and population abundance of turtles, which is not the case. Furthermore, the paper could not assess the effect of the
+# device in detail, as only one turtle entered the device but successfully escaped. So let us change the reported
+# response variable from 'catch rate' to 'bycatch' (as there is no rate reported), the categorized response variable from
+# Abundance to Behaviour.
+# Changes made in data processing script Step 5.
+
+## SW4_0355
+# Paper compares the commonly used grid as well as a sieve, plus the combination of the two in its effects on catch and 
+# bycatch. The grid is already used in the fishery, the sieve not yet. Use of the sieve leads to fewer smaller individual
+# redfish being caught, hence the reported negative relationship between the use of the device and the size/age structure.
+# Yet this may be interpreted as the device reducing the size/age structure of the population, while it is the catch.
+# Therefore, change the response variable category to Behaviour.
+# Changes made in data processing script Step 5.
+
+## SW4_1991
+# Paper studies and compares the selectivity of gill nets with different mesh sizes for non-target fish species. It was
+# reports a negative relationship between the Pressure and length -> Size/age structure as the response variable. The 
+# paper found that a larger mesh size resulted in a greater catch length, and that is therefore important to use the  
+# largest mesh size to ensure stock sustainability of non-target fish.
+# Let's change the current reported pressure variable 'change in selectivity' to 'increase in mesh size'. This will then
+# result in a positive relationship (rather then the current negative relationship). Also add a row for gear comparison.
+# Manually changed in data processing scripts 4 and 5.
+
 
 
 #-----------------------------------------------#
@@ -2398,7 +2716,7 @@ datTr           <- gather_set_data(tempPETDR, x = c("Ecosystem.component_level1"
 
 # Plot Sankey diagram
 p <- ggplot(datTr, aes(x, id = SW.ID, split = y, value = value)) +
-  geom_parallel_sets(aes(fill = Ecosystem.component_level1), alpha = 0.3, axis.width = 0.1, show.legend = FALSE) +
+  geom_parallel_sets(aes(fill = Direction.of.relationship), alpha = 0.3, axis.width = 0.1, show.legend = FALSE) +
   geom_parallel_sets_axes(axis.width = 0.1, fill = "gray60") +
   geom_parallel_sets_labels(colour = 'black', angle = 0, size=2.4) +
   scale_x_continuous(breaks = c(2:5),
@@ -2471,7 +2789,7 @@ datTr           <- gather_set_data(tempPETDR, x = c("Pressure.variable_category"
 
 # Plot Sankey diagram
 p <- ggplot(datTr, aes(x, id = SW.ID, split = y, value = value)) +
-  geom_parallel_sets(aes(fill = Pressure.variable_category), alpha = 0.3, axis.width = 0.1, show.legend = FALSE) +
+  geom_parallel_sets(aes(fill = Direction.of.relationship), alpha = 0.3, axis.width = 0.1, show.legend = FALSE) +
   geom_parallel_sets_axes(axis.width = 0.1, fill = "gray60") +
   geom_parallel_sets_labels(colour = 'black', angle = 0, size=2.4) +
   scale_x_continuous(breaks = c(2:4),
@@ -2502,16 +2820,24 @@ tempPETDR       <- subset_PET[, c("SW.ID","Pressure.variable_category","Directio
 tempPETDR       <- tempPETDR[!duplicated(tempPETDR), ]
 tempPETDR$value <- 1
 
+# Re-label long names
+tempPETDR$Pressure.variable_category[tempPETDR$Pressure.variable_category %in% "Bycatch reduction & selectivity"] <- "Bycatch reduction\n& selectivity"
+tempPETDR$Sampling.Method.used.for.data.collection[tempPETDR$Sampling.Method.used.for.data.collection %in% "Visual Analyses of Quadrats/Transects"] <- "Visual Analyses of\nQuadrats/Transects"
+tempPETDR$Sampling.Method.used.for.data.collection[tempPETDR$Sampling.Method.used.for.data.collection %in% "Regular Fisheries Independent Survey"] <- "Regular Fisheries\nIndependent Survey"
+tempPETDR$Sampling.Method.used.for.data.collection[tempPETDR$Sampling.Method.used.for.data.collection %in% "Irregular Fisheries Independent Survey"] <- "Irregular Fisheries\nIndependent Survey"
+tempPETDR$Sampling.Method.used.for.data.collection[tempPETDR$Sampling.Method.used.for.data.collection %in% "Data Storage, GPS, Acoustic Taggin"] <- "Data Storage, GPS,\nAcoustic Tagging"
+
 # Transform data so that it can be handled by ggplot2
 datTr           <- gather_set_data(tempPETDR, x = c("Pressure.variable_category","Direction.of.relationship","Response.variable_category"), id_name = "SW.ID")
 
 # Plot Sankey diagram
 p <- ggplot(datTr, aes(x, id = SW.ID, split = y, value = value)) +
-  geom_parallel_sets(aes(fill = Pressure.variable_category), alpha = 0.3, axis.width = 0.1, show.legend = FALSE) +
+  geom_parallel_sets(aes(fill = Direction.of.relationship), alpha = 0.4, axis.width = 0.1, show.legend = FALSE) +
   geom_parallel_sets_axes(axis.width = 0.1, fill = "gray60") +
   geom_parallel_sets_labels(colour = 'black', angle = 0, size=2.4) +
   scale_x_continuous(breaks = c(2:4),
-                     labels = c("Pressure","Direction\nof relationship","Response\nmeasured")) +
+                     labels = c("Pressure","Direction\nof relationship","Response\nmeasured"),
+                     expand = c(0.12, 0.05)) +
   scale_fill_viridis_d() +
   theme_bw() +
   theme(panel.grid = element_blank(),
@@ -2608,6 +2934,55 @@ ggsave(plot = p,
        units = "mm")
 
 
+#-----------------------------------------------#
+### Sampling method - Response variable ----
+#-----------------------------------------------#
+
+# Data prepping
+tempPETDR       <- subset_PET[, c("SW.ID","Sampling.Method.used.for.data.collection", "Response.variable_category")]
+tempPETDR       <- tempPETDR[!duplicated(tempPETDR), ]
+tempPETDR$value <- 1
+
+# Re-label long names
+tempPETDR$Sampling.Method.used.for.data.collection[tempPETDR$Sampling.Method.used.for.data.collection %in% "Fisheries Dependent Data"] <- "Fisheries\nDependent Data"
+tempPETDR$Sampling.Method.used.for.data.collection[tempPETDR$Sampling.Method.used.for.data.collection %in% "Visual Analyses of Quadrats/Transects"] <- "Visual Analyses of\nQuadrats/Transects"
+tempPETDR$Sampling.Method.used.for.data.collection[tempPETDR$Sampling.Method.used.for.data.collection %in% "Regular Fisheries Independent Survey"] <- "Regular Fisheries\nIndependent Survey"
+tempPETDR$Sampling.Method.used.for.data.collection[tempPETDR$Sampling.Method.used.for.data.collection %in% "Irregular Fisheries Independent Survey"] <- "Irregular Fisheries\nIndependent Survey"
+tempPETDR$Sampling.Method.used.for.data.collection[tempPETDR$Sampling.Method.used.for.data.collection %in% "Data Storage, GPS, Acoustic Taggin"] <- "Data Storage, GPS,\nAcoustic Tagging"
+
+# Transform data so that it can be handled by ggplot2
+datTr           <- gather_set_data(tempPETDR, x = c("Sampling.Method.used.for.data.collection", "Response.variable_category"), id_name = "SW.ID")
+
+# Plot Sankey diagram
+p <- ggplot(datTr, aes(x, id = SW.ID, split = y, value = value)) +
+  geom_parallel_sets(aes(fill = Sampling.Method.used.for.data.collection), alpha = 0.7, axis.width = 0.1, show.legend = FALSE, sep = 0.2) +
+  geom_parallel_sets_axes(axis.width = 0.1, fill = "gray70", sep = 0.2) +
+  geom_parallel_sets_labels(colour = 'black', angle = 0, size=2.4, sep = 0.2
+                            # aes(label = after_stat(paste("", label, sep = "\n")))
+  ) +
+  scale_x_continuous(breaks = c(2:3),
+                     labels = c("Sampling\nmethod","Response\nmeasured"),
+                     expand = c(0.12, 0.05)) +
+  # scale_fill_viridis_d() +
+  # scale_fill_brewer(type = "qual", palette = "Paired") +
+  # scale_fill_manual(values = brewer.pal(12, "Set3")[-2]) +
+  scale_fill_manual(values = brewer.pal(12, "Paired")[-11]) +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        axis.title = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank())
+print(p)
+
+ggsave(plot = p,
+       filename = paste0(outPathPET, "Sankey_MethodRes.png"),
+       device = "png",
+       dpi = 300,
+       width = 170,
+       height = 90,
+       units = "mm")
+
+
 
 #-----------------------------------------------#
 ### Sampling method - Pressure - Response variable ----
@@ -2666,10 +3041,10 @@ ggsave(plot = p,
 
 ## Make spatial extent and scale categories
 subset_PET$ScaleSpatial <- factor(x = subset_PET$Scale...Spatial..m.,
-                              levels = c("0-5", "5-10", "10-50", "50-100", "100-500", "500-1,000", "1,000-5,000", "5,000-10,000", "10,000-50,000", "50,000-100,000", ">100,000"),
+                              levels = c("Not specified","0-5", "5-10", "10-50", "50-100", "100-500", "500-1,000", "1,000-5,000", "5,000-10,000", "10,000-50,000", "50,000-100,000", ">100,000"),
                               ordered = TRUE)
 subset_PET$ResSpatial <- factor(x = subset_PET$Resolution...Spatial..m.,
-                            levels = c("0-5", "5-10", "10-50", "50-100", "100-500", "500-1,000", "1,000-5,000", "5,000-10,000", "10,000-50,000", "50,000-100,000", ">100,000"),
+                            levels = c("Not specified","0-5", "5-10", "10-50", "50-100", "100-500", "500-1,000", "1,000-5,000", "5,000-10,000", "10,000-50,000", "50,000-100,000", ">100,000"),
                             ordered = TRUE)
 
 spatResEx_cat <- expand.grid(levels(subset_PET$ScaleSpatial),
@@ -2729,10 +3104,10 @@ ggsave(filename = paste0(outPathPET, "spatialResVExt.png"),
 # subset_byc$ScaleTemporal <- subset_byc$Scale...Temporal
 # subset_byc$ScaleTemporal[subset_byc$ScaleTemporal %in% "snapshot/no repeat sampling"] <- "snapshot/no\nrepeated sampling"   
 subset_PET$ScaleTemporal <- factor(x = subset_PET$Scale...Temporal,
-                               levels = c("snapshot/no\nrepeated sampling", "subday", "day", "week", "two week", "month", "two month", "quarter", "half year", "year", "two year", "five year", "decade", "multidecadal"),
+                               levels = c("Not specified","snapshot/no\nrepeated sampling", "subday", "day", "week", "two week", "month", "two month", "quarter", "half year", "year", "two year", "five year", "decade", "multidecadal"),
                                ordered = TRUE)
 subset_PET$ResTemporal <- factor(x = subset_PET$Resolution...Temporal,
-                             levels = c("snapshot/no\nrepeat sampling", "subday", "day", "week", "two week", "month", "two month", "quarter", "half year", "year", "two year", "five year", "decade", "multidecadal"),
+                             levels = c("Not specified","snapshot/no\nrepeat sampling", "subday", "day", "week", "two week", "month", "two month", "quarter", "half year", "year", "two year", "five year", "decade", "multidecadal"),
                              ordered = TRUE)
 
 tempResEx_cat <- expand.grid(levels(subset_PET$ScaleTemporal),
@@ -2889,7 +3264,7 @@ ggsave(filename = paste0(outPathPET, "spatiotemporalRes.png"),
 )
 
 
-### Combine figures into one plot ----
+### COMBINE figures into one plot ----
 
 pSpatial <- ggplot() +
   geom_tile(data = spatResEx_count,
@@ -2899,7 +3274,7 @@ pSpatial <- ggplot() +
   scale_fill_continuous_sequential(palette = "blues3",
                                    rev = TRUE,
                                    na.value = 0,
-                                   name="No. of\narticles",
+                                   name="No. of\npapers",
                                    n.breaks = 8) +
   scale_x_discrete(drop = FALSE) +
   scale_y_discrete(drop = FALSE) +
@@ -2919,7 +3294,7 @@ pTemporal <- ggplot() +
   scale_fill_continuous_sequential(palette = "blues3",
                                    rev = TRUE,
                                    na.value = 0,
-                                   name="No. of\narticles",
+                                   name="No. of\npapers",
                                    n.breaks=6) +
   scale_x_discrete(drop = FALSE) +
   scale_y_discrete(drop = FALSE) +
@@ -2934,9 +3309,3 @@ pTemporal <- ggplot() +
 p <- pSpatial / pTemporal + plot_annotation(tag_levels = 'A')
 
 ggsave("spatialTemporalScales.png", p, path=outPathPET, width = 7, height = 7)
-
-
-
-
-
-

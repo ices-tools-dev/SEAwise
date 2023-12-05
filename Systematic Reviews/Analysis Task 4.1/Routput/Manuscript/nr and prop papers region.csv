@@ -1,10 +1,10 @@
-Region;NrPaps;Prop
-Mediterranean Sea;268;0.49
-Western Waters;81;0.15
-Baltic Sea;29;0.05
-Barents Sea;8;0.01
-North Sea;128;0.24
-Black Sea;9;0.02
-NE-Atlantic;16;0.03
-Global;2;0.004
-Norwegian Sea;1;0.002
+"Region","NrPaps","Prop"
+"Mediterranean Sea",268,0.494464944649447
+"Western Waters",81,0.149446494464945
+"Baltic Sea",29,0.0535055350553506
+"Barents Sea",8,0.014760147601476
+"North Sea",128,0.236162361623616
+"Black Sea",9,0.0166051660516605
+"NE-Atlantic",16,0.029520295202952
+"Global",2,0.003690036900369
+"Norwegian Sea",1,0.0018450184501845

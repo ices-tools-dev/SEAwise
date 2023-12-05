@@ -345,6 +345,16 @@ datNotSpec[,c(1,33)]
 #Have checked them and made changes in the data extraction files on the Sharepoint.
 
 
+### Do some manual changes after in-depth exploration of case studies ----
+datRespvar$Direction.of.relationship[datRespvar$SW.ID %in% "SW4_0703"]  <- "Negative"
+
+datRespvar$Response.variable_paper[datRespvar$SW.ID %in% "SW4_1107"]    <- "bycatch"
+datRespvar$Response.variable_category[datRespvar$SW.ID %in% "SW4_1107"] <- "Behaviour"
+
+datRespvar$Response.variable_category[datRespvar$SW.ID %in% "SW4_0355"] <- "Behaviour"
+
+datRespvar$Direction.of.relationship[datRespvar$SW.ID %in% "SW4_1991"] <- "Positive"
+
 
 #-----------------------------------------------#
 # Magnitude of relationship ----
