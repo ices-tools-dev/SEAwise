@@ -1,10 +1,11 @@
 
 
 # SEAwise: Ecosystem-Based Fisheries Management Advice #
-## *Supporting information including code and data not available elsewhere for use in the SEAwise project to provide enhanced knowledge for use in Ecosystem-Based Fisheries Management Advice* ##
 <p align="center">
 <img src="https://github.com/ices-tools-dev/SEAwise/assets/75067038/448633f0-2022-4aca-a4c3-5a470e9e1a14" width=25% height=25% />
 </p>
+
+## *Supporting information including code and data not available elsewhere for use in the SEAwise project to provide enhanced knowledge for use in Ecosystem-Based Fisheries Management Advice* ##
 
 #### For more information on the project visit https://seawiseproject.org/ ####
 
