@@ -5,8 +5,7 @@
 ### Project structure and available repositories: ###
 
 * WP1 - Knowledge exchange and integration 
-  * Task 1.1: 
-  * Task 1.2: 
+  * …
     
 * WP2 - Social and economic effects of fishing:
   * Task 2.1: Identification of key social and economic aspects of fisheries [link to repository](https://github.com/ices-tools-dev/SEAwise_T2.1)
@@ -21,8 +20,10 @@
   
 * WP4 - Ecological effects of fisheries 
   * …
+    
 * WP5 - Spatial management impacts on ecological systems and fisheries
   * …
+    
 * WP6 - Evaluation of fisheries management strategies in an ecosystem context 
   * …
 
