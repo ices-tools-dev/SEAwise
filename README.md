@@ -2,6 +2,8 @@
 # SEAwise: Ecosystem-Based Fisheries Management Advice #
 ## *Supporting information including code and data not available elsewhere for use in the SEAwise project to provide enhanced knowledge for use in Ecosystem-Based Fisheries Management Advice* ##
 
+### For more information on the project visit https://seawiseproject.org/ ###
+
 ### Project structure and available repositories: ###
 
 * WP1 - Knowledge exchange and integration:
