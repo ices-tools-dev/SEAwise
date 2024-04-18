@@ -29,7 +29,10 @@
   * …
     
 * WP5 - Spatial management impacts on ecological systems and fisheries:
-  * …
+  * Task 5.2: Predicting species distribution [link to repository](https://github.com/ices-tools-dev/SEAwise_T5.2)
+  * Task 5.3: Predicting changes in fisheries distribution [link to repository](https://github.com/ices-tools-dev/SEAwise_T5.3)
+  * Task 5.4: Effect of changes in habitat on productivity, species and habitats [link to repository](https://github.com/ices-tools-dev/SEAwise_T5.4)
+  * Task 5.5: Predicting the effect of changes in 'fishable' areas on fish and fisheries [link to repository](https://github.com/ices-tools-dev/SEAwise_T5.5)
     
 * WP6 - Evaluation of fisheries management strategies in an ecosystem context:
   * Baltic Sea case study [link to repository](https://github.com/ices-tools-dev/SEAwise_WP6_BS)
