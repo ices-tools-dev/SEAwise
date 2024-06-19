@@ -31,7 +31,8 @@ outPath                               <- "Systematic Reviews/Analysis Task 4.1/R
 #  info:
 #  This section depends on the processed data file produced in step 1.
 #-----------------------------------------------#
-data                                  <- readRDS(file=paste0(datPath, "data.rds"))
+data                                  <- readRDS(file=paste0(datPath, "data_allScreened.rds"))
+data                                  <- data[is.na(Exclusion.Criteria),]
 
 
 unique(data$Study.type)

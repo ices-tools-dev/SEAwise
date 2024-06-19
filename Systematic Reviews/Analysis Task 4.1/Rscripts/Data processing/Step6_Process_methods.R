@@ -50,6 +50,9 @@ as.data.frame(sort(table(datSampl$Sampling.Method.used.for.data.collection, useN
 #no NAs
 #quite some cases where 'Other' has been chosen: 83 papers
 
+# Correct spelling mistake 'taggin'
+data$Sampling.Method.used.for.data.collection[data$Sampling.Method.used.for.data.collection %in% "Data Storage, GPS, Acoustic Taggin"] <- "Data Storage, GPS, Acoustic Tagging"
+
 
 #-----------------------------------------------#
 # Check Description of Other Sampling Method for 'Other' Sampling Method & create new categories ----
@@ -546,6 +549,25 @@ datDescr$Analytical.method.used.for.inference <- str_replace_all(datDescr$Analyt
 
 # Check how many papers have NA
 length(unique(datDescr$SW.ID[is.na(datDescr$Analytical.method.used.for.inference)])) #8 papers
+
+
+
+#-----------------------------------------------#
+# Check Study type ----
+#-----------------------------------------------#
+
+# Check whether there are papers with multiple study types
+studyType                <- aggregate(Study.type ~ SW.ID, datDescr, function(x) length(unique(x)))
+studyType                <- studyType[order(studyType$Study.type, decreasing = TRUE),]
+head(studyType)
+length(unique(studyType$SW.ID[studyType$Study.type > 1])) #19 papers with two study types
+
+# Check whether there are papers with NA for study type
+unique(datDescr$SW.ID[is.na(datDescr$Study.type)]) #2 papers: "SW4_0154" "SW4_0915"
+
+# Assign study type to papers with NA
+datDescr$Study.type[datDescr$SW.ID %in% "SW4_0154"]   <- "Field experiment/observations"
+datDescr$Study.type[datDescr$SW.ID %in% "SW4_0915"]   <- "Fisheries dependent survey"
 
 
 

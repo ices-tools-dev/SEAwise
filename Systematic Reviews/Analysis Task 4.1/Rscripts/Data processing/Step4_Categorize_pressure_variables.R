@@ -841,6 +841,9 @@ datPressvar$Pressure.variable_category    <- with(datPressvar, ifelse(Pressure_v
 datPressvar$Pressure.variable_category    <- with(datPressvar, ifelse(Pressure_variable %in% "Effort reduction" & is.na(Pressure.variable_category) &
                                                                         SW.ID %in% "SW4_1455", "Closure",Pressure.variable_category))
 
+datPressvar$Pressure.variable_category    <- with(datPressvar, ifelse(Pressure_variable %in% "Fishing effort" & SW.ID %in% "SW4_1086", 
+                                                                      "Closure",Pressure.variable_category))
+
 PV_closure                         <- subset(datPressvar, Pressure.variable_category %in% "Closure")
 
 
@@ -1005,8 +1008,7 @@ datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(Pressure_va
                                                                                               "Otter trawl vs. beam trawl"),
                                                                      "Gear comparison",Pressure.variable_category))
 # Some manual additions
-datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(Pressure_variable %in% "change from trawling to creeling" & 
-                                                                       is.na(datPressvar$Pressure.variable_category) & SW.ID %in% "SW4_0562",
+datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(is.na(datPressvar$Pressure.variable_category) & SW.ID %in% "SW4_0562",
                                                                      "Gear comparison",Pressure.variable_category))
 
 datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(Pressure_variable %in% "trawl dimensions" & 
