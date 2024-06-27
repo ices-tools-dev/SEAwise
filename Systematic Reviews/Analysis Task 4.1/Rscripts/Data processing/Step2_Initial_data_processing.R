@@ -9,7 +9,7 @@
 #
 #####################################################################################################################
 #####################################################################################################################
-rm(list = ls())
+rm(list=ls())
 
 #-----------------------------------------------
 # Load libraries and set Paths.
@@ -48,11 +48,11 @@ length(unique(tab$SW.ID))
 ## Check who did how many papers
 contributors                          <- tab[,.(Papers_read = length(unique(SW.ID))), by="Reader"]
 
-## how many papers retained : 528 papers
+## how many papers retained : 527 papers
 retained                              <- unique(subset(tab, is.na(Exclusion.Criteria)==TRUE)$SW.ID)
 length(retained)
 
-## how many rejected : 203 papers
+## how many rejected : 204 papers
 excluded                              <- unique(subset(tab, !is.na(Exclusion.Criteria) == TRUE)$SW.ID)
 length(excluded)
 
@@ -77,9 +77,12 @@ table(tab[SW.ID %in% excluded, Exclusion.Criteria])
 data                                  <- tab[SW.ID %in% retained,,]
 #rm(tab, contributors, retained, excluded)
 
-## For easyness, skip the long-text columns.
-## !!!! SKIP THIS STEP FOR PROCESSING THE DATA INCLUDING ALL COLUMNS !!!!
-data                                  <- data[,c(1, 5, 19:29, 32:49, 51:52)]
+
+## Should the full or cropped version of the dataset be produced?
+## If full, nothing needs to be changed, if cropped, then columns are removed
+if(dataset == "cropped"){
+  data                                  <- data[,c(1, 5, 19:29, 32:49, 51:52)]
+}
 
 ## Check the regions (all fine)
 table(is.na(data$Region))
@@ -120,7 +123,7 @@ data$Response.variable_category       <- ifelse(data$Response.variable_category 
 table(is.na(data$Pressure.type)) ## all fine 
 
 ## Check the Pressure types (level 2)
-table(is.na(subset(data, Pressure.type == "Catch_and_bycatch")$Pressure_level)) # There are 115 NAs (for rows where non-NA was expected). These are set to "non specified".
+table(is.na(subset(data, Pressure.type == "Catch_and_bycatch")$Pressure_level)) # There are 116 NAs (for rows where non-NA was expected). These are set to "non specified".
 
 table(data$Pressure_level)
 data$Pressure_level                  <- ifelse(data$Pressure_level == "target", "Target", data$Pressure_level)
@@ -132,7 +135,7 @@ table(is.na(data$Ecosystem.component_level1)) #no NAs
 
 ## Check the ecosystem component level 2
 table(is.na(subset(data, Ecosystem.component_level1 %in% c("Fish_teleost", "Benthos", "Marine_mammals", "Fish_cartilaginous",
-                                                     "Physical_habitats", "Plankton", "Plants", "Reptiles"))$Ecosystem.component_level2)==T) #324 NAs
+                                                     "Physical_habitats", "Plankton", "Plants", "Reptiles"))$Ecosystem.component_level2)==T) #331 NAs
 table(data$Ecosystem.component_level2)
 
 
@@ -162,7 +165,7 @@ data$Direction.of.relationship       <- ifelse(data$Direction.of.relationship ==
 data$Direction.of.relationship[is.na(data$Direction.of.relationship)] <- "Not specified"
 
 ## Check what species are commonly mentioned
-length(unique(data$Species.taxonomic.group.s.)) # 466 unique input... Let's try to group/categorize these in a separate script (step 3)
+length(unique(data$Species.taxonomic.group.s.)) # 469 unique input... Let's try to group/categorize these in a separate script (step 3)
 
 ## fix some rows with double input
 a                                    <- data[Species.taxonomic.group.s. == "asteroids and lamp shells",,]
@@ -175,7 +178,7 @@ data                                 <- rbindlist(list(data, a, b), use.names=TR
 
 
 ## Check what pressure variables are commonly mentioned
-length(unique(data$Pressure_variable)) # 389 unique input... Let's skip for now.
+length(unique(data$Pressure_variable)) # 387 unique input... Let's skip for now.
 
 ## Check whether ECL2 contains only sediment information when ECL1 == Physical_habitat
 a                                    <- data[Ecosystem.component_level2 %in% c("Gravel", "Mixed", "Mud", "Sand", "Unknown")]
@@ -242,12 +245,14 @@ if(ncol(data) > 50){
 #-----------------------------------------------
 # Save the processed data file
 #-----------------------------------------------
-saveRDS(data, file=paste0(outPath, "data.rds"))
-
-## Paste back excluded papers and save -> make sure you first undo dropping columns in data and removing tab and retained
-## !!!! ONLY WHEN YOU ARE PROCESSING THE DATA INCLUDING ALL COLUMNS !!!!
-data_allScreened                     <- rbind(data, tab[!SW.ID %in% retained,], fill=TRUE) #IMPORTANT NOTE: ROWID does not match between data & tab and data_allScreened!
-saveRDS(data_allScreened, file=paste0(outPath, "data_allScreened.rds"))
+if(dataset == "cropped"){
+  saveRDS(data, file=paste0(outPath, "data.rds"))
+}
+if(dataset == "full"){
+  data_allScreened                     <- rbind(data, tab[!SW.ID %in% retained,], fill=TRUE) 
+  saveRDS(data_allScreened, file=paste0(outPath, "data_allScreened.rds"))
+}
+#IMPORTANT NOTE: ROWID does not match between data & tab and data_allScreened!
 
 
 
@@ -256,73 +261,77 @@ saveRDS(data_allScreened, file=paste0(outPath, "data_allScreened.rds"))
 # Merge cleaned extracted data with screening results
 #-----------------------------------------------
 
-# Load cleaned extracted data (including papers that were excluded)
-data_allScreened                         <- readRDS(paste0(outPath, "data_allScreened.rds"))
-
-# Load screening results
-screening.raw                            <- read.csv(paste0(outPath,"../Screening/screening coding all.csv"), stringsAsFactors = FALSE)
-
-# Following needs to done:
-# * Mark papers that were excluded during screening and under which exclusion criteria
-# * Mark papers that were included during screening and under which inclusion label
-# * Mark papers that were excluded during data extraction and under which exclusion criteria
-# * Mark papers that remained including in data extraction and under which inclusion label (a few may have changed)
-
-# Screening
-## Subset to relevant columns
-screening                                <- screening.raw[,c("SW_ID","Screening.Code","InclExcl")]
-names(screening)                         <- c("SW.ID","Screening.Code","Screening.Fate")
-screening$Screening.Exclusion.Code       <- with(screening, ifelse(Screening.Fate %in% "Excluded",Screening.Code,NA))
-
-## Correct paper that got both inclusion and exclusion label
-screening$Screening.Code[screening$SW.ID %in% "SW4_0647"] <- "INCLUDE on title and abstract"
-
-## Create WP4 task labels
-screening$task4.2                        <- with(screening.raw, ifelse(!is.na(INCLUDE.4.2.bycatch.PET.species),"4.2",NA))
-screening$task4.3                        <- with(screening.raw, ifelse(!is.na(INCLUDE.4.3.benthic.habitats),"4.3",NA))
-screening$task4.4                        <- with(screening.raw, ifelse(!is.na(INCLUDE.4.4.food.webs...diversity),"4.4",NA))
-screening$task4.5                        <- with(screening.raw, ifelse(!is.na(INCLUDE.4.5.litter),"4.5",NA))
-screening$task.none                      <- with(screening.raw, ifelse(!is.na(INCLUDE.on.title.and.abstract),"None",NA))
-
-## Combine
-screening$Screening.WP4.task             <- apply(screening[,c(5:9)], 1, function(x) paste(x[!is.na(x)], collapse = " _ "))
-screening$Screening.WP4.task             <- with(screening, ifelse(Screening.WP4.task %in% "", NA, Screening.WP4.task))
-screening$task4.2                        <- screening$task4.3 <- screening$task4.4 <- screening$task4.5 <- screening$task.none <- NULL
-
-
-# Data extraction
-## Subset to relevant columns
-extraction                               <- data_allScreened[,c("SW.ID","Exclusion.Criteria","WP4.task")]
-names(extraction)                        <- c("SW.ID","Extraction.Exclusion.Code","Extraction.WP4.task")  
-
-## Clean and add some columns
-extraction$Extraction.WP4.task           <- with(extraction, ifelse(!is.na(Extraction.Exclusion.Code), NA, Extraction.WP4.task))
-SW.IDs                                   <- unique(extraction$SW.ID)
-extraction.tasks                         <- data.frame(SW.ID = SW.IDs, Extraction.WP4.task = NA)
-for(iID in 1:length(SW.IDs)){
-  ss                                        <- subset(extraction, SW.ID %in% SW.IDs[iID])
-  if(length(unique(ss$Extraction.WP4.task)) == 1){
-    extraction.tasks$Extraction.WP4.task[iID] <- ss$Extraction.WP4.task
-  } else{
-    tasks                                     <- sort(unique(ss$Extraction.WP4.task))
-    extraction.tasks$Extraction.WP4.task[iID] <- paste(tasks, collapse = " _ ")
+# Do this only when full dataset is used
+if(dataset == "full"){
+  
+  # Load cleaned extracted data (including papers that were excluded)
+  data_allScreened                         <- readRDS(paste0(outPath, "data_allScreened.rds"))
+  
+  # Load screening results
+  screening.raw                            <- read.csv(paste0(outPath,"../Screening/screening coding all.csv"), stringsAsFactors = FALSE)
+  
+  # Following needs to done:
+  # * Mark papers that were excluded during screening and under which exclusion criteria
+  # * Mark papers that were included during screening and under which inclusion label
+  # * Mark papers that were excluded during data extraction and under which exclusion criteria
+  # * Mark papers that remained including in data extraction and under which inclusion label (a few may have changed)
+  
+  # Screening
+  ## Subset to relevant columns
+  screening                                <- screening.raw[,c("SW_ID","Screening.Code","InclExcl")]
+  names(screening)                         <- c("SW.ID","Screening.Code","Screening.Fate")
+  screening$Screening.Exclusion.Code       <- with(screening, ifelse(Screening.Fate %in% "Excluded",Screening.Code,NA))
+  
+  ## Correct paper that got both inclusion and exclusion label
+  screening$Screening.Code[screening$SW.ID %in% "SW4_0647"] <- "INCLUDE on title and abstract"
+  
+  ## Create WP4 task labels
+  screening$task4.2                        <- with(screening.raw, ifelse(!is.na(INCLUDE.4.2.bycatch.PET.species),"4.2",NA))
+  screening$task4.3                        <- with(screening.raw, ifelse(!is.na(INCLUDE.4.3.benthic.habitats),"4.3",NA))
+  screening$task4.4                        <- with(screening.raw, ifelse(!is.na(INCLUDE.4.4.food.webs...diversity),"4.4",NA))
+  screening$task4.5                        <- with(screening.raw, ifelse(!is.na(INCLUDE.4.5.litter),"4.5",NA))
+  screening$task.none                      <- with(screening.raw, ifelse(!is.na(INCLUDE.on.title.and.abstract),"None",NA))
+  
+  ## Combine
+  screening$Screening.WP4.task             <- apply(screening[,c(5:9)], 1, function(x) paste(x[!is.na(x)], collapse = " _ "))
+  screening$Screening.WP4.task             <- with(screening, ifelse(Screening.WP4.task %in% "", NA, Screening.WP4.task))
+  screening$task4.2                        <- screening$task4.3 <- screening$task4.4 <- screening$task4.5 <- screening$task.none <- NULL
+  
+  
+  # Data extraction
+  ## Subset to relevant columns
+  extraction                               <- data_allScreened[,c("SW.ID","Exclusion.Criteria","WP4.task")]
+  names(extraction)                        <- c("SW.ID","Extraction.Exclusion.Code","Extraction.WP4.task")  
+  
+  ## Clean and add some columns
+  extraction$Extraction.WP4.task           <- with(extraction, ifelse(!is.na(Extraction.Exclusion.Code), NA, Extraction.WP4.task))
+  SW.IDs                                   <- unique(extraction$SW.ID)
+  extraction.tasks                         <- data.frame(SW.ID = SW.IDs, Extraction.WP4.task = NA)
+  for(iID in 1:length(SW.IDs)){
+    ss                                        <- subset(extraction, SW.ID %in% SW.IDs[iID])
+    if(length(unique(ss$Extraction.WP4.task)) == 1){
+      extraction.tasks$Extraction.WP4.task[iID] <- unique(ss$Extraction.WP4.task)
+    } else{
+      tasks                                     <- sort(unique(ss$Extraction.WP4.task))
+      extraction.tasks$Extraction.WP4.task[iID] <- paste(tasks, collapse = " _ ")
+    }
   }
+  extraction$Extraction.WP4.task           <- NULL                                        
+  extraction                               <- merge(extraction, extraction.tasks, by="SW.ID")
+  extraction                               <- extraction[!duplicated(extraction),]
+  extraction$Extraction.Fate               <- with(extraction, ifelse(is.na(Extraction.Exclusion.Code), "Included", "Excluded"))
+  
+  
+  # Merge the two datasets
+  FatePapers                              <- merge(screening, extraction, by="SW.ID", all.x=TRUE)
+  
+  # Check for duplicates and correct
+  FatePapers$SW.ID[which(duplicated(FatePapers$SW.ID))] #paper received two exclusion criteria during data extraction
+  FatePapers$Extraction.Exclusion.Code[FatePapers$SW.ID %in% "SW4_1550"] <- paste(FatePapers$Extraction.Exclusion.Code[FatePapers$SW.ID %in% "SW4_1550"], collapse = " _ ")
+  
+  # Remove duplicated paper
+  FatePapers                              <- FatePapers[!duplicated(FatePapers$SW.ID),]
+  
+  # Save
+  save(FatePapers, file=paste0(outPath, "FatePapers.RData"))
 }
-extraction$Extraction.WP4.task           <- NULL                                        
-extraction                               <- merge(extraction, extraction.tasks, by="SW.ID")
-extraction                               <- extraction[!duplicated(extraction),]
-extraction$Extraction.Fate               <- with(extraction, ifelse(is.na(Extraction.Exclusion.Code), "Included", "Excluded"))
-
-
-# Merge the two datasets
-FatePapers                              <- merge(screening, extraction, by="SW.ID", all.x=TRUE)
-
-# Check for duplicates and correct
-FatePapers$SW.ID[which(duplicated(FatePapers$SW.ID))] #paper received two exclusion criteria during data extraction
-FatePapers$Extraction.Exclusion.Code[FatePapers$SW.ID %in% "SW4_1550"] <- paste(FatePapers$Extraction.Exclusion.Code[FatePapers$SW.ID %in% "SW4_1550"], collapse = " _ ")
-
-# Remove duplicated paper
-FatePapers                              <- FatePapers[!duplicated(FatePapers$SW.ID),]
-
-# Save
-save(FatePapers, file=paste0(outPath, "FatePapers.RData"))

@@ -28,10 +28,14 @@ datPath                               <- "Systematic Reviews/Analysis Task 4.1/R
 data                                  <- readRDS(file=paste0(datPath, "data_correctTaxa_PressVar.rds"))
 data_allScreened                      <- readRDS(file=paste0(datPath, "data_allScreened_correctTaxa_PressVar.rds"))
 
+# If cropped dataset should be used, do nothing.
+# If full dataset should be used, select this:
+if(dataset == "full"){
+  data                                  <- data_allScreened
+}
+
 # # Remove some columns to improve viewing the data frame
 # data_allScreened$SearchID <- data_allScreened$Open.Access <- NULL
-
-# data                                  <- data_allScreened #in case you'd like to run with the entire dataset (incl. all columns)
 
 
 #-----------------------------------------------#
@@ -331,7 +335,7 @@ sort(unique(datRespvar$Response.variable_paper))
 ### Check which papers still classified as 'Other' ----
 papers                                   <- datRespvar[datRespvar$Response.variable_category %in% "Other",]
 sort(unique(papers$Response.variable_paper))
-#Two unclassified left - best to keep as 'Other'
+#Three unclassified left - best to keep as 'Other'
 
 
 
@@ -501,11 +505,14 @@ datDupl                 <- subset(data_collapsed, ROWID %in% rowIDdupl) #this is
 data_collapsed$ROWID    <- c(1:nrow(data_collapsed)) #give new unique row ID
 
 
-# Save
-saveRDS(data_collapsed, paste0(datPath,"data_correctTaxa_PressVar_RespVar.rds"))
-write.xlsx(data_collapsed, file=paste0(datPath, "data_correctTaxa_PressVar_RespVar.xlsx"))
+# If cropped dataset should be saved:
+if(dataset == "cropped"){
+  saveRDS(data_collapsed, paste0(datPath,"data_correctTaxa_PressVar_RespVar.rds"))
+  write.xlsx(data_collapsed, file=paste0(datPath, "data_correctTaxa_PressVar_RespVar.xlsx"))
+}
 
-# # In case you're running it with the entire dataset (incl. all columns)
-# saveRDS(data_collapsed, paste0(datPath,"data_AllScreened_correctTaxa_PressVar_RespVar.rds"))
-# write.xlsx(data_collapsed, file=paste0(datPath,"data_AllScreened_correctTaxa_PressVar_RespVar.xlsx"))
-
+# If full dataset should be saved:
+if(dataset == "full"){
+  saveRDS(data_collapsed, paste0(datPath,"data_AllScreened_correctTaxa_PressVar_RespVar.rds"))
+  write.xlsx(data_collapsed, file=paste0(datPath,"data_AllScreened_correctTaxa_PressVar_RespVar.xlsx"))
+}

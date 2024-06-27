@@ -491,7 +491,7 @@ p <- ggplot(EcoPressExp, aes(x=Pressure.type, y=Ecosystem.component_level1, fill
         axis.title = element_text(size=12))
 print(p)
 
-ggsave("EcoPress_heatmap.tiff", p, path=outPath, width = 9, height = 7)
+ggsave("EcoPress_heatmap.png", p, path=outPath, width = 9, height = 7)
 
 
 
@@ -2171,7 +2171,7 @@ Region
 Study                              <- subset_PET[, .(NrPaps = length(unique(SW.ID))),
                                                   by = c("Study.type")]
 Study
-sum(Study$NrPaps) #117, so a bit more than the 112 unique papers, meaning that a few studies have multiple study types
+sum(Study$NrPaps) #128, so a bit more than the 123 unique papers, meaning that a few studies have multiple study types
 
 # Check exactly how many papers have more than one study type
 StudyNrPap                         <- aggregate(Study.type ~ SW.ID, subset_PET, function(x) length(unique(x)))
@@ -2185,7 +2185,7 @@ StudyNrPap[order(StudyNrPap$Study.type),] #five papers with two study types
 Pressure                           <- subset_PET[, .(NrPaps = length(unique(SW.ID))),
                                                  by = c("Pressure.variable_category")]
 Pressure
-sum(Pressure$NrPaps) #133, so a few more than the 123 unique papers, meaning that a few studies have multiple study types
+sum(Pressure$NrPaps) #132, so a few more than the 123 unique papers, meaning that a few studies have multiple study types
 
 # Check exactly how many papers 
 PressNrPap                         <- aggregate(Pressure.variable_category ~ SW.ID, subset_PET, function(x) length(unique(x)))
@@ -2200,12 +2200,12 @@ nrow(PressNrPap[PressNrPap$Pressure.variable_category > 1,]) #8 papers with more
 Response                           <- subset_PET[, .(NrPaps = length(unique(SW.ID))),
                                                  by = c("Response.variable_category")]
 Response
-sum(Response$NrPaps) #127, so more than the 112 unique papers, meaning that a few studies have multiple response variables
+sum(Response$NrPaps) #144, so more than the 123 unique papers, meaning that a few studies have multiple response variables
 
 # Check exactly how many papers
 RespNrPap                         <- aggregate(Response.variable_category ~ SW.ID, subset_PET, function(x) length(unique(x)))
 RespNrPap[order(RespNrPap$Response.variable_category),] 
-nrow(RespNrPap[RespNrPap$Response.variable_category > 1,]) #15 papers with more than 1 response variable
+nrow(RespNrPap[RespNrPap$Response.variable_category > 1,]) #17 papers with more than 1 response variable
 
 
 #-----------------------------------------------#
@@ -2215,12 +2215,12 @@ nrow(RespNrPap[RespNrPap$Response.variable_category > 1,]) #15 papers with more 
 Direction                            <- subset_PET[, .(NrPaps = length(unique(SW.ID))),
                                                  by = c("Direction.of.relationship")]
 Direction
-sum(Direction$NrPaps) #149, so more than the 123 unique papers, meaning that a few studies have multiple study types
+sum(Direction$NrPaps) #150, so more than the 123 unique papers, meaning that a few studies have multiple study types
 
 # Check exactly how many papers
 DirNrPap                             <- aggregate(Direction.of.relationship ~ SW.ID, subset_PET, function(x) length(unique(x)))
 DirNrPap[order(DirNrPap$Direction.of.relationship),] 
-nrow(DirNrPap[DirNrPap$Direction.of.relationship > 1,]) #22 papers with more than 1 response variable
+nrow(DirNrPap[DirNrPap$Direction.of.relationship > 1,]) #23 papers with more than 1 response variable
 
 # Check direction by pressure variable
 DirPress                             <- subset_PET[, .(NrPaps = length(unique(SW.ID))),

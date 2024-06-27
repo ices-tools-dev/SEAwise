@@ -29,10 +29,14 @@ datPath                               <- "Systematic Reviews/Analysis Task 4.1/R
 data                                  <- readRDS(file=paste0(datPath, "data_correctTaxa_PressVar_RespVar.rds"))
 data_allScreened                      <- readRDS(file=paste0(datPath, "data_allScreened_correctTaxa_PressVar_RespVar.rds"))
 
+# If cropped dataset should be used, do nothing.
+# If full dataset should be used, select this:
+if(dataset == "full"){
+  data                                  <- data_allScreened
+}
+
 # # Remove some columns to improve viewing the data frame
 # data_allScreened$SearchID <- data_allScreened$Open.Access <- NULL
-
-# data                                  <- data_allScreened #in case you'd like to run with the entire dataset (incl. all columns)
 
 
 #-----------------------------------------------#
@@ -585,11 +589,15 @@ rowIDdupl               <- datDescr$ROWID[duplicated(datDescr$ROWID)]
 datDupl                 <- subset(datDescr, ROWID %in% rowIDdupl) #this is because rows were split or duplicated and got a new Sampling Method
 datDescr$ROWID          <- c(1:nrow(datDescr)) #give new unique row ID
 
-# Save
-saveRDS(datDescr, paste0(datPath,"data_correctTaxa_PressVar_RespVar_Methods.rds"))
-write.xlsx(datDescr, file=paste0(datPath, "data_correctTaxa_PressVar_RespVar_Methods.xlsx"))
+# If cropped dataset should be saved
+if(dataset == "cropped"){
+  saveRDS(datDescr, paste0(datPath,"data_correctTaxa_PressVar_RespVar_Methods.rds"))
+  write.xlsx(datDescr, file=paste0(datPath, "data_correctTaxa_PressVar_RespVar_Methods.xlsx"))
+}
 
-# # In case you're running it with the entire dataset (incl. all columns)
-# saveRDS(datDescr, paste0(datPath,"data_AllScreened_correctTaxa_PressVar_RespVar_Methods.rds"))
-# write.xlsx(datDescr, file=paste0(datPath,"data_AllScreened_correctTaxa_PressVar_RespVar_Methods.xlsx"))
+# If full dataset should be saved
+if(dataset == "full"){
+  saveRDS(datDescr, paste0(datPath,"data_AllScreened_correctTaxa_PressVar_RespVar_Methods.rds"))
+  write.xlsx(datDescr, file=paste0(datPath,"data_AllScreened_correctTaxa_PressVar_RespVar_Methods.xlsx"))
+}
 

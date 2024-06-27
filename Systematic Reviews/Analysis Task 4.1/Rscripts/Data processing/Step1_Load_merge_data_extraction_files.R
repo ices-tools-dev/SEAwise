@@ -9,12 +9,12 @@
 #
 #####################################################################################################################
 #####################################################################################################################
-rm(list = ls())
+rm(list=ls())
 
 #-----------------------------------------------
 # Load libraries and set Paths.
 #-----------------------------------------------
-library(xlsx) 
+# library(xlsx) #returns error
 library(openxlsx)
 
 
@@ -37,21 +37,26 @@ readers                                <- c("Altuna-Etxabe", "Anastasopoulou", "
                                             "Carbonara", "Dinesen", "Festjens", "garcia", "Girardin", "Halouani", "Lefkaditou_Chatzispyrou", "MacMillan", "Papadopoulou", "Potier",
                                             "Romagnoni", "Seghers", "Smith", "Spedicato", "Thorpe", "Thuenen","Tsagarakis", "Uhlmann_Reid", "VanHoey", "vdReijden")
 
-## Create a table from the first reader
-people                                 <- readers[1]
-tab                                    <- read.xlsx(file=paste0(datPath, "DataExtractionForm_WP4_", people,".xlsx"), startRow = 2, header = TRUE, sheetIndex = 1)
-colnames(tab)
-tab$Reader                             <- people
+## In case one uses 'xlsx
+if("xlsx" %in% .packages()){
+  
+  ## Create a table from the first reader
+  people                                 <- readers[1]
+  tab                                    <- read.xlsx(file=paste0(datPath, "DataExtractionForm_WP4_", people,".xlsx"), startRow = 2, header = TRUE, sheetIndex = 1)
+  colnames(tab)
+  tab$Reader                             <- people
+  
+  ## Add all other readers
+  for(people in readers[2:length(readers)]) {
+    print(people)
+    tab1                                 <- read.xlsx(file=paste0(datPath, "DataExtractionForm_WP4_", people,".xlsx"), startRow = 2, header = TRUE, sheetIndex = 1)
+    tab1$Reader                          <- people
+    tab2                                 <- tab1[,colnames(tab1) %in% colnames(tab)] # remove empty / additional columns
+    tab2                                 <- subset(tab2, !is.na(tab2$SW.ID)==T) # remove empty rows
+    tab                                  <- rbind(tab,tab2)
+  } # end people-loop
+}
 
-## Add all other readers
-for(people in readers[2:length(readers)]) {
-  print(people)
-  tab1                                 <- read.xlsx(file=paste0(datPath, "DataExtractionForm_WP4_", people,".xlsx"), startRow = 2, header = TRUE, sheetIndex = 1)
-  tab1$Reader                          <- people
-  tab2                                 <- tab1[,colnames(tab1) %in% colnames(tab)] # remove empty / additional columns
-  tab2                                 <- subset(tab2, !is.na(tab2$SW.ID)==T) # remove empty rows
-  tab                                  <- rbind(tab,tab2)
-} # end people-loop
 
 ## In case package 'xlsx' doesn't work: same but with another package
 if(!"xlsx" %in% .packages()){

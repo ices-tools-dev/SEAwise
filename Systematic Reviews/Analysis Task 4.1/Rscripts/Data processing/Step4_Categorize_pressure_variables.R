@@ -25,10 +25,15 @@ datPath                               <- "Systematic Reviews/Analysis Task 4.1/R
 #  info:
 #  This section depends on the processed data file produced in step 3.
 #-----------------------------------------------#
+
 data                                  <- readRDS(file=paste0(datPath, "data_correctTaxa.rds"))
 data_allScreened                      <- readRDS(file=paste0(datPath, "data_allScreened_correctTaxa.rds"))
 
-# data                                  <- data_allScreened #in case you'd like to run with the entire dataset (incl. all columns)
+# If cropped dataset should be used, do nothing.
+# If full dataset should be used, select this:
+if(dataset == "full"){
+  data                                  <- data_allScreened
+}
 
 
 #-----------------------------------------------#
@@ -1115,27 +1120,30 @@ for(iRow in unique(datPressvar$ROWID)){
   
 }
 
-# Put Pressure variable category column after Pressure variable
-data_collapsed <- cbind(data_collapsed[,c(1:23)], data_collapsed[,34], data_collapsed[,c(24:33)])
+# If cropped dataset should be produced:
+if(dataset == "cropped"){
+  # Put Pressure variable category column after Pressure variable
+  data_collapsed <- cbind(data_collapsed[,c(1:23)], data_collapsed[,34], data_collapsed[,c(24:33)])
+  
+  # Check duplicated ROWID
+  rowIDdupl               <- data_collapsed$ROWID[duplicated(data_collapsed$ROWID)]
+  datDupl                 <- subset(data_collapsed, ROWID %in% rowIDdupl) #this is because rows were split or duplicated and got a new response variable category
+  data_collapsed$ROWID    <- c(1:nrow(data_collapsed)) #give new unique row ID
+  
+  # Save
+  saveRDS(data_collapsed, paste0(datPath,"data_correctTaxa_PressVar.rds"))
+  write.xlsx(data_collapsed, file=paste0(datPath, "data_correctTaxa_PressVar.xlsx"))
+}
 
-# Check duplicated ROWID
-rowIDdupl               <- data_collapsed$ROWID[duplicated(data_collapsed$ROWID)]
-datDupl                 <- subset(data_collapsed, ROWID %in% rowIDdupl) #this is because rows were split or duplicated and got a new response variable category
-data_collapsed$ROWID    <- c(1:nrow(data_collapsed)) #give new unique row ID
-
-# Save
-saveRDS(data_collapsed, paste0(datPath,"data_correctTaxa_PressVar.rds"))
-write.xlsx(data_collapsed, file=paste0(datPath, "data_correctTaxa_PressVar.xlsx"))
-
-
-# # !!! In case you're running it with the entire dataset (incl. all columns) !!!
-# data_collapsed <- cbind(data_collapsed[,c(1:41)], data_collapsed[,53], data_collapsed[,c(42:52)])
-# 
-# # Check duplicated ROWID
-# rowIDdupl               <- data_collapsed$ROWID[duplicated(data_collapsed$ROWID)]
-# datDupl                 <- subset(data_collapsed, ROWID %in% rowIDdupl) #this is because rows were split or duplicated and got a new response variable category
-# data_collapsed$ROWID    <- c(1:nrow(data_collapsed)) #give new unique row ID
-# 
-# saveRDS(data_collapsed, paste0(datPath,"data_AllScreened_correctTaxa_PressVar.rds"))
-# write.xlsx(data_collapsed, file=paste0(datPath,"data_AllScreened_correctTaxa_PressVar.xlsx"))
-
+# If full dataset should be produced:
+if(dataset == "full"){
+  data_collapsed <- cbind(data_collapsed[,c(1:41)], data_collapsed[,53], data_collapsed[,c(42:52)])
+  
+  # Check duplicated ROWID
+  rowIDdupl               <- data_collapsed$ROWID[duplicated(data_collapsed$ROWID)]
+  datDupl                 <- subset(data_collapsed, ROWID %in% rowIDdupl) #this is because rows were split or duplicated and got a new response variable category
+  data_collapsed$ROWID    <- c(1:nrow(data_collapsed)) #give new unique row ID
+  
+  saveRDS(data_collapsed, paste0(datPath,"data_AllScreened_correctTaxa_PressVar.rds"))
+  write.xlsx(data_collapsed, file=paste0(datPath,"data_AllScreened_correctTaxa_PressVar.xlsx"))
+}
