@@ -150,7 +150,7 @@ ggsave("YearBar.png", p, path=outPath, width = 3.2, height = 3.2)
 Study                              <- data[, .(NrPaps = length(unique(SW.ID))),
                                                  by = c("Study.type")]
 Study
-sum(Study$NrPaps) #547, so a bit more than the 528 unique papers, meaning that a several studies have multiple study types
+sum(Study$NrPaps) #546, so a bit more than the 527 unique papers, meaning that a several studies have multiple study types
 ## In that case, we cannot colour by study type, as we only want each paper the be represented once
 ## Try it anyway, just to get a feeling of how things have changed (if they did)
 
@@ -187,14 +187,9 @@ ggsave("YearBarStudy.png", p, path=outPath, width = 5, height = 3.2)
 YearRet                          <- data[,.(NrPaps = length(unique(SW.ID))),
                                          by = c("Year")]
 YearRet                          <- YearRet[order(YearRet$Year),]
-YearCum                          <- YearRet %>%
-  group_by(Year) %>%
-  mutate(cumNrPaps = cumsum(NrPaps))
-YearCum2                         <- expand.grid(Year=seq(min(data$Year),max(data$Year)))
-YearCum2                         <- merge(YearCum2, YearCum, by="Year", all.x=TRUE)
+YearRet$cumNrPaps                <- cumsum(YearRet$NrPaps)
 YearRet2                         <- expand.grid(Year=seq(min(data$Year),max(data$Year)))
 YearRet2                         <- merge(YearRet2, YearRet, by="Year", all.x=TRUE)
-YearRet2$cumNrPaps               <- YearCum2$cumNrPaps
 YearRet2$col                     <- with(YearRet2, ifelse(Year == 2022, "incomplete","complete"))
 coeff                            <- 10
 
@@ -206,7 +201,7 @@ p <- ggplot(YearRet2, aes(x=Year)) +
   scale_y_continuous(expand = c(0,0), limits = c(0, 55), n.breaks = 10,
                      sec.axis = sec_axis(~.*coeff, name="Cumulative number of papers")) +
   scale_fill_manual(values = rev(viridis(3)[-3])) +
-  labs(x="Publication year", y="Number of papers") +
+  labs(x="Year", y="Number of papers") +
   theme_bw() +
   theme(legend.position = "none",
         axis.text = element_text(size = 10),
@@ -345,7 +340,7 @@ ggsave("EcoComp2.png", p, path=outPath, width = 4.5, height = 3)
 
 # First manually combine Survival and Mortality studies (all as Mortality)
 ResVarCats                            <- data
-ResVarCats$Response.variable_category <- with(ResVarCats, ifelse(Response.variable_category %in% "Survival","Mortality",Response.variable_category))                            
+# ResVarCats$Response.variable_category <- with(ResVarCats, ifelse(Response.variable_category %in% "Survival","Mortality",Response.variable_category))                            
 
 ResVarCats                            <- ResVarCats[, .(NrPaps = length(unique(SW.ID))),
                                               by = Response.variable_category]
@@ -370,24 +365,9 @@ dev.off()
 Pressure                              <- data[, .(NrPaps = length(unique(SW.ID))),
                                               by = Pressure.type]
 Pressure                              <- Pressure[order(NrPaps, decreasing = TRUE),,]
-
-## Vertical bars
-tiff(paste0(outPath, "Pressures.tiff"), width=850, height=1000, res=100)
-par(mar=c(25,7, 2, 2))
-b                                     <- barplot(Pressure$NrPaps, axes=F, ylim=c(0,350), col=viridis(3)[2])
-box()
-axis(1, at=b, labels=Pressure$Pressure.type , las=2, cex.axis=1.7)
-axis(2, at= seq(0,350, 50), labels=seq(0, 350, 50), cex.axis=1.5, las=1)
-text(x=6.3, y=340, paste0("Total number of unique papers: ", length(unique(data$SW.ID))), cex = 1.3)
-text(x=b, y=Pressure$NrPaps+10, Pressure$NrPaps, cex = 1.3)
-# text(x=b, y=max(subdat$NrPaps)*0.035, labels=subdat$NrPaps, cex=1.5, font=3)
-axis(2, at=190, tick=F, line=3, label="Number of papers", cex.axis=2)
-dev.off()
-
-## Horizontal bars
 Pressure                              <- Pressure[order(NrPaps),,]
 
-png(paste0(outPath, "Pressures_hor.png"), width=1200, height=750, res=100)
+png(paste0(outPath, "Pressures.png"), width=1200, height=750, res=100)
 par(mar=c(5, 28, 2, 2))
 b                                     <- barplot(Pressure$NrPaps, horiz=TRUE, axes=F, xlim=c(0,350), col=viridis(3)[2])
 box()
@@ -521,7 +501,7 @@ Regions                               <- data[, .(NrPaps = length(unique(SW.ID))
 Regions                               <- Regions[, .(NrPaps = sum(NrPaps)), by="Region"]
 Regions                               <- Regions[order(NrPaps, decreasing = F),,]
 
-sum(Regions$NrPaps) #542, suggesting that, out of 528 papers, several of them studied multiple regions
+sum(Regions$NrPaps) #542, suggesting that, out of 527 papers, several of them studied multiple regions
 
 
 tiff(paste0(outPath, "Regions.tiff"), width=1000, height=750, res=100)
@@ -884,7 +864,7 @@ ggsave("Sankey.tiff", sankey, path=outPath,
        units = "mm")
 
 ## View interactive sankey (needs work)
-ggplotly(sankey)
+# ggplotly(sankey)
 
 
 
@@ -1097,6 +1077,8 @@ dev.off()
 #   coord_sf(xlim = xlim, ylim = ylim) +
 #   scale_fill_viridis_c() +
 #   theme_bw()
+
+
 
 #####################################################################################################################-
 #####################################################################################################################-
@@ -2052,16 +2034,20 @@ subset_PET                 <- subset(subset_PET, !(SW.ID %in% "SW4_1069" & Press
 
 ### Final PET dataset ----
 
-# Revert mortality to survival
+# Check whether papers look more at mortality or at survival
+subset_PET[, .(NrPaps = length(unique(SW.ID))), by = c("Response.variable_category")]
+## Mostly at mortality
+
+# Revert survival to mortality
 table(subset_PET$Response.variable_category, subset_PET$Direction.of.relationship)
-subset_PET$Direction.of.relationship    <- with(subset_PET, ifelse(Response.variable_category %in% "Mortality" & Direction.of.relationship %in% "Negative","Positive",
-                                                                   ifelse(Response.variable_category %in% "Mortality" & Direction.of.relationship %in% "Positive","Negative",Direction.of.relationship)))
+subset_PET$Direction.of.relationship    <- with(subset_PET, ifelse(Response.variable_category %in% "Survival" & Direction.of.relationship %in% "Negative","Positive",
+                                                                   ifelse(Response.variable_category %in% "Surival" & Direction.of.relationship %in% "Positive","Negative",Direction.of.relationship)))
 table(subset_PET$Response.variable_category, subset_PET$Direction.of.relationship)
-subset_PET$Response.variable_category   <- with(subset_PET, ifelse(Response.variable_category %in% "Mortality","Survival", Response.variable_category))
+subset_PET$Response.variable_category   <- with(subset_PET, ifelse(Response.variable_category %in% "Survival","Mortality", Response.variable_category))
 table(subset_PET$Response.variable_category, subset_PET$Direction.of.relationship)
 
 # Check final number of papers
-length(unique(subset_PET$SW.ID)) #112 papers
+length(unique(subset_PET$SW.ID)) #122 papers
 table(subset_PET$Ecosystem.component_level1)
 
 
@@ -2101,6 +2087,56 @@ nrow(subset_PET)
 subset_PET[subset_PET$Year == min(subset_PET$Year), ]
 subset_PET[subset_PET$Year == min(subset_PET$Year), "Year"] #1992
 
+# Number of papers per year
+Years                                <- subset_PET[,.(NrPaps = length(unique(SW.ID))),
+                                                   by = c("Year")]
+## Compare with trend in ALL papers - quick plot
+YearsAll                             <- data[,.(NrPaps = length(unique(SW.ID))),
+                                                   by = c("Year")]
+ggplot(YearsAll, aes(Year, NrPaps)) +
+  geom_line() +
+  geom_line(data = Years, aes(Year, NrPaps), col="red") +
+  theme_bw()
+
+
+#-----------------------------------------------#
+### Barplot number of papers per year bycatch ETP ----
+#-----------------------------------------------#
+
+Years                                <- subset_PET[,.(NrPapsByc = length(unique(SW.ID))),
+                                                   by = c("Year")]
+# Years$Category                       <- "Bycatch ETP papers"
+YearsAll                             <- data[,.(NrPaps = length(unique(SW.ID))),
+                                             by = c("Year")]
+# YearsAll$Category                    <- "All papers"
+YearsComb                            <- merge(YearsAll, Years, by = "Year", all.x = TRUE)
+YearsComb[is.na(YearsComb)]          <- 0
+YearsComb$NrPapsAllNoByc             <- YearsComb$NrPaps - YearsComb$NrPapsByc
+YearsPlot                            <- data.frame(Year = YearsComb$Year,
+                                                   Category = c(rep("All papers",nrow(YearsComb)), rep("Bycatch ETP papers",nrow(YearsComb))),
+                                                   NrPaps = c(YearsComb$NrPapsAllNoByc, YearsComb$NrPapsByc))
+
+p <- ggplot(YearsPlot, aes(Year, NrPaps, fill = Category)) +
+  geom_bar(stat = "identity") +
+  scale_x_continuous(n.breaks = 8) +
+  scale_y_continuous(expand = c(0,0), limits = c(0, 50), n.breaks = 10) +
+  scale_fill_manual(values = c("darkgrey", viridis(1))) +
+  labs(x="Publication year", y="Number of papers") +
+  theme_bw() +
+  theme(legend.position = c(0.35,0.86),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 10),
+        axis.text = element_text(size = 10),
+        strip.text = element_text(size = 10),
+        axis.title = element_text(size = 10),
+        axis.title.x = element_text(margin = margin(t = 3, unit = "mm")),
+        axis.title.y = element_text(margin = margin(r = 3, unit = "mm")),
+        panel.grid.minor = element_blank())
+print(p)
+
+ggsave("YearBarBycatch.png", p, path=outPathPET, width = 3.2, height = 3.2)
+
+
 #-----------------------------------------------#
 ### Gears ----
 #-----------------------------------------------#
@@ -2121,6 +2157,16 @@ Gears
 # Check fisheries type only
 Gears                                <- subset_PET[,.(NrPaps = length(unique(SW.ID))),
                                                    by = c("Fishery.type")]
+Gears
+
+# Check gears by region
+Gears                                <- subset_PET[,.(NrPaps = length(unique(SW.ID))),
+                                                   by = c("Gear_level1","Region")]
+Gears
+
+# Check gears by ecosystem component
+Gears                                <- subset_PET[,.(NrPaps = length(unique(SW.ID))),
+                                                   by = c("Gear_level1","Ecosystem.component_level1")]
 Gears
 
 #-----------------------------------------------#
@@ -2669,7 +2715,7 @@ Resp                              <- merge(Resp, RespTot, by="Response.variable_
 
 p <- ggplot(Resp, aes(NrPaps, reorder(Response.variable_category, TotNrPaps), fill=Sampling.Method.used.for.data.collection)) +
   geom_bar(stat="identity") +
-  scale_x_continuous(expand = c(0,0), n.breaks = 6, limits = c(0,max(Resp$TotNrPaps+2))) +
+  scale_x_continuous(expand = c(0,0), n.breaks = 6, limits = c(0,max(Resp$TotNrPaps+3))) +
   # scale_fill_manual(values=viridis(11), name= "Sampling method") +
   scale_fill_manual(values = brewer.pal(12,"Paired")[-11], name = "Sampling method") +
   labs(x="Number of papers", y="Response measured") +
@@ -3059,7 +3105,7 @@ datTr           <- gather_set_data(tempPETDR, x = c("Pressure.variable_category"
 p <- ggplot(datTr, aes(x, id = SW.ID, split = y, value = value)) +
   geom_parallel_sets(aes(fill = Pressure.variable_category), alpha = 0.3, axis.width = 0.1, show.legend = FALSE) +
   geom_parallel_sets_axes(axis.width = 0.1, fill = "gray90") +
-  geom_parallel_sets_labels(colour = 'black', angle = 0, size=2.4) +
+  geom_parallel_sets_labels(colour = 'black', angle = 0, size=3.1) +
   scale_x_continuous(breaks = c(2:4),
                      labels = c("Pressure","Direction\nof relationship","Response\nmeasured"),
                      expand = c(0.12, 0.05)) +

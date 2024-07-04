@@ -269,7 +269,11 @@ datRespvar$Response.variable_category    <- with(datRespvar,ifelse(Response.vari
                                                                                                   "Mud cover",
                                                                                                   "Fragility",
                                                                                                   "Frequency of deep-hooking",
-                                                                                                  "Covering"),
+                                                                                                  "Covering",
+                                                                                                  "Skin mark severity",
+                                                                                                  "skin mark abundance",
+                                                                                                  "richness of skin marks",
+                                                                                                  "distribution of skin marks"),
                                                                    "Damage & entanglement", Response.variable_category))
 
 datRespvar$Response.variable_category    <- with(datRespvar,ifelse(Response.variable_paper %in% "Bottom contact" & Ecosystem.component_level1 %in% "Plants",
@@ -307,7 +311,7 @@ datRespvar$Response.variable_category <- with(datRespvar, ifelse(Response.variab
                                                                  "Community composition", Response.variable_category)) #SW4_1960
 
 ## For the following papers, replace category by Biodiversity
-datRespvar$Response.variable_category[datRespvar$SW.ID %in% c("SW4_0955","SW4_0537","SW4_1826","SW4_0311","SW4_0968","SW4_1448","SW4_1826") & 
+datRespvar$Response.variable_category[datRespvar$SW.ID %in% c("SW4_0955","SW4_0537","SW4_1826","SW4_0968","SW4_1448","SW4_1826") & 
                                         (grepl("diversity", datRespvar$Response.variable_paper) | grepl("richness", datRespvar$Response.variable_paper))] <- "Biodiversity"
 datRespvar$Response.variable_category[datRespvar$SW.ID %in% "SW4_0208" & 
                                         datRespvar$Response.variable_paper %in% "Macrofaunal indicators (inc.functional richness, functional dispersion)"] <- "Biodiversity"
