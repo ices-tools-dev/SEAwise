@@ -303,10 +303,6 @@ datDescr$Description.Other.Sampling.Method[datDescr$SW.ID %in% "SW4_1228" & datD
 datDescr$Sampling.Method.used.for.data.collection[datDescr$SW.ID %in% "SW4_1713"] <- "Other"
 
 ### Fisheries Dependent Data ----
-newRow                                            <- datDescr[datDescr$SW.ID %in% "SW4_0596",]
-newRow$Sampling.Method.used.for.data.collection   <- "Fisheries Dependent Data"
-datDescr                                          <- rbind(datDescr, newRow)
-
 newRow                                            <- datDescr[datDescr$SW.ID %in% "SW4_0731",]
 newRow$Sampling.Method.used.for.data.collection   <- "Fisheries Dependent Data"
 datDescr                                          <- rbind(datDescr, newRow)

@@ -3489,13 +3489,15 @@ ggsave(filename = paste0(outPathPET, "spatialResVExt.png"),
 #-----------------------------------------------#
 
 ## Make temporal extent and scale categories
-# subset_byc$ScaleTemporal <- subset_byc$Scale...Temporal
-# subset_byc$ScaleTemporal[subset_byc$ScaleTemporal %in% "snapshot/no repeat sampling"] <- "snapshot/no\nrepeated sampling"   
-subset_PET$ScaleTemporal <- factor(x = subset_PET$Scale...Temporal,
+subset_PET$ScaleTemporal <- subset_PET$Scale...Temporal
+subset_PET$ScaleTemporal[subset_PET$ScaleTemporal %in% "snapshot/no repeated sampling"] <- "snapshot/no\nrepeated sampling"
+subset_PET$ScaleTemporal <- factor(x = subset_PET$ScaleTemporal,
                                levels = c("Not specified","snapshot/no\nrepeated sampling", "subday", "day", "week", "two week", "month", "two month", "quarter", "half year", "year", "two year", "five year", "decade", "multidecadal"),
                                ordered = TRUE)
-subset_PET$ResTemporal <- factor(x = subset_PET$Resolution...Temporal,
-                             levels = c("Not specified","snapshot/no\nrepeat sampling", "subday", "day", "week", "two week", "month", "two month", "quarter", "half year", "year", "two year", "five year", "decade", "multidecadal"),
+subset_PET$ResTemporal <- subset_PET$Resolution...Temporal
+subset_PET$ResTemporal[subset_PET$ResTemporal %in% "snapshot/no repeat sampling"] <- "snapshot/no\nrepeated sampling"
+subset_PET$ResTemporal <- factor(x = subset_PET$ResTemporal,
+                             levels = c("Not specified","snapshot/no\nrepeated sampling", "subday", "day", "week", "two week", "month", "two month", "quarter", "half year", "year", "two year", "five year", "decade", "multidecadal"),
                              ordered = TRUE)
 
 tempResEx_cat <- expand.grid(levels(subset_PET$ScaleTemporal),
@@ -3532,10 +3534,10 @@ ggsave(filename = paste0(outPathPET, "temporalResVExt.png"),
                    mapping = aes(x = TemporalExtent,
                                  y = TemporalRes,
                                  fill = NumberOfArticles)) +
-         scale_fill_continuous_sequential(palette = "blues3",
-                                          rev = TRUE,
-                                          na.value = 0,
-                                          name="No. of\narticles") +
+         # scale_fill_continuous_sequential(palette = "blues3",
+         #                                  rev = TRUE,
+         #                                  na.value = 0,
+         #                                  name="No. of\narticles") +
          scale_x_discrete(drop = FALSE) +
          scale_y_discrete(drop = FALSE) +
          ylab("Temporal Sampling Resolution") +
@@ -3696,4 +3698,4 @@ pTemporal <- ggplot() +
 
 p <- pSpatial / pTemporal + plot_annotation(tag_levels = 'A')
 
-ggsave("spatialTemporalScales.png", p, path=outPathPET, width = 7, height = 7)
+ggsave("spatialTemporalScales2.png", p, path=outPathPET, width = 7, height = 7)

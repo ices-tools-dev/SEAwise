@@ -37,6 +37,15 @@ data_allScreened                      <- readRDS(file=paste0(datPath, "data_allS
 #####################################################################################################################-
 #####################################################################################################################-
 #-----------------------------------------------#
+# Correct naming ----
+#-----------------------------------------------#
+
+data$Resolution...Temporal[data$Resolution...Temporal %in% "snapshot/no repeat sampling"] <- "snapshot/no repeated sampling"
+data_allScreened$Resolution...Temporal[data_allScreened$Resolution...Temporal %in% "snapshot/no repeat sampling"] <- "snapshot/no repeated sampling"
+
+
+
+#-----------------------------------------------#
 # Check missing values ----
 #-----------------------------------------------#
 
@@ -182,14 +191,14 @@ ggsave(filename = paste0(outPath, "spatialResVExt_beforeChecking.png"),
 
 ## Make temporal extent and scale categories
 data$ScaleTemporal <- factor(x = data$Scale...Temporal,
-                               levels = c("snapshot/no repeat sampling", "subday", "day", "week", "two week", "month", "two month", "quarter", "half year", "year", "two year", "five year", "decade", "multidecadal"),
+                               levels = c("subday", "day", "week", "two week", "month", "two month", "quarter", "half year", "year", "two year", "five year", "decade", "multidecadal"),
                                ordered = TRUE)
 data$ResTemporal <- factor(x = data$Resolution...Temporal,
-                             levels = c("snapshot/no repeat sampling", "subday", "day", "week", "two week", "month", "two month", "quarter", "half year", "year", "two year", "five year", "decade", "multidecadal"),
+                             levels = c("snapshot/no repeated sampling", "subday", "day", "week", "two week", "month", "two month", "quarter", "half year", "year", "two year", "five year", "decade", "multidecadal"),
                              ordered = TRUE)
 
 tempResEx_cat <- expand.grid(levels(data$ScaleTemporal),
-                             levels(data$ScaleTemporal))
+                             levels(data$ResTemporal))
 
 colnames(tempResEx_cat) <- c("TemporalExtent", "TemporalRes")
 
@@ -225,10 +234,10 @@ ggsave(filename = paste0(outPath, "temporalResVExt_beforeChecking.png"),
          scale_fill_continuous_sequential(palette = "blues3",
                                           rev = TRUE,
                                           na.value = 0) +
-               scale_x_discrete(drop = FALSE, 
-                                labels = c("snapshot/\nrepeat sampling", levels(data$ScaleTemporal)[-1])) +
+               scale_x_discrete(drop = FALSE,
+                                labels = levels(data$ScaleTemporal)) +
                scale_y_discrete(drop = FALSE,
-                                labels = c("snapshot/\nrepeat sampling", levels(data$ResTemporal)[-1])) +
+                                labels = levels(data$ResTemporal)) +
          ylab("Sampling Resolution") +
          xlab("Sampling Extent") +
          theme_few() +
@@ -244,7 +253,7 @@ ggsave(filename = paste0(outPath, "temporalResVExt_beforeChecking.png"),
 #-----------------------------------------------#
 ## Dependent on code above
 
-# Make spatio-temperal extent and resolution category matrix in long form
+# Make spatio-temperal extent category matrix in long form
 spatempResEx_cat <- expand.grid(levels(data$ScaleSpatial),
                                 levels(data$ScaleTemporal))
 
@@ -283,8 +292,7 @@ ggsave(filename = paste0(outPath, "spatiotemporalExt_beforeChecking.png"),
                                           rev = TRUE,
                                           na.value = 0) +
          scale_x_discrete(drop = FALSE) +
-         scale_y_discrete(drop = FALSE,
-                          labels = c("snapshot/\nrepeat sampling", levels(data$ResTemporal)[-1])) +
+         scale_y_discrete(drop = FALSE) +
          ylab("Temporal Extent") +
          xlab("Spatial Extent (m)") +
          theme_few() +
@@ -300,6 +308,12 @@ ggsave(filename = paste0(outPath, "spatiotemporalExt_beforeChecking.png"),
 #-----------------------------------------------#
 ## Dependent on code above
 
+# Make spatio-temperal resolution category matrix in long form
+spatempRes_cat <- expand.grid(levels(data$ResSpatial),
+                                levels(data$ResTemporal))
+
+colnames(spatempRes_cat) <- c("SpatialRes_m", "TemporalRes")
+
 ## Make counts of articles in different combinations of SPATIAL & TEMPORAL RESOLUTIONS
 spatempRes_count <- aggregate(SW.ID~ResSpatial+ResTemporal,
                               data = data[!duplicated(data$SW.ID), ],
@@ -307,10 +321,10 @@ spatempRes_count <- aggregate(SW.ID~ResSpatial+ResTemporal,
 names(spatempRes_count)[names(spatempRes_count) %in% "SW.ID"] <- "NumberOfArticles"
 
 
-spatempRes_count <- merge(x = spatempResEx_cat,
+spatempRes_count <- merge(x = spatempRes_cat,
                           y = spatempRes_count,
                           by.y = c("ResSpatial", "ResTemporal"),
-                          by.x = c("SpatialScale_m", "TemporalScale"),
+                          by.x = c("SpatialRes_m", "TemporalRes"),
                           all.x = TRUE)
 
 spatempRes_count[is.na(spatempRes_count$NumberOfArticles), "NumberOfArticles"] <- 0
@@ -325,15 +339,14 @@ ggsave(filename = paste0(outPath, "spatiotemporalRes_beforeChecking.png"),
        plot = 
          ggplot() +
          geom_tile(data = spatempRes_count,
-                   mapping = aes(x = SpatialScale_m,
-                                 y = TemporalScale,
+                   mapping = aes(x = SpatialRes_m,
+                                 y = TemporalRes,
                                  fill = NumberOfArticles)) +
          scale_fill_continuous_sequential(palette = "blues3",
                                           rev = TRUE,
                                           na.value = 0) +
          scale_x_discrete(drop = FALSE) +
-         scale_y_discrete(drop = FALSE,
-                          labels = c("snapshot/\nrepeat sampling", levels(data$ResTemporal)[-1])) +
+         scale_y_discrete(drop = FALSE) +
          ylab("Temporal Resolution") +
          xlab("Spatial Resolution (m)") +
          theme_few() +
@@ -440,10 +453,12 @@ data_allScreened$Scale...Spatial..m.[data_allScreened$SW.ID %in% "SW4_0502"] <- 
 
 ## SW4_0589
 # Spatial extent is smaller than reported based on map in paper, 50,000-100,000 m instead of >100,000 m.
-# Spatial resolution is likely 5,000-10,000 m (instead of ) with some further away, and others closer together.
-# Temporal extent is set as five years while only snapshot sampling was done in 2013. Yet, it's related to 
-# VMS data from several years prior to sampling as well as closing of areas five years ago, so this if fine. But no need to
-#  make distinction between 'fishing frequency' and 'fishing intensity'.
+# Spatial resolution is likely indeed 5,000-10,000 m with some further away, and others closer together.
+# Temporal extent is set as five years while only snapshot sampling was done in 2013. Data are linked to 
+# VMS data from several years prior to sampling, as well as closing of areas five years ago. As we focus
+# on the response (i.e. benthos and fish sampling), supplementary info suggests sampling was done in 5 days
+# with 3-4 stations a day. So let's take week as temporal scale and subday as temporal resolution.
+# But no need to make distinction between 'fishing frequency' and 'fishing intensity'.
 # Dab is set as a target species, but this was a non-target species.
 # Fishing dependent data - no, all were from irregular fisheries independent survey.
 
@@ -456,13 +471,21 @@ data_allScreened$Species.taxonomic.group.s.[data_allScreened$SW.ID %in% "SW4_058
 data$Sampling.Method.used.for.data.collection[data$SW.ID %in% "SW4_0589"] <- "Irregular Fisheries Independent Survey"
 data_allScreened$Sampling.Method.used.for.data.collection[data_allScreened$SW.ID %in% "SW4_0589"] <- "Irregular Fisheries Independent Survey"
 
-data$Resolution...Spatial..m.[data$SW.ID %in% "SW4_0589"]                         <- "5,00-10,000"
+data$Resolution...Spatial..m.[data$SW.ID %in% "SW4_0589"]                         <- "5,000-10,000"
 data$ResSpatial[data$SW.ID %in% "SW4_0589"]                                       <- "5,000-10,000"
 data_allScreened$Resolution...Spatial..m.[data_allScreened$SW.ID %in% "SW4_0589"] <- "5,000-10,000"
 
 data$Scale...Spatial..m.[data$SW.ID %in% "SW4_0589"]                         <- "50,000-100,000"
 data$ScaleSpatial[data$SW.ID %in% "SW4_0589"]                                <- "50,000-100,000"
 data_allScreened$Scale...Spatial..m.[data_allScreened$SW.ID %in% "SW4_0589"] <- "50,000-100,000"
+
+data$Scale...Temporal[data$SW.ID %in% "SW4_0589"]                         <- "week"
+data$ScaleTemporal[data$SW.ID %in% "SW4_0589"]                            <- "week"
+data_allScreened$Scale...Temporal[data_allScreened$SW.ID %in% "SW4_0589"] <- "week"
+
+data$Resolution...Temporal[data$SW.ID %in% "SW4_0589"]                         <- "subday"
+data$ResTemporal[data$SW.ID %in% "SW4_0589"]                                   <- "subday"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_0589"] <- "subday"
 
 data$Pressure_variable[data$SW.ID %in% "SW4_0589"] <- "Trawling frequency"
 data_allScreened$Pressure_variable[data_allScreened$SW.ID %in% "SW4_0589"] <- "Trawling frequency"
@@ -655,8 +678,11 @@ unique(datSpatIssue$SW.ID) #4 papers
 ### Temporal resolution larger than temporal extent ----
 
 # Identify rows where temporal resolution is greater than temporal extent
-idx             <- which(data$ScaleTemporal < data$ResTemporal)
-datTempIssue    <- data[idx,]
+## First add a temporary temporal scale option with snapshot so that it is directly comparable to temporal resolution
+data$ScaleTemporalSnapshot   <- factor(data$Scale...Temporal, levels = c("snapshot/no repeated sampling", "subday", "day", "week", "two week", "month", "two month", 
+                                                                         "quarter", "half year", "year", "two year", "five year", "decade", "multidecadal"), ordered = TRUE)
+idx                          <- which(data$ScaleTemporalSnapshot < data$ResTemporal)
+datTempIssue                 <- data[idx,]
 unique(datTempIssue$SW.ID) #6 papers
 
 
@@ -665,15 +691,15 @@ unique(datTempIssue$SW.ID) #6 papers
 ## SW4_0115
 
 # Reported treatment duration from Table 1 in paper indicates that the temporal scale is subday, instead of day.
-# Time between control and impact treatment is indeed multiple days, but inference is done based on what happens within a days's time of
-# catching fish during normal fishing operations. So take 'subday' as temporal resolution, instead of 'two weeks'.
+# Time between repeated trials is either one week in May/June or 3 months compared to the one in Aug/Sept.
+# So temporal resolution on average one month
 data$Scale...Temporal[data$SW.ID %in% "SW4_0115"]                         <- "subday"
 data$ScaleTemporal[data$SW.ID %in% "SW4_0115"]                            <- "subday"
 data_allScreened$Scale...Temporal[data_allScreened$SW.ID %in% "SW4_0115"] <- "subday"
 
-data$Resolution...Temporal[data$SW.ID %in% "SW4_0115"]                         <- "subday"
-data$ResTemporal[data$SW.ID %in% "SW4_0115"]                                   <- "subday"
-data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_0115"] <- "subday"
+data$Resolution...Temporal[data$SW.ID %in% "SW4_0115"]                         <- "month"
+data$ResTemporal[data$SW.ID %in% "SW4_0115"]                                   <- "month"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_0115"] <- "month"
 
 
 ## SW4_0738
@@ -711,21 +737,15 @@ data_allScreened$Scale...Temporal[data_allScreened$SW.ID %in% "SW4_0829"] <- "ha
 ## SW4_1224
 
 # There are two experiments reported:
-# - Injury and short-term mortality (4-5h after catching): temporal scale is thus subday and not halfyear, and
-#   resolution is subday as well, and not week. 
+# - Injury and short-term mortality (4-5h after catching): temporal scale is thus subday and not halfyear. 
+#   Experiments were done in two groups between Feb and Oct, but it is unclear what the time is between the two groups
+#   or between repeated observations. But it could well be that there was on average a month in between, so keep that as resolution.
 data$Scale...Temporal[data$SW.ID %in% "SW4_1224" & data$Scale...Temporal %in% "half year"]                                     <- "subday"
 data$ScaleTemporal[data$SW.ID %in% "SW4_1224" & data$Scale...Temporal %in% "half year"]                                        <- "subday"
 data_allScreened$Scale...Temporal[data_allScreened$SW.ID %in% "SW4_1224" & data_allScreened$Scale...Temporal %in% "half year"] <- "subday"
 
-data$Resolution...Temporal[data$SW.ID %in% "SW4_1224" & data$Scale...Temporal %in% "subday"]                                     <- "subday"
-data$ResTemporal[data$SW.ID %in% "SW4_1224" & data$Scale...Temporal %in% "subday"]                                               <- "subday"
-data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1224" & data_allScreened$Scale...Temporal %in% "subday"] <- "subday"
-
-# - Longer-term mortality after 10 days in tank: temporal scale of week is fine then, temporal resolution should
-#   be subday (and not month), as fish were monitored three times a day.
-data$Resolution...Temporal[data$SW.ID %in% "SW4_1224" & data$Scale...Temporal %in% "week"]                                     <- "subday"
-data$ResTemporal[data$SW.ID %in% "SW4_1224" & data$Scale...Temporal %in% "week"]                                               <- "subday"
-data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1224" & data_allScreened$Scale...Temporal %in% "week"] <- "subday"
+# - Longer-term mortality after 10 days in tank: temporal scale of week is fine then, temporal resolution is probably again
+#   one month, so can be kept as it is.
 
 
 ## SW4_1320
@@ -738,9 +758,11 @@ data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1320"] <
 
 
 # Check again whether there are rows where temporal resolution is larger than temporal extent
-idx             <- which(data$ScaleTemporal < data$ResTemporal)
+data$ScaleTemporalSnapshot   <- factor(data$Scale...Temporal, levels = c("snapshot/no repeated sampling", "subday", "day", "week", "two week", "month", "two month", 
+                                                                         "quarter", "half year", "year", "two year", "five year", "decade", "multidecadal"), ordered = TRUE)
+idx             <- which(data$ScaleTemporalSnapshot < data$ResTemporal)
 datTempIssue    <- data[idx,]
-unique(datTempIssue$SW.ID) #none
+unique(datTempIssue$SW.ID) #two left
 
 
 
@@ -752,27 +774,22 @@ unique(datTempIssue$SW.ID) #16 papers
 # Correct papers manually
 
 ## SW4_0199
-# Temporal scale is indeed decade yet, within areas, the temporal scale is just a few years (2006-2009 for all, except one: 2015-2017). So scale
-# should be five year rather than decade. It doesn't not seem like the same persons were interviewed multiple times or that they wanted to
-# to get a time series. Temporal resolution is there a snapshot instead of week.
-data$Scale...Temporal[data$SW.ID %in% "SW4_0199"]                         <- "five year"
-data$ScaleTemporal[data$SW.ID %in% "SW4_0199"]                            <- "five year"
-data_allScreened$Scale...Temporal[data_allScreened$SW.ID %in% "SW4_0199"] <- "five year"
-
-data$Resolution...Temporal[data$SW.ID %in% "SW4_0199"]                         <- "snapshot/no repeat sampling"
-data$ResTemporal[data$SW.ID %in% "SW4_0199"]                                   <- "snapshot/no repeat sampling"
-data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_0199"] <- "snapshot/no repeat sampling"
+# Temporal scale is indeed decade yet, with most areas between 2006-2009 and one area where they did a second round from 2015-2017.
+# So temporal resolution is around 8.5 years, so five years.
+data$Resolution...Temporal[data$SW.ID %in% "SW4_0199"]                         <- "five year"
+data$ResTemporal[data$SW.ID %in% "SW4_0199"]                                   <- "five year"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_0199"] <- "five year"
 
 ## Sw4_0272
 # Temporal scale is indeed multidecadal. Temporal resolution is indeed subday, as time step in model was 1200 sec.
 
 ## Sw4_0365
 # Paper looked at VMS records across 10 year period, so decadal scale is correct. Although VMS pings are indeed at subday resolution, inference is made
-# across the entire 10 years period, as theu authors also write themselves that they base their analysis on a "contemporary snapshot (last 10 years).
+# across the entire 10 years period, as the authors also write themselves that they base their analysis on a "contemporary snapshot (last 10 years).
 # So let's change resolution to snapshot.
-data$Resolution...Temporal[data$SW.ID %in% "SW4_0365"]                         <- "snapshot/no repeat sampling"
-data$ResTemporal[data$SW.ID %in% "SW4_0365"]                                   <- "snapshot/no repeat sampling"
-data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_0365"] <- "snapshot/no repeat sampling"
+data$Resolution...Temporal[data$SW.ID %in% "SW4_0365"]                         <- "snapshot/no repeated sampling"
+data$ResTemporal[data$SW.ID %in% "SW4_0365"]                                   <- "snapshot/no repeated sampling"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_0365"] <- "snapshot/no repeated sampling"
 
 ## SW4_0579
 # They used two types of data: tagging and bycatch data - the latter spanning over a decade and not being reported separately, while tagging only
@@ -793,15 +810,41 @@ data             <- rbind(data, newRow)
 data_allScreened <- rbind(data_allScreened, newRow_all)
 
 ## SW4_0592
-# Two cruises performed within two months time, so temporal scale is two months instead of multidecadal.
-# Unclear at which temporal resolution sampling was, but results are interpreted as a snapshot, rathern than 'subday'.
-data$Scale...Temporal[data$SW.ID %in% "SW4_0592"]                         <- "two month"
-data$ScaleTemporal[data$SW.ID %in% "SW4_0592"]                            <- "two month"
-data_allScreened$Scale...Temporal[data_allScreened$SW.ID %in% "SW4_0592"] <- "two month"
+# Multiple studies are reported here. One of them is based on two cruises performed within two months time, so add a
+# row where temporal scale is two months and temporal resolution is one month (i.e. time between cruises), although
+# it is not clear whether one cruise only sampled one zone, and the other cruise only sampled the other, or whether both
+# cruises visited both zones.
+newRow     <- data[data$SW.ID %in% "SW4_0592",]
+newRow_all <- data_allScreened[data_allScreened$SW.ID %in% "SW4_0592",]
 
-data$Resolution...Temporal[data$SW.ID %in% "SW4_0592"]                         <- "snapshot/no repeat sampling"
-data$ResTemporal[data$SW.ID %in% "SW4_0592"]                                   <- "snapshot/no repeat sampling"
-data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_0592"] <- "snapshot/no repeat sampling"
+newRow$Scale...Temporal[newRow$SW.ID %in% "SW4_0592"]                         <- "two month"
+newRow$ScaleTemporal[newRow$SW.ID %in% "SW4_0592"]                            <- "two month"
+newRow_all$Scale...Temporal[newRow_all$SW.ID %in% "SW4_0592"]                 <- "two month"
+
+newRow$Resolution...Temporal[newRow$SW.ID %in% "SW4_0592"]                    <- "month"
+newRow$ResTemporal[newRow$SW.ID %in% "SW4_0592"]                              <- "month"
+newRow_all$Resolution...Temporal[newRow_all$SW.ID %in% "SW4_0592"]            <- "month"
+
+# A second study uses VMS data from 2005-2013 = 8 years so temporal scale of 'five year', to estimate overall resuspension.
+# Although VMS data are at subday resolution, the inference is done on a seasonal basis, so let's take this as 'half year'.
+# Also ensure data are marked as fisheries dependent data
+data$Scale...Temporal[data$SW.ID %in% "SW4_0592"]                         <- "five year"
+data$ScaleTemporal[data$SW.ID %in% "SW4_0592"]                            <- "five year"
+data_allScreened$Scale...Temporal[data_allScreened$SW.ID %in% "SW4_0592"] <- "five year"
+
+data$Resolution...Temporal[data$SW.ID %in% "SW4_0592"]                         <- "half year"
+data$ResTemporal[data$SW.ID %in% "SW4_0592"]                                   <- "half year"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_0592"] <- "half year"
+
+data$Sampling.Method.used.for.data.collection[data$SW.ID %in% "SW4_0592"]                         <- "Fisheries Dependent Data"
+data_allScreened$Sampling.Method.used.for.data.collection[data_allScreened$SW.ID %in% "SW4_0592"] <- "Fisheries Dependent Data"
+
+data$Study.type[data$SW.ID %in% "SW4_0592"]                         <- "Fisheries dependent survey"
+data_allScreened$Study.type[data_allScreened$SW.ID %in% "SW4_0592"] <- "Fisheries dependent survey"
+
+# Combine new row to main data
+data                <- rbind(data, newRow)
+data_allScreened    <- rbind(data_allScreened, newRow_all)
 
 ## SW4_0705
 # Model ran for 9 years and one parameter was tuned with weekly temperature measurements, so temporal scale and resolution are correct.
@@ -871,11 +914,16 @@ data$ResTemporal[data$SW.ID %in% "SW4_1036"]                                   <
 data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1036"] <- "year"
 
 ## SW4_1199
-# Fishing pressure data span multiple decades, but benthos sampling was done in July & August in one year, so resolution is
-# snapshot rather than day. Inference is however done at the multidecadal scale based on the fishing data. So scale is correct.
-data$Resolution...Temporal[data$SW.ID %in% "SW4_1199"]                         <- "snapshot/no repeat sampling"
-data$ResTemporal[data$SW.ID %in% "SW4_1199"]                                   <- "snapshot/no repeat sampling"
-data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1199"] <- "snapshot/no repeat sampling"
+# Fishing pressure data span one decade, but benthos sampling (i.e. the response) was done in July & August in one year. It is unclear when the 
+# 14 samples were taken exactly, only that three replicates were taken per station. Likely replicates has been taken on the
+# same day, but multiple cruises with perhaps one or weeks in between them, so let's take 'week' as temporal resolution
+data$Scale...Temporal[data$SW.ID %in% "SW4_1199"]                         <- "two month"
+data$ScaleTemporal[data$SW.ID %in% "SW4_1199"]                            <- "two month"
+data_allScreened$Scale...Temporal[data_allScreened$SW.ID %in% "SW4_1199"] <- "two month"
+
+data$Resolution...Temporal[data$SW.ID %in% "SW4_1199"]                         <- "week"
+data$ResTemporal[data$SW.ID %in% "SW4_1199"]                                   <- "week"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1199"] <- "week"
 
 ## Sw4_1465
 # Inference done by year, so temporal resolution is year instead of subday.
@@ -956,14 +1004,14 @@ data_allScreened$Resolution...Spatial..m.[data_allScreened$SW.ID %in% "SW4_0013"
 
 ## SW4_0098
 # Paper states that model was developed for period 2010-2014, so temporal scale is five year. 
-#Model provides snapshot so that is the resolution.
+# Model provides snapshot so that is the resolution.
 data$Scale...Temporal[data$SW.ID %in% "SW4_0098"]                         <- "five year"
 data$ScaleTemporal[data$SW.ID %in% "SW4_0098"]                            <- "five year"
 data_allScreened$Scale...Temporal[data_allScreened$SW.ID %in% "SW4_0098"] <- "five year"
 
-data$Resolution...Temporal[data$SW.ID %in% "SW4_0098"]                         <- "snapshot/no repeat sampling"
-data$ResTemporal[data$SW.ID %in% "SW4_0098"]                                   <- "snapshot/no repeat sampling"
-data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_0098"] <- "snapshot/no repeat sampling"
+data$Resolution...Temporal[data$SW.ID %in% "SW4_0098"]                         <- "snapshot/no repeated sampling"
+data$ResTemporal[data$SW.ID %in% "SW4_0098"]                                   <- "snapshot/no repeated sampling"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_0098"] <- "snapshot/no repeated sampling"
 
 ## SW4_0100
 # Experiment done in small tanks, so spatial scale is 0-5 m.
@@ -1174,14 +1222,15 @@ data_allScreened$Resolution...Spatial..m.[data_allScreened$SW.ID %in% "SW4_1528"
 
 ## SW4_1531
 # EwE model without spatial component, so indeed no spatial resolution. Yet, interpretation of results is basin-wide, so let's say >100,000 m.
-# They explored impact of a management measure before and after a certain year, with 10-20 years of data. So let's take a decade as temporal resolution.
+# They explored impact of a management measure before and after a certain year, with 10-20 years of data, but ran simulations and grouped
+# survey data in bins of 5 years. So take five years as temporal resolution.
 data$Resolution...Spatial..m.[data$SW.ID %in% "SW4_1531"]                         <- ">100,000"
 data$ResSpatial[data$SW.ID %in% "SW4_1531"]                                       <- ">100,000"
 data_allScreened$Resolution...Spatial..m.[data_allScreened$SW.ID %in% "SW4_1531"] <- ">100,000"
 
-data$Resolution...Temporal[data$SW.ID %in% "SW4_1531"]                         <- "decade"
-data$ResTemporal[data$SW.ID %in% "SW4_1531"]                                   <- "decade"
-data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1531"] <- "decade"
+data$Resolution...Temporal[data$SW.ID %in% "SW4_1531"]                         <- "five year"
+data$ResTemporal[data$SW.ID %in% "SW4_1531"]                                   <- "five year"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1531"] <- "five year"
 
 ## SW4_1662
 # Model without spatial component, but some inferences are made in the discussion on a wider area (e.g. softbottom habitats in North Sea).
@@ -1229,21 +1278,24 @@ data$ResTemporal[data$SW.ID %in% "SW4_1719"]                                   <
 data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1719"] <- "two week"
 
 ## SW4_1727
-# Duration of trap experiment is two days, so choose day as temporal scale.
-# No repeated measurements, so choose that as temporal resolution
+# Paper does not mention in which year(s?) trap experiments were done, but the months are provided, which are
+# spread out through the year: Feb to Sep. Let's assume they were done in the same year, with on average one month 
+# in between them = temporal resolution.
+# Temporal scale should be the duration of the experiment which is two days, so 'day'
 data$Scale...Temporal[data$SW.ID %in% "SW4_1727"]                         <- "day"
 data$ScaleTemporal[data$SW.ID %in% "SW4_1727"]                            <- "day"
 data_allScreened$Scale...Temporal[data_allScreened$SW.ID %in% "SW4_1727"] <- "day"
 
-data$Resolution...Temporal[data$SW.ID %in% "SW4_1727"]                         <- "snapshot/no repeat sampling"
-data$ResTemporal[data$SW.ID %in% "SW4_1727"]                                   <- "snapshot/no repeat sampling"
-data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1727"] <- "snapshot/no repeat sampling"
+data$Resolution...Temporal[data$SW.ID %in% "SW4_1727"]                         <- "month"
+data$ResTemporal[data$SW.ID %in% "SW4_1727"]                                   <- "month"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1727"] <- "month"
 
 ## SW4_1788
-# Based on interviews conducted once, so no repeated sampling - take this as temporal resolution.
-data$Resolution...Temporal[data$SW.ID %in% "SW4_1788"]                         <- "snapshot/no repeat sampling"
-data$ResTemporal[data$SW.ID %in% "SW4_1788"]                                   <- "snapshot/no repeat sampling"
-data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1788"] <- "snapshot/no repeat sampling"
+# Based on 54 interviews conducted in one month at two different locations. Time between interviews unknown,
+# but likely in the order of days or week. Choose 'week' as temporal resolution
+data$Resolution...Temporal[data$SW.ID %in% "SW4_1788"]                         <- "week"
+data$ResTemporal[data$SW.ID %in% "SW4_1788"]                                   <- "week"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1788"] <- "week"
 
 ## SW4_1803
 # Distance between hauls within experimental areas is unknown, but distance between the two experimental areas,
@@ -1279,9 +1331,9 @@ data$Resolution...Spatial..m.[data$SW.ID %in% "SW4_1952"]                       
 data$ResSpatial[data$SW.ID %in% "SW4_1952"]                                       <- ">100,000"
 data_allScreened$Resolution...Spatial..m.[data_allScreened$SW.ID %in% "SW4_1952"] <- ">100,000"
 
-data$Resolution...Temporal[data$SW.ID %in% "SW4_1952"]                         <- "snapshot/no repeat sampling"
-data$ResTemporal[data$SW.ID %in% "SW4_1952"]                                   <- "snapshot/no repeat sampling"
-data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1952"] <- "snapshot/no repeat sampling"
+data$Resolution...Temporal[data$SW.ID %in% "SW4_1952"]                         <- "snapshot/no repeated sampling"
+data$ResTemporal[data$SW.ID %in% "SW4_1952"]                                   <- "snapshot/no repeated sampling"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1952"] <- "snapshot/no repeated sampling"
 
 ## SW4_1953
 # Inference done by comparing the three areas, not hauls within each area. So take distance between areas as spatial resolution,
@@ -1311,6 +1363,424 @@ data_allScreened$Scale...Spatial..m.[is.na(data_allScreened$Scale...Spatial..m.)
 data_allScreened$Scale...Temporal[is.na(data_allScreened$Scale...Temporal) & is.na(data_allScreened$Exclusion.Criteria)]                   <- "Not specified"
 data_allScreened$Resolution...Spatial..m.[is.na(data_allScreened$Resolution...Spatial..m.) & is.na(data_allScreened$Exclusion.Criteria)]   <- "Not specified"
 data_allScreened$Resolution...Temporal[is.na(data_allScreened$Resolution...Temporal) & is.na(data_allScreened$Exclusion.Criteria)]         <- "Not specified"
+
+
+
+#-----------------------------------------------#
+# Temporal extent equal to temporal resolution ----
+#-----------------------------------------------#
+
+# First add a temporary temporal scale option with snapshot so that it is directly comparable to temporal resolution
+data$ScaleTemporalSnapshot   <- factor(data$Scale...Temporal, levels = c("snapshot/no repeated sampling", "subday", "day", "week", "two week", "month", "two month", 
+                                                                         "quarter", "half year", "year", "two year", "five year", "decade", "multidecadal"), ordered = TRUE)
+idx             <- which(data$ScaleTemporalSnapshot == data$ResTemporal)
+datTempIssue    <- data[idx,]
+length(unique(datTempIssue$SW.ID)) #45 papers
+unique(datTempIssue$SW.ID)
+
+
+## SW4_0054
+# They use beam trawl swept area ratio from 2009-2010, and pulse trawl data from 2016-2018 - all based on VMS data.
+# Several vessels that were active during that time were selected. In the end, results are presented without any
+# temporal effect - only the variation between vessels is quantified - so a snapshot as temporal resolution.
+data$Resolution...Temporal[data$SW.ID %in% "SW4_0054"]                         <- "snapshot/no repeated sampling"
+data$ResTemporal[data$SW.ID %in% "SW4_0054"]                                   <- "snapshot/no repeated sampling"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_0054"] <- "snapshot/no repeated sampling"
+
+## SW4_0059
+# Model of scallop abundance includes multiple fishing seasons and also predicts the abundance per season per year.
+# So temporal resolution is year.
+data$Resolution...Temporal[data$SW.ID %in% "SW4_0059"]                         <- "year"
+data$ResTemporal[data$SW.ID %in% "SW4_0059"]                                   <- "year"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_0059"] <- "year"
+
+## SW4_0064
+# Multiple samples were taken on the same day, so temporal resolution should be 'subday' rather than 'day'.
+data$Resolution...Temporal[data$SW.ID %in% "SW4_0064"]                         <- "subday"
+data$ResTemporal[data$SW.ID %in% "SW4_0064"]                                   <- "subday"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_0064"] <- "subday"
+
+## SW4_0190
+# Modelling done at the level of year, so temporal resolution is 'year' rather than 'multidecadal'.
+data$Resolution...Temporal[data$SW.ID %in% "SW4_0190"]                         <- "year"
+data$ResTemporal[data$SW.ID %in% "SW4_0190"]                                   <- "year"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_0190"] <- "year"
+
+## SW4_0251
+# Time between two treatments is about a week, so in a way, the temporal resolution could also
+# be seen as 'week'. However, each treatment lasted one day with multiple samples taken.
+# So keep temporal scale as 'week' and change resolution from 'week' to 'subday'.
+data$Resolution...Temporal[data$SW.ID %in% "SW4_0251"]                         <- "subday"
+data$ResTemporal[data$SW.ID %in% "SW4_0251"]                                   <- "subday"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_0251"] <- "subday"
+
+## SW4_0284
+# Three sample were taken in 2015 and three in 2016, with each set of samples taken on the same day.
+# So temporal scale is indeed a year. In the analysis, all samples are taken as repeated observations.
+# As the between sample is either subday or year, the median would then be the average of the middle two values,
+# so 'half year'.
+data$Resolution...Temporal[data$SW.ID %in% "SW4_0284"]                         <- "half year"
+data$ResTemporal[data$SW.ID %in% "SW4_0284"]                                   <- "half year"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_0284"] <- "half year"
+
+## SW4_0396
+# Sampling took place on 5 days in May and 5 days in December, so temporal scale should be 'half year' instead of 'two month'.
+# Analysis looked at both differences within a day (morning vs. afternoon) and between months, so temporal resolution
+# in the analysis is both subday and 'half year'. Main outcome of the paper is the total estimate of discard that is
+# consumed annually, and in the discussion, the focus is more on this as well as on the seasonally differences rather than
+# difference between morning and afternoon. So in that sense, we set temporal resolution also to 'half year'. 
+data$Scale...Temporal[data$SW.ID %in% "SW4_0396"]                         <- "half year"
+data$ScaleTemporal[data$SW.ID %in% "SW4_0396"]                            <- "half year"
+data_allScreened$Scale...Temporal[data_allScreened$SW.ID %in% "SW4_0396"] <- "half year"
+
+data$Resolution...Temporal[data$SW.ID %in% "SW4_0396"]                         <- "half year"
+data$ResTemporal[data$SW.ID %in% "SW4_0396"]                                   <- "half year"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_0396"] <- "half year"
+
+## SW4_0476
+# Sampling took place over six days, with majority of hauls taken on the same day. So change temporal scale
+# from 'subday' to week and leave temporal resolution as 'subday'.
+data$Scale...Temporal[data$SW.ID %in% "SW4_0476"]                         <- "week"
+data$ScaleTemporal[data$SW.ID %in% "SW4_0476"]                            <- "week"
+data_allScreened$Scale...Temporal[data_allScreened$SW.ID %in% "SW4_0476"] <- "week"
+
+## SW4_0493
+# The fisheries dependent data refers to the VMS data, but these are only used to determine the pressure - not the response.
+# Remove these rows.
+# Regarding sampling the response, all sampling was done in one month, so that is the temporal scale.
+# Unclear what the time is between hauls within that month, but it is likely in the order of one day or a few days.
+# So take 'day' as temporal resolution
+data               <- subset(data, !(SW.ID %in% "SW4_0493" & Sampling.Method.used.for.data.collection %in% "Fisheries Dependent Data"))
+data_allScreened   <- subset(data_allScreened, !(SW.ID %in% "SW4_0493" & Sampling.Method.used.for.data.collection %in% "Fisheries Dependent Data"))
+
+data$Scale...Temporal[data$SW.ID %in% "SW4_0493"]                         <- "month"
+data$ScaleTemporal[data$SW.ID %in% "SW4_0493"]                            <- "month"
+data_allScreened$Scale...Temporal[data_allScreened$SW.ID %in% "SW4_0493"] <- "month"
+
+data$Resolution...Temporal[data$SW.ID %in% "SW4_0493"]                         <- "day"
+data$ResTemporal[data$SW.ID %in% "SW4_0493"]                                   <- "day"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_0493"] <- "day"
+
+## SW4_0620
+# Paper uses data on incidentally caught turtles during fishing operations from 2001-2012, but no temporal
+# patterns are studied - they specifically tested if time would have a significant effect on the results, and
+# it didn't - so data from all years were aggregated. 
+# Temporal resolution has been coded as decade (like the scale), but Suppl Info shows that  multiple turtles were
+# caught per year for each region. Therefore let's take month as temporal resolution
+data$Resolution...Temporal[data$SW.ID %in% "SW4_0620"]                         <- "month"
+data$ResTemporal[data$SW.ID %in% "SW4_0620"]                                   <- "month"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_0620"] <- "month"
+
+## SW4_0624
+# The exact time period of benthos sampling is unclear - they only say samples were available from 1994 onwards.
+# Study is from 2016, so it assumed that the sampling is multidecadal rather than 'five year'. The VMS data were however
+# from a five year period, but key thing here is the benthos sampling. So temporal scale is multidecadal.
+# Benthos samples are taken annually, but in the analysis, samples from all years are grouped. So inference is done as
+# a 'snapshot'.
+data$Scale...Temporal[data$SW.ID %in% "SW4_0624"]                         <- "multidecadal"
+data$ScaleTemporal[data$SW.ID %in% "SW4_0624"]                            <- "multidecadal"
+data_allScreened$Scale...Temporal[data_allScreened$SW.ID %in% "SW4_0624"] <- "multidecadal"
+
+data$Resolution...Temporal[data$SW.ID %in% "SW4_0624"]                         <- "snapshot/no repeated sampling"
+data$ResTemporal[data$SW.ID %in% "SW4_0624"]                                   <- "snapshot/no repeated sampling"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_0624"] <- "snapshot/no repeated sampling"
+
+## SW4_0633
+# The different datasets used lie 10 years apart, so the temporal scale should be 'decade' rather than 'year'.
+# Observations are >100 fishing operations within 2 years' time, so temporal resolution could be 'week'.
+# Yet, in the analysis, all data are combined and no time effect is studied. So inference is like a 'snapshot'.
+data$Scale...Temporal[data$SW.ID %in% "SW4_0633"]                         <- "decade"
+data$ScaleTemporal[data$SW.ID %in% "SW4_0633"]                            <- "decade"
+data_allScreened$Scale...Temporal[data_allScreened$SW.ID %in% "SW4_0633"] <- "decade"
+
+data$Resolution...Temporal[data$SW.ID %in% "SW4_0633"]                         <- "snapshot/no repeated sampling"
+data$ResTemporal[data$SW.ID %in% "SW4_0633"]                                   <- "snapshot/no repeated sampling"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_0633"] <- "snapshot/no repeated sampling"
+
+## SW4_0638
+# Temporal scale is indeed multidecadal but data are modelled and results presented by year, so
+# temporal resolution should be 'year' instead of 'multidecadal'.
+data$Resolution...Temporal[data$SW.ID %in% "SW4_0638"]                         <- "year"
+data$ResTemporal[data$SW.ID %in% "SW4_0638"]                                   <- "year"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_0638"] <- "year"
+
+## SW4_0689
+# Data from 2002 and 2011 are also compared to the 1970s. So keep temporal resolution of decadal,
+# but change temporal scale from 'decadal' to 'multidecadal'.
+data$Scale...Temporal[data$SW.ID %in% "SW4_0689"]                         <- "multidecadal"
+data$ScaleTemporal[data$SW.ID %in% "SW4_0689"]                            <- "multidecadal"
+data_allScreened$Scale...Temporal[data_allScreened$SW.ID %in% "SW4_0689"] <- "multidecadal"
+
+## SW4_0702
+# Keep temporal scale and resolution at 'five year', because they compare benthic communities between
+# 2007 and 2011.
+
+## SW4_0738
+# Temporal scale and resolution are indeed both multidecadal due to >60 years of data analysed in
+# blocks of two decades.
+
+## SW4_0760
+# Temporal scale and resolution are indeed both multidecadal as they compare samples from 1983
+# with samples from 2012.
+
+## SW4_0793
+# Samples are taken in May and October in the same year, so temporal scale is indeed 'half year'.
+# Samples were taken on the same day in either May or October. So resolution is either subday or half year.
+# As the samples are analysed combinedly without looking at temporal effects, so inference is done as a 'snapshot'.
+data$Resolution...Temporal[data$SW.ID %in% "SW4_0793"]                         <- "snapshot/no repeated sampling"
+data$ResTemporal[data$SW.ID %in% "SW4_0793"]                                   <- "snapshot/no repeated sampling"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_0793"] <- "snapshot/no repeated sampling"
+
+## SW4_0798
+# Model is built so simulate ecosystem from 1985 to 2008, so temporal scale is 'multidecadal' instead of 'year'.
+# Temporal resolution can remain as 'year', as results are predicted by year.
+data$Scale...Temporal[data$SW.ID %in% "SW4_0798"]                         <- "multidecadal"
+data$ScaleTemporal[data$SW.ID %in% "SW4_0798"]                            <- "multidecadal"
+data_allScreened$Scale...Temporal[data_allScreened$SW.ID %in% "SW4_0798"] <- "multidecadal"
+
+## SW4_0995
+# Samples were indeed taken in a month's time, so temporal scale of 'month' is correct. 
+# How many hauls were conducted within the sampling month is unknown, but it is of course less than a month, so could be days or weeks.
+# They are all treated similarly without accounting for temporal effects, so inference is as a 'snapshot'. 
+# Therefore, let's go for 'week' as temporal resolution.
+data$Resolution...Temporal[data$SW.ID %in% "SW4_0995"]                         <- "snapshot/no repeated sampling"
+data$ResTemporal[data$SW.ID %in% "SW4_0995"]                                   <- "snapshot/no repeated sampling"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_0995"] <- "snapshot/no repeated sampling"
+
+## SW4_1034
+# Samples were taken between June 2010 and January 2011, so temporal scale is 'half year' instead of 'year'.
+# Within areas, sampling occurred usually on the same day or the day after, but temporal effects are not assessed, 
+# so inference is as a 'snapshot'.
+data$Resolution...Temporal[data$SW.ID %in% "SW4_1034"]                         <- "snapshot/no repeated sampling"
+data$ResTemporal[data$SW.ID %in% "SW4_1034"]                                   <- "snapshot/no repeated sampling"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1034"] <- "snapshot/no repeated sampling"
+
+## SW4_1164
+# Sampling occurred during 59 survey days from June to September 2007, so temporal scale is 'two month' instead of 'year'.
+# On average sampling probably took place every two days, but temporal effects are not assessed however, 
+# so inference done as a 'snapshot'.
+data$Scale...Temporal[data$SW.ID %in% "SW4_1164"]                         <- "two month"
+data$ScaleTemporal[data$SW.ID %in% "SW4_1164"]                            <- "two month"
+data_allScreened$Scale...Temporal[data_allScreened$SW.ID %in% "SW4_1164"] <- "two month"
+
+data$Resolution...Temporal[data$SW.ID %in% "SW4_1164"]                         <- "snapshot/no repeated sampling"
+data$ResTemporal[data$SW.ID %in% "SW4_1164"]                                   <- "snapshot/no repeated sampling"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1164"] <- "snapshot/no repeated sampling"
+
+## SW4_1184
+# Sampling was done within two weeks time, so temporal scale is 'two weeks' instead of 'year'.
+# Exact sampling days not known, but considering that 27 stations were sampled four times, repeated
+# observations took probably place on the same day.
+# But temporal effects are not assessed, so inference done as a 'snapshot'.
+data$Scale...Temporal[data$SW.ID %in% "SW4_1184"]                         <- "two week"
+data$ScaleTemporal[data$SW.ID %in% "SW4_1184"]                            <- "two week"
+data_allScreened$Scale...Temporal[data_allScreened$SW.ID %in% "SW4_1184"] <- "two week"
+
+data$Resolution...Temporal[data$SW.ID %in% "SW4_1184"]                         <- "snapshot/no repeated sampling"
+data$ResTemporal[data$SW.ID %in% "SW4_1184"]                                   <- "snapshot/no repeated sampling"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1184"] <- "snapshot/no repeated sampling"
+
+## SW4_1208
+# Sampling was done within one months' time, so temporal scale is 'month' instead of 'year'.
+# Sampling occurred every few days, but temporal effects are not assessed, so inference done as a 'snapshot'.
+data$Scale...Temporal[data$SW.ID %in% "SW4_1208"]                         <- "month"
+data$ScaleTemporal[data$SW.ID %in% "SW4_1208"]                            <- "month"
+data_allScreened$Scale...Temporal[data_allScreened$SW.ID %in% "SW4_1208"] <- "month"
+
+data$Resolution...Temporal[data$SW.ID %in% "SW4_1208"]                         <- "snapshot/no repeated sampling"
+data$ResTemporal[data$SW.ID %in% "SW4_1208"]                                   <- "snapshot/no repeated sampling"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1208"] <- "snapshot/no repeated sampling"
+
+## SW4_1246
+# Samples collected between 1990 and 2008, so temporal scale is 'multidecadal' instead of 'decadal'.
+# 120 samples were collected in 18 years' time, so on average one every two months, but no temporal effects assessed, 
+# so inference is as a 'snapshot'.
+data$Scale...Temporal[data$SW.ID %in% "SW4_1246"]                         <- "multidecadal"
+data$ScaleTemporal[data$SW.ID %in% "SW4_1246"]                            <- "multidecadal"
+data_allScreened$Scale...Temporal[data_allScreened$SW.ID %in% "SW4_1246"] <- "multidecadal"
+
+data$Resolution...Temporal[data$SW.ID %in% "SW4_1246"]                         <- "snapshot/no repeated sampling"
+data$ResTemporal[data$SW.ID %in% "SW4_1246"]                                   <- "snapshot/no repeated sampling"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1246"] <- "snapshot/no repeated sampling"
+
+## SW4_1264
+# Sampling on average with or 1-2 days in between, but no temporal effects assessed, so inference is as a 'snapshot'.
+data$Resolution...Temporal[data$SW.ID %in% "SW4_1264"]                         <- "snapshot/no repeated sampling"
+data$ResTemporal[data$SW.ID %in% "SW4_1264"]                                   <- "snapshot/no repeated sampling"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1264"] <- "snapshot/no repeated sampling"
+
+## SW4_1321
+# Samples were collected with over a year in between, so temporal scale of 'year' is fine. Main effect studied
+# is however seasonal, as winter and summer are compared rather than year effects. So set temporal resolution
+# as 'half year' instead of 'year'.
+data$Resolution...Temporal[data$SW.ID %in% "SW4_1321"]                         <- "half year"
+data$ResTemporal[data$SW.ID %in% "SW4_1321"]                                   <- "half year"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1321"] <- "half year"
+
+## SW4_1375
+# Data span almost a century and some of the periods compare lie multiple decades apart.
+# So correct that both temporal scale and resolution are 'multidecadal'.
+
+## SW4_1445
+# Approximately one year between first and last sample, so temporal scale should be 'year' instead of 'five year'.
+# No temporal effects are assessed, so 'snapshot' as inference.
+data$Scale...Temporal[data$SW.ID %in% "SW4_1445"]                         <- "year"
+data$ScaleTemporal[data$SW.ID %in% "SW4_1445"]                            <- "year"
+data_allScreened$Scale...Temporal[data_allScreened$SW.ID %in% "SW4_1445"] <- "year"
+
+data$Resolution...Temporal[data$SW.ID %in% "SW4_1445"]                         <- "snapshot/no repeated sampling"
+data$ResTemporal[data$SW.ID %in% "SW4_1445"]                                   <- "snapshot/no repeated sampling"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1445"] <- "snapshot/no repeated sampling"
+
+## SW4_1477
+# Model run for 10 years, so temporal scale should be 'decade' instead of 'year'.
+data$Scale...Temporal[data$SW.ID %in% "SW4_1477"]                         <- "decade"
+data$ScaleTemporal[data$SW.ID %in% "SW4_1477"]                            <- "decade"
+data_allScreened$Scale...Temporal[data_allScreened$SW.ID %in% "SW4_1477"] <- "decade"
+
+## SW4_1478
+# Temporal scale is one decade instead of year, as temporal simulation runs and data input range from 1994 to 2003.
+data$Scale...Temporal[data$SW.ID %in% "SW4_1478"]                         <- "decade"
+data$ScaleTemporal[data$SW.ID %in% "SW4_1478"]                            <- "decade"
+data_allScreened$Scale...Temporal[data_allScreened$SW.ID %in% "SW4_1478"] <- "decade"
+
+## SW4_1502
+# Data collected during 1981-2000, so temporal scale is indeed multidecadal. It is not reported
+# what the time is between observations, but these are likely highly variable as they are based on recapture.
+# 105 captures occurred in 19 years' time, so on average 5-6 per year. But, no trends or temporal effects are assessed, 
+# so inference is as a 'snapshot'.
+data$Resolution...Temporal[data$SW.ID %in% "SW4_1502"]                         <- "snapshot/no repeated sampling"
+data$ResTemporal[data$SW.ID %in% "SW4_1502"]                                   <- "snapshot/no repeated sampling"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1502"] <- "snapshot/no repeated sampling"
+
+## SW4_1531
+# Temporal scale is multiple decades rather than five years, so change this for one row where this is the case.
+data$Scale...Temporal[data$SW.ID %in% "SW4_1531"]                         <- "multidecadal"
+data$ScaleTemporal[data$SW.ID %in% "SW4_1531"]                            <- "multidecadal"
+data_allScreened$Scale...Temporal[data_allScreened$SW.ID %in% "SW4_1531"] <- "multidecadal"
+
+## SW4_1560
+# Input data is taken from only one year, so that is the correct temporal scale. However, most results
+# presented as snapshot, so temporal resolution should thus be 'snapshot/no repeated sampling'.
+# The exception are time series of mean trophic level: these should have multidecadal as scale, and
+# resolution can remain to be year.
+data$Resolution...Temporal[data$SW.ID %in% "SW4_1560" & !(data$Response.variable_paper %in% "Trophic level of fisheries")] <- "snapshot/no repeated sampling"
+data$ResTemporal[data$SW.ID %in% "SW4_1560" & !(data$Response.variable_paper %in% "Trophic level of fisheries")]           <- "snapshot/no repeated sampling"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1560" & !(data_allScreened$Response.variable_paper %in% "Trophic level of fisheries")] <- "snapshot/no repeated sampling"
+
+data$Scale...Temporal[data$SW.ID %in% "SW4_1560" & data$Response.variable_paper %in% "Trophic level of fisheries"]                         <- "multidecadal"
+data$ScaleTemporal[data$SW.ID %in% "SW4_1560" & data$Response.variable_paper %in% "Trophic level of fisheries"]                            <- "multidecadal"
+data_allScreened$Scale...Temporal[data_allScreened$SW.ID %in% "SW4_1560" & data_allScreened$Response.variable_paper %in% "Trophic level of fisheries"] <- "multidecadal"
+
+## SW4_1566
+# For interviews, temporal scale was from May-August = four months = rounded off 'two month'.
+# 162 interviews over 4 months = likely 1-2 per day, probably more but perhaps with days without interviews in between.
+# But inference as snapshot.
+data$Resolution...Temporal[data$SW.ID %in% "SW4_1566" & data$Study.type %in% "Questionnaire/interview"]                                     <- "snapshot/no repeated sampling"
+data$ResTemporal[data$SW.ID %in% "SW4_1566" & data$Study.type %in% "Questionnaire/interview"]                                               <- "snapshot/no repeated sampling"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1566" & data_allScreened$Study.type %in% "Questionnaire/interview"] <- "snapshot/no repeated sampling"
+
+# For onboard observers data collection, it is unknown when these took place, but likely within the same four months or longer,
+# as they joined on 59 vessels. Inference as snapshot
+data$Resolution...Temporal[data$SW.ID %in% "SW4_1566" & data$Study.type %in% "Fisheries dependent survey"]                                     <- "snapshot/no repeated sampling"
+data$ResTemporal[data$SW.ID %in% "SW4_1566" & data$Study.type %in% "Fisheries dependent survey"]                                               <- "snapshot/no repeated sampling"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1566" & data_allScreened$Study.type %in% "Fisheries dependent survey"] <- "snapshot/no repeated sampling"
+
+## SW4_1586
+# Before After experiment where experiment duration is one year, so temporal scale of one year is correct.
+# Sampling in each year happened within 2-3 months, with 6 transects being sampled three times.
+# Temporal resolution could thus either be one year (time between Before and After, same as temporal scale) or
+# days or weeks when considering repeated observations taken within each treatment. Inference is done at the level
+# of year, so choose that. This means that temporal scale and resolution can remain as 'year'.
+
+## SW4_1651
+# Temporal scale of survey is not day, but decade, and resolution year and not day. But survey presented in blocks of five year each, so choose that
+data$Scale...Temporal[data$SW.ID %in% "SW4_1651" & data$Sampling.Method.used.for.data.collection %in% "Regular Fisheries Independent Survey"]        <- "decade"
+data$ScaleTemporal[data$SW.ID %in% "SW4_1651" & data$Sampling.Method.used.for.data.collection %in% "Regular Fisheries Independent Survey"]           <- "decade"
+data_allScreened$Scale...Temporal[data_allScreened$SW.ID %in% "SW4_1651" & data_allScreened$Sampling.Method.used.for.data.collection %in% "Regular Fisheries Independent Survey"] <- "decade"
+
+data$Resolution...Temporal[data$SW.ID %in% "SW4_1651" & data$Sampling.Method.used.for.data.collection %in% "Regular Fisheries Independent Survey"] <- "five year"
+data$ResTemporal[data$SW.ID %in% "SW4_1651" & data$Sampling.Method.used.for.data.collection %in% "Regular Fisheries Independent Survey"]            <- "five year"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1651" & data_allScreened$Sampling.Method.used.for.data.collection %in% "Regular Fisheries Independent Survey"] <- "five year"
+
+# Temporal scale of discard trial is indeed one day. Inference as snapshot so choose that as temporal resolution
+data$Resolution...Temporal[data$SW.ID %in% "SW4_1651" & data$Sampling.Method.used.for.data.collection %in% "Stomach Contents Analyses"]  <- "snapshot/no repeated sampling"
+data$ResTemporal[data$SW.ID %in% "SW4_1651" & data$Sampling.Method.used.for.data.collection %in% "Stomach Contents Analyses"]            <- "snapshot/no repeated sampling"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1651" & data_allScreened$Sampling.Method.used.for.data.collection %in% "Stomach Contents Analyses"] <- "snapshot/no repeated sampling"
+
+## SW4_1684
+# All samples were taken within two weeks' time in Sept 1998 and Sept 1999. Temporal scale is indeed year,
+# but resolution can be either (sub)day because of the sampling within each year, or year because of the repeated
+# sampling between years. The others present the results separately but also combined for the two years, and stress
+# the variability between years. Therefore keep the temporal resolution as year.
+
+## SW4_1687
+# Samples were collected during Q3, so temporal scale is two months and not year. Samples were likely collected
+# on the same day or with one or more days in between. Inference done at snapshot level.
+data$Scale...Temporal[data$SW.ID %in% "SW4_1687"]                         <- "two month"
+data$ScaleTemporal[data$SW.ID %in% "SW4_1687"]                            <- "two month"
+data_allScreened$Scale...Temporal[data_allScreened$SW.ID %in% "SW4_1687"] <- "two month"
+
+data$Resolution...Temporal[data$SW.ID %in% "SW4_1687"]                         <- "snapshot/no repeated sampling"
+data$ResTemporal[data$SW.ID %in% "SW4_1687"]                                   <- "snapshot/no repeated sampling"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1687"] <- "snapshot/no repeated sampling"
+
+## SW4_1710
+# Both temporal scale and resolution are indeed 'five year', as there are 7 years between the first and second sampling event,
+# and the authors infer the data based on the difference between the sampling events, despite multiple samples being taken
+# at each event.
+
+## SW4_1721
+# Temporal scale and resolution are indeed year for the comparison of biodiversity from the trawl data.
+
+## SW4_1811
+# Samples were collected in 1993, 1994 and 1995, so temporal scale is indeed two year, but temporal resolution
+# is year instead of two year. However, inference as snapshot, so choose that.
+data$Resolution...Temporal[data$SW.ID %in% "SW4_1811"]                         <- "snapshot/no repeated sampling"
+data$ResTemporal[data$SW.ID %in% "SW4_1811"]                                   <- "snapshot/no repeated sampling"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1811"] <- "snapshot/no repeated sampling"
+
+## SW4_1837
+# Temporal scale is indeed day, but temporal resolution is subday and not day, as multiple samples were taken.
+# But, inference as snapshot so choose that.
+data$Resolution...Temporal[data$SW.ID %in% "SW4_1837"]                         <- "snapshot/no repeated sampling"
+data$ResTemporal[data$SW.ID %in% "SW4_1837"]                                   <- "snapshot/no repeated sampling"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1837"] <- "snapshot/no repeated sampling"
+
+## SW4_1961
+# First change sampling method long-term monitoring program
+data$Sampling.Method.used.for.data.collection[data$SW.ID %in% "SW4_1961" & data$Scale...Temporal %in% "five year"] <- "Regular Fisheries Independent Survey"
+data_allScreened$Sampling.Method.used.for.data.collection[data_allScreened$SW.ID %in% "SW4_1961" & data_allScreened$Scale...Temporal %in% "five year"] <- "Regular Fisheries Independent Survey"
+
+# Change temporal resolution of survey from month to snapshot as this is the level of inference, as annual effects are not assessed.
+data$Resolution...Temporal[data$SW.ID %in% "SW4_1961" & data$Sampling.Method.used.for.data.collection %in% "Regular Fisheries Independent Survey"] <- "snapshot/no repeated sampling"
+data$ResTemporal[data$SW.ID %in% "SW4_1961" & data$Sampling.Method.used.for.data.collection %in% "Regular Fisheries Independent Survey"]           <- "snapshot/no repeated sampling"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1961" & data_allScreened$Sampling.Method.used.for.data.collection %in% "Regular Fisheries Independent Survey"] <- "snapshot/no repeated sampling"
+
+# Samples from 'snapshot' survey were collected during two weeks in 2016, so change temporal scale from month to two weeks.
+# Multiple samples were taken on the same day, but inference done as if it was a snapshot, so choose that.
+data$Scale...Temporal[data$SW.ID %in% "SW4_1961" & data$Sampling.Method.used.for.data.collection %in% "Irregular Fisheries Independent Survey"] <- "two week"
+data$ScaleTemporal[data$SW.ID %in% "SW4_1961" & data$Sampling.Method.used.for.data.collection %in% "Irregular Fisheries Independent Survey"]           <- "two week"
+data_allScreened$Scale...Temporal[data_allScreened$SW.ID %in% "SW4_1961" & data_allScreened$Sampling.Method.used.for.data.collection %in% "Irregular Fisheries Independent Survey"] <- "two week"
+
+data$Resolution...Temporal[data$SW.ID %in% "SW4_1961" & data$Sampling.Method.used.for.data.collection %in% "Irregular Fisheries Independent Survey"] <- "snapshot/no repeated sampling"
+data$ResTemporal[data$SW.ID %in% "SW4_1961" & data$Sampling.Method.used.for.data.collection %in% "Irregular Fisheries Independent Survey"]           <- "snapshot/no repeated sampling"
+data_allScreened$Resolution...Temporal[data_allScreened$SW.ID %in% "SW4_1961" & data_allScreened$Sampling.Method.used.for.data.collection %in% "Irregular Fisheries Independent Survey"] <- "snapshot/no repeated sampling"
+
+## SW4_2033
+# Temporal scale and resolution are indeed day.
+
+
+## Note that temporal extent and scale can indeed be the same in case there are only two repeated sampling events:
+# at the beginning and end of the temporal scale.
+
+## ISSUE: for experiments, we should take duration of manipulation as temporal scale.
+# However, the time between repeated experiments can be longer than this, fx when they need to visit multiple stations at sea.
+# We earlier on said that resolution can never be larger than scale... So how to deal with this?
+# Example is SW4_1727
+## DECISION: we should allow this to be the case for experiments, as this is how we instructed the reviewers.
+## CHECK again all papers for when temporal resolution is higher than scale.
+## DONE.
 
 
 
@@ -1402,10 +1872,6 @@ ggsave(filename = paste0(outPath, "temporalResVExt.png"),
                scale_fill_continuous_sequential(palette = "blues3",
                                                 rev = TRUE,
                                                 na.value = 0) +
-               scale_x_discrete(drop = FALSE, 
-                                labels = c("snapshot/\nrepeat sampling", levels(data$ScaleTemporal)[-1])) +
-               scale_y_discrete(drop = FALSE,
-                                labels = c("snapshot/\nrepeat sampling", levels(data$ResTemporal)[-1])) +
                ylab("Sampling Resolution") +
                xlab("Sampling Extent") +
                theme_few() +
@@ -1453,8 +1919,7 @@ ggsave(filename = paste0(outPath, "spatiotemporalExt.png"),
                                                 rev = TRUE,
                                                 na.value = 0) +
                scale_x_discrete(drop = FALSE) +
-               scale_y_discrete(drop = FALSE,
-                                labels = c("snapshot/\nrepeat sampling", levels(data$ResTemporal)[-1])) +
+               scale_y_discrete(drop = FALSE) +
                ylab("Temporal Extent") +
                xlab("Spatial Extent (m)") +
                theme_few() +
@@ -1469,6 +1934,12 @@ ggsave(filename = paste0(outPath, "spatiotemporalExt.png"),
 ## SpatioTemporal Resolution ----
 #-----------------------------------------------#
 
+# Make spatio-temperal resolution category matrix in long form
+spatempRes_cat <- expand.grid(levels(data$ResSpatial),
+                              levels(data$ResTemporal))
+
+colnames(spatempRes_cat) <- c("SpatialRes_m", "TemporalRes")
+
 ## Make counts of articles in different combinations of SPATIAL & TEMPORAL RESOLUTIONS
 spatempRes_count <- aggregate(SW.ID~ResSpatial+ResTemporal,
                               data = data[!duplicated(data$SW.ID), ],
@@ -1476,10 +1947,25 @@ spatempRes_count <- aggregate(SW.ID~ResSpatial+ResTemporal,
 names(spatempRes_count)[names(spatempRes_count) %in% "SW.ID"] <- "NumberOfArticles"
 
 
-spatempRes_count <- merge(x = spatempResEx_cat,
+spatempRes_count <- merge(x = spatempRes_cat,
                           y = spatempRes_count,
                           by.y = c("ResSpatial", "ResTemporal"),
-                          by.x = c("SpatialScale_m", "TemporalScale"),
+                          by.x = c("SpatialRes_m", "TemporalRes"),
+                          all.x = TRUE)
+
+spatempRes_count[is.na(spatempRes_count$NumberOfArticles), "NumberOfArticles"] <- 0
+
+## Make counts of articles in different combinations of SPATIAL & TEMPORAL RESOLUTIONS
+spatempRes_count <- aggregate(SW.ID~ResSpatial+ResTemporal,
+                              data = data[!duplicated(data$SW.ID), ],
+                              FUN = length)
+names(spatempRes_count)[names(spatempRes_count) %in% "SW.ID"] <- "NumberOfArticles"
+
+
+spatempRes_count <- merge(x = spatempRes_cat,
+                          y = spatempRes_count,
+                          by.y = c("ResSpatial", "ResTemporal"),
+                          by.x = c("SpatialRes_m", "TemporalRes"),
                           all.x = TRUE)
 
 spatempRes_count[is.na(spatempRes_count$NumberOfArticles), "NumberOfArticles"] <- 0
@@ -1494,15 +1980,14 @@ ggsave(filename = paste0(outPath, "spatiotemporalRes.png"),
        plot = 
                ggplot() +
                geom_tile(data = spatempRes_count,
-                         mapping = aes(x = SpatialScale_m,
-                                       y = TemporalScale,
+                         mapping = aes(x = SpatialRes_m,
+                                       y = TemporalRes,
                                        fill = NumberOfArticles)) +
                scale_fill_continuous_sequential(palette = "blues3",
                                                 rev = TRUE,
                                                 na.value = 0) +
                scale_x_discrete(drop = FALSE) +
-               scale_y_discrete(drop = FALSE,
-                                labels = c("snapshot/\nrepeat sampling", levels(data$ResTemporal)[-1])) +
+               scale_y_discrete(drop = FALSE) +
                ylab("Temporal Resolution") +
                xlab("Spatial Resolution (m)") +
                theme_few() +
