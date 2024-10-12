@@ -2067,6 +2067,8 @@ write.xlsx(citations, file = paste0(outPathPET, "no. of citations bycatch PET ca
 idx                     <- match(subset_PET$SW.ID, citations$SW_ID)
 subset_PET$Cited.by     <- citations$Cit[idx]
 
+# Sort by SW.ID
+subset_PET              <- subset_PET[order(subset_PET$SW.ID),]
 
 ### Save ----
 saveRDS(subset_PET, file = paste0(outPathPET,"bycatch case study dataset.RDS"))
@@ -3490,18 +3492,17 @@ ggsave(filename = paste0(outPathPET, "spatialResVExt.png"),
 
 ## Make temporal extent and scale categories
 subset_PET$ScaleTemporal <- subset_PET$Scale...Temporal
-subset_PET$ScaleTemporal[subset_PET$ScaleTemporal %in% "snapshot/no repeated sampling"] <- "snapshot/no\nrepeated sampling"
 subset_PET$ScaleTemporal <- factor(x = subset_PET$ScaleTemporal,
-                               levels = c("Not specified","snapshot/no\nrepeated sampling", "subday", "day", "week", "two week", "month", "two month", "quarter", "half year", "year", "two year", "five year", "decade", "multidecadal"),
+                               levels = c("Not specified","subday", "day", "week", "two week", "month", "two month", "quarter", "half year", "year", "two year", "five year", "decade", "multidecadal"),
                                ordered = TRUE)
 subset_PET$ResTemporal <- subset_PET$Resolution...Temporal
-subset_PET$ResTemporal[subset_PET$ResTemporal %in% "snapshot/no repeat sampling"] <- "snapshot/no\nrepeated sampling"
+subset_PET$ResTemporal[subset_PET$ResTemporal %in% "snapshot/no repeated sampling"] <- "snapshot/no\nrepeated sampling"
 subset_PET$ResTemporal <- factor(x = subset_PET$ResTemporal,
                              levels = c("Not specified","snapshot/no\nrepeated sampling", "subday", "day", "week", "two week", "month", "two month", "quarter", "half year", "year", "two year", "five year", "decade", "multidecadal"),
                              ordered = TRUE)
 
 tempResEx_cat <- expand.grid(levels(subset_PET$ScaleTemporal),
-                             levels(subset_PET$ScaleTemporal))
+                             levels(subset_PET$ResTemporal))
 
 colnames(tempResEx_cat) <- c("TemporalExtent", "TemporalRes")
 
@@ -3534,10 +3535,11 @@ ggsave(filename = paste0(outPathPET, "temporalResVExt.png"),
                    mapping = aes(x = TemporalExtent,
                                  y = TemporalRes,
                                  fill = NumberOfArticles)) +
-         # scale_fill_continuous_sequential(palette = "blues3",
-         #                                  rev = TRUE,
-         #                                  na.value = 0,
-         #                                  name="No. of\narticles") +
+         scale_fill_continuous_sequential(palette = "blues3",
+                                          rev = TRUE,
+                                          na.value = 0,
+                                          name="No. of\narticles",
+                                          n.breaks = 6) +
          scale_x_discrete(drop = FALSE) +
          scale_y_discrete(drop = FALSE) +
          ylab("Temporal Sampling Resolution") +
@@ -3610,6 +3612,12 @@ ggsave(filename = paste0(outPathPET, "spatiotemporalExt.png"),
 #-----------------------------------------------#
 ## Dependent on code above
 
+# Make spatio-temperal resolution category matrix in long form
+spatempRes_cat <- expand.grid(levels(subset_PET$ResSpatial),
+                              levels(subset_PET$ResTemporal))
+
+colnames(spatempRes_cat) <- c("SpatialRes_m", "TemporalRes")
+
 ## Make counts of articles in different combinations of SPATIAL & TEMPORAL RESOLUTIONS
 spatempRes_count <- aggregate(SW.ID~ResSpatial+ResTemporal,
                               data = subset_PET[!duplicated(subset_PET$SW.ID), ],
@@ -3617,10 +3625,10 @@ spatempRes_count <- aggregate(SW.ID~ResSpatial+ResTemporal,
 names(spatempRes_count)[names(spatempRes_count) %in% "SW.ID"] <- "NumberOfArticles"
 
 
-spatempRes_count <- merge(x = spatempResEx_cat,
+spatempRes_count <- merge(x = spatempRes_cat,
                           y = spatempRes_count,
                           by.y = c("ResSpatial", "ResTemporal"),
-                          by.x = c("SpatialScale_m", "TemporalScale"),
+                          by.x = c("SpatialRes_m", "TemporalRes"),
                           all.x = TRUE)
 
 spatempRes_count[is.na(spatempRes_count$NumberOfArticles), "NumberOfArticles"] <- 0
@@ -3635,13 +3643,14 @@ ggsave(filename = paste0(outPathPET, "spatiotemporalRes.png"),
        plot = 
          ggplot() +
          geom_tile(data = spatempRes_count,
-                   mapping = aes(x = SpatialScale_m,
-                                 y = TemporalScale,
+                   mapping = aes(x = SpatialRes_m,
+                                 y = TemporalRes,
                                  fill = NumberOfArticles)) +
          scale_fill_continuous_sequential(palette = "blues3",
                                           rev = TRUE,
                                           na.value = 0,
-                                          name="No. of\narticles") +
+                                          name="No. of\narticles",
+                                          n.breaks = 6) +
          scale_x_discrete(drop = FALSE) +
          scale_y_discrete(drop = FALSE) +
          ylab("Temporal Sampling Resolution") +
@@ -3698,4 +3707,4 @@ pTemporal <- ggplot() +
 
 p <- pSpatial / pTemporal + plot_annotation(tag_levels = 'A')
 
-ggsave("spatialTemporalScales2.png", p, path=outPathPET, width = 7, height = 7)
+ggsave("spatialTemporalScales.png", p, path=outPathPET, width = 7, height = 7)

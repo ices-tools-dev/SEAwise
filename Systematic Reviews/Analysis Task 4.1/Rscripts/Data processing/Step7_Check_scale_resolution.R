@@ -2006,6 +2006,10 @@ ggsave(filename = paste0(outPath, "spatiotemporalRes.png"),
 # Drop some columns to return to original columns
 data$ScaleSpatial <- data$ResSpatial <- data$ScaleTemporal <- data$ResTemporal <- data$ROWID <- NULL
 
+# Sort papers by SW.ID
+data                   <- data[order(data$SW.ID),]
+data_allScreened       <- data_allScreened[order(data_allScreened$SW.ID),]
+
 # Add new ROWID
 data$ROWID             <- c(1:nrow(data))
 data_allScreened$ROWID <- c(1:nrow(data_allScreened))
