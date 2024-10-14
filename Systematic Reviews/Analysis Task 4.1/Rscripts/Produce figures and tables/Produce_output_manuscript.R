@@ -214,6 +214,9 @@ print(p)
 
 ggsave("YearBarCum.png", p, path=outPath, width = 3.5, height = 3.2)
 
+# Add proportion of cumulative papers
+YearRet2$propCum                 <- YearRet2$cumNrPaps / sum(YearRet2$NrPaps, na.rm = TRUE)
+
 
 #-----------------------------------------------#
 ## Sankey diagram of fate of all records ----
@@ -472,6 +475,99 @@ p <- ggplot(EcoPressExp, aes(x=Pressure.type, y=Ecosystem.component_level1, fill
 print(p)
 
 ggsave("EcoPress_heatmap.png", p, path=outPath, width = 9, height = 7)
+
+
+
+#-----------------------------------------------#
+## Barplot for methods ----
+#-----------------------------------------------#
+
+Methods                              <- data[,.(NrPaps = length(unique(SW.ID))),
+                                             by = c("Sampling.Method.used.for.data.collection")]
+Methods                              <- Methods[order(NrPaps),,]
+
+
+png(paste0(outPath, "Methods.png"), width=1500, height=750, res=100)
+par(mar=c(5, 30, 2, 2))
+b                                     <- barplot(Methods$NrPaps, horiz=TRUE, axes=F, xlim=c(0,185), col=viridis(3)[2])
+box()
+axis(2, at=b, labels=Methods$Sampling.Method.used.for.data.collection , las=1, cex.axis=2)
+axis(1, at= seq(0,220, 25), labels=seq(0, 220, 25), cex.axis=1.5)
+text(x=150, y=0, paste0("Total number of unique papers: ", length(unique(data$SW.ID))))
+text(x=Methods$NrPaps+4, y=b, Methods$NrPaps, cex = 1.3)
+axis(1, at=110, tick=F, line=2, label="Number of papers", cex.axis=2)
+dev.off()
+
+
+# ggplot2 version
+p <- ggplot(Methods, aes(NrPaps, reorder(Sampling.Method.used.for.data.collection, NrPaps))) +
+  geom_bar(stat="identity", fill = viridis(3)[2]) +
+  scale_x_continuous(expand = c(0,0), n.breaks = 6, limits = c(0,max(Methods$NrPaps+2))) +
+  labs(x="Number of papers", y="Gear") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 12),
+        strip.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10),
+        panel.grid.minor.x = element_blank())
+print(p)
+
+ggsave("Methods2.png", p, path=outPath, width = 10, height = 4)
+
+
+#-----------------------------------------------#
+### By ecosystem component ----
+#-----------------------------------------------#
+
+Methods                              <- data[,.(NrPaps = length(unique(SW.ID))),
+                                                   by = c("Sampling.Method.used.for.data.collection","Ecosystem.component_level1")]
+MethTot                              <- Methods[, .(TotNrPaps = sum(NrPaps)),
+                                                by = "Sampling.Method.used.for.data.collection"]
+Methods                              <- merge(Methods, MethTot, by="Sampling.Method.used.for.data.collection")
+
+p <- ggplot(Methods, aes(NrPaps, reorder(Sampling.Method.used.for.data.collection, TotNrPaps), fill=Ecosystem.component_level1)) +
+  geom_bar(stat="identity") +
+  scale_x_continuous(expand = c(0,0), n.breaks = 6, limits = c(0,max(Methods$TotNrPaps+2))) +
+  scale_fill_manual(values=viridis(11), name= "Ecosystem component") +
+  labs(x="Number of papers", y="Sampling method") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 12),
+        strip.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10),
+        panel.grid.minor.x = element_blank())
+print(p)
+
+ggsave("MethodsEcoComp.png", p, path=outPath, width = 10, height = 4)
+
+
+#-----------------------------------------------#
+### By response variable ----
+#-----------------------------------------------#
+
+Methods                              <- data[,.(NrPaps = length(unique(SW.ID))),
+                                                   by = c("Sampling.Method.used.for.data.collection","Response.variable_category")]
+MethTot                              <- Methods[, .(TotNrPaps = sum(NrPaps)),
+                                                by = "Sampling.Method.used.for.data.collection"]
+Methods                              <- merge(Methods, MethTot, by="Sampling.Method.used.for.data.collection")
+
+p <- ggplot(Methods, aes(NrPaps, reorder(Sampling.Method.used.for.data.collection, TotNrPaps), fill=Response.variable_category)) +
+  geom_bar(stat="identity") +
+  scale_x_continuous(expand = c(0,0), n.breaks = 6, limits = c(0,max(Methods$TotNrPaps+2))) +
+  scale_fill_viridis_d(name="Response measured") +
+  labs(x="Number of papers", y="Sampling method") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 12),
+        strip.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10),
+        panel.grid.minor.x = element_blank())
+print(p)
+
+ggsave("MethodsRes.png", p, path=outPath, width = 10, height = 5)
 
 
 
@@ -1377,11 +1473,12 @@ ggsave(filename = paste0(outPath, "litter_spatialResVExt.png"),
                                  fill = NumberOfArticles)) +
          scale_fill_continuous_sequential(palette = "blues3",
                                           rev = TRUE,
-                                          na.value = 0) +
+                                          na.value = 0,
+                                          name="No. of\narticles") +
          scale_x_discrete(drop = FALSE) +
          scale_y_discrete(drop = FALSE) +
-         ylab("Sampling Resolution (m)") +
-         xlab("Sampling Extent (m)") +
+         ylab("Spatial Sampling Resolution (m)") +
+         xlab("Spatial Sampling Extent (m)") +
          theme_few() +
          theme(text = element_text(size = 9), 
                # axis.text.x = element_text(hjust = 0.5, vjust = 1),
@@ -1394,15 +1491,18 @@ ggsave(filename = paste0(outPath, "litter_spatialResVExt.png"),
 #-----------------------------------------------#
 
 ## Make temporal extent and scale categories
-litter$ScaleTemporal <- factor(x = litter$Scale...Temporal,
-                               levels = c("snapshot/no repeat sampling", "subday", "day", "week", "two week", "month", "two month", "quarter", "half year", "year", "two year", "five year", "decade", "multidecadal"),
-                               ordered = TRUE)
-litter$ResTemporal <- factor(x = litter$Resolution...Temporal,
-                             levels = c("snapshot/no repeat sampling", "subday", "day", "week", "two week", "month", "two month", "quarter", "half year", "year", "two year", "five year", "decade", "multidecadal"),
-                             ordered = TRUE)
+litter$ScaleTemporal <- litter$Scale...Temporal
+litter$ScaleTemporal <- factor(x = litter$ScaleTemporal,
+                                   levels = c("Not specified","subday", "day", "week", "two week", "month", "two month", "quarter", "half year", "year", "two year", "five year", "decade", "multidecadal"),
+                                   ordered = TRUE)
+litter$ResTemporal <- litter$Resolution...Temporal
+litter$ResTemporal[litter$ResTemporal %in% "snapshot/no repeated sampling"] <- "snapshot/no\nrepeated sampling"
+litter$ResTemporal <- factor(x = litter$ResTemporal,
+                                 levels = c("Not specified","snapshot/no\nrepeated sampling", "subday", "day", "week", "two week", "month", "two month", "quarter", "half year", "year", "two year", "five year", "decade", "multidecadal"),
+                                 ordered = TRUE)
 
 tempResEx_cat <- expand.grid(levels(litter$ScaleTemporal),
-                             levels(litter$ScaleTemporal))
+                             levels(litter$ResTemporal))
 
 colnames(tempResEx_cat) <- c("TemporalExtent", "TemporalRes")
 
@@ -1437,11 +1537,13 @@ ggsave(filename = paste0(outPath, "litter_temporalResVExt.png"),
                                  fill = NumberOfArticles)) +
          scale_fill_continuous_sequential(palette = "blues3",
                                           rev = TRUE,
-                                          na.value = 0) +
+                                          na.value = 0,
+                                          name="No. of\narticles",
+                                          n.breaks=3) +
          scale_x_discrete(drop = FALSE) +
          scale_y_discrete(drop = FALSE) +
-         ylab("Sampling Resolution") +
-         xlab("Sampling Extent") +
+         ylab("Temporal Sampling Resolution") +
+         xlab("Temporal Sampling Extent") +
          theme_few() +
          theme(text = element_text(size = 9), 
                # axis.text.x = element_text(hjust = 0.5, vjust = 1),
@@ -1493,7 +1595,9 @@ ggsave(filename = paste0(outPath, "litter_spatiotemporalExt.png"),
                                  fill = NumberOfArticles)) +
          scale_fill_continuous_sequential(palette = "blues3",
                                           rev = TRUE,
-                                          na.value = 0) +
+                                          na.value = 0,
+                                          name="No. of\narticles",
+                                          n.breaks = 3) +
          scale_x_discrete(drop = FALSE) +
          scale_y_discrete(drop = FALSE) +
          ylab("Temporal Extent") +
@@ -1509,6 +1613,12 @@ ggsave(filename = paste0(outPath, "litter_spatiotemporalExt.png"),
 ## SpatioTemporal Resolution ----
 #-----------------------------------------------#
 ## Dependent on code above
+
+# Make spatio-temperal resolution category matrix in long form
+spatempResEx_cat <- expand.grid(levels(litter$ResSpatial),
+                                levels(litter$ResTemporal))
+
+colnames(spatempResEx_cat) <- c("SpatialScale_m", "TemporalScale")
 
 ## Make counts of articles in different combinations of SPATIAL & TEMPORAL RESOLUTIONS
 spatempRes_count <- aggregate(SW.ID~ResSpatial+ResTemporal,
@@ -1540,7 +1650,8 @@ ggsave(filename = paste0(outPath, "litter_spatiotemporalRes.png"),
                                  fill = NumberOfArticles)) +
          scale_fill_continuous_sequential(palette = "blues3",
                                           rev = TRUE,
-                                          na.value = 0) +
+                                          na.value = 0,
+                                          name="No. of\narticles") +
          scale_x_discrete(drop = FALSE) +
          scale_y_discrete(drop = FALSE) +
          ylab("Temporal Resolution") +
@@ -1551,6 +1662,53 @@ ggsave(filename = paste0(outPath, "litter_spatiotemporalRes.png"),
                axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
          )
 )
+
+### COMBINE figures into one plot ----
+
+pSpatial <- ggplot() +
+  geom_tile(data = spatResEx_count,
+            mapping = aes(x = SpatialExtent_m,
+                          y = SpatialRes_m,
+                          fill = NumberOfArticles)) +
+  scale_fill_continuous_sequential(palette = "blues3",
+                                   rev = TRUE,
+                                   na.value = 0,
+                                   name="No. of\npapers") +
+  scale_x_discrete(drop = FALSE) +
+  scale_y_discrete(drop = FALSE) +
+  ylab("Spatial Sampling Resolution (m)") +
+  xlab("Spatial Sampling Extent (m)") +
+  theme_few() +
+  theme(text = element_text(size = 9), 
+        # axis.text.x = element_text(hjust = 0.5, vjust = 1),
+        axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
+  )
+
+pTemporal <- ggplot() +
+  geom_tile(data = tempResEx_count,
+            mapping = aes(x = TemporalExtent,
+                          y = TemporalRes,
+                          fill = NumberOfArticles)) +
+  scale_fill_continuous_sequential(palette = "blues3",
+                                   rev = TRUE,
+                                   na.value = 0,
+                                   name="No. of\npapers",
+                                   n.breaks=3) +
+  scale_x_discrete(drop = FALSE) +
+  scale_y_discrete(drop = FALSE) +
+  ylab("Temporal Sampling Resolution") +
+  xlab("Temporal Sampling Extent") +
+  theme_few() +
+  theme(text = element_text(size = 9), 
+        # axis.text.x = element_text(hjust = 0.5, vjust = 1),
+        axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
+  )
+
+p <- pSpatial / pTemporal + plot_annotation(tag_levels = 'A')
+
+ggsave("litter_spatialTemporalScales.png", p, path=outPath, width = 7, height = 7)
+
+
 
 #-----------------------------------------------#
 ## Pressures & Responses ----
