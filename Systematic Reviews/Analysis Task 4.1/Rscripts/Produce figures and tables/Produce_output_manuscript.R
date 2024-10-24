@@ -1306,46 +1306,6 @@ nrow(tempLit[tempLit$Response.variable_category == "Mortality", ])/nrow(tempLit)
 #===-
 ### Create sankey diagram ----
 #====-
-## Create long versions for sankeys
-litterMethodsInput <- make_long(tempLit, Ecosystem.component_level1, Sampling.Method.used.for.data.collection, Response.variable_category, AnalyticalMethod)
-
-## Set colors
-# colorpal                             <- brewer.pal(8,"Paired")[-c(2,4,6,8)]
-colorpal                             <- viridis(8)[-c(1,2,3,6)]
-# mycolors                             <- c(rep(colorpal[1],4), rep(colorpal[3],7), rep(colorpal[5],11), rep(colorpal[7],13))
-
-## Build sankey
-litterMethods <- ggplot(litterMethodsInput,
-                        mapping = aes(x = x,
-                                      next_x = next_x,
-                                      node = node,
-                                      next_node = next_node,
-                                      fill = factor(x),
-                                      label = node)) +
-  scale_x_discrete(labels=c("Ecosystem\nComponent","Sampling\nMethodology","Response\nMeasured","Analytic\nMethod")) +
-  # scale_fill_manual(values=colorpal) +
-  geom_sankey(flow.fill="grey",
-              flow.alpha=0.8) +
-  geom_sankey_label(size=2) +
-  theme_few()+
-  theme(text = element_text(size = 10),
-        axis.title = element_blank(),
-        axis.text.y = element_blank(),
-        axis.text = element_text(colour = "black"),
-        legend.position = "none")
-
-ggsave(plot = litterMethods,
-       filename = paste0(outPath, "litterMethods.png"),
-       device = "png",
-       dpi = 300,
-       width = 170,
-       height = 90,
-       units = "mm")
-
-
-#===-
-### Create alternative sankey diagram with ggforce ----
-#====-
 
 # Prepare data
 tempLitNoDupl       <- tempLit[!duplicated(tempLit), ]
@@ -1360,19 +1320,21 @@ tempLitTr           <- gather_set_data(tempLitNoDupl,
 # Plot Sankey diagram
 p <- ggplot(tempLitTr, aes(x, id = SW.ID, split = y, value = value)) +
   geom_parallel_sets(aes(fill = Ecosystem.component_level1), alpha = 0.3, axis.width = 0.1, show.legend = FALSE) +
-  geom_parallel_sets_axes(axis.width = 0.1, fill = "gray60") +
-  geom_parallel_sets_labels(colour = 'black', angle = 0, size = 2.4) +
+  geom_parallel_sets_axes(axis.width = 0.1, fill = "gray90") +
+  geom_parallel_sets_labels(colour = 'black', angle = 0, size = 2.8) +
   scale_x_continuous(breaks = c(2:5),
-                     labels = c("Ecosystem\ncomponent","Sampling\nMethodology","Response\nmeasured","Analytic\nmethod")) +
+                     labels = c("Ecosystem\ncomponent","Sampling\nMethodology","Response\nmeasured","Analytic\nmethod"),
+                     expand = c(0.06,0.05)) +
   scale_fill_viridis_d(direction = -1) +
   theme_bw() +
   theme(panel.grid = element_blank(),
         axis.title = element_blank(),
         axis.text.y = element_blank(),
         axis.ticks.y = element_blank())
+print(p)
 
 ggsave(plot = p,
-       filename = paste0(outPath, "litterMethods_altn.png"),
+       filename = paste0(outPath, "litterMethods.png"),
        device = "png",
        dpi = 300,
        width = 170,
@@ -1384,46 +1346,42 @@ ggsave(plot = p,
 #-----------------------------------------------#
 ## Geographic spread ----
 #-----------------------------------------------#
-tempLitGeo <- litter[!duplicated(litter$SW.ID), ]
 
-tempLitGeo <- as.data.frame(table(tempLitGeo$Region))
-colnames(tempLitGeo) <- c("Region", "Number of Articles")
-# tempLitGeo$Region <- factor(tempLitGeo$Region, levels = c("Barents Sea", "NE-Atlantic", "Baltic Sea", "Mediterranean Sea"))
+# Prepare data
+tempLitGeo              <- litter[!duplicated(litter$SW.ID), ]
+tempLitGeo              <- as.data.frame(table(tempLitGeo$Region))
+colnames(tempLitGeo)    <- c("Region", "Number of Articles")
 
-regSea <- data.frame(Region = as.factor(unique(data$Region)),
-                     `Number of Articles` = rep(0, times = length(unique(data$Region))))
+regSea                  <- data.frame(Region = as.factor(unique(data$Region)),
+                                      `Number of Articles` = rep(0, times = length(unique(data$Region))))
 
 tempLitGeo <- merge(x = regSea,
                     y = tempLitGeo,
                     by = "Region",
                     all.x = TRUE)
-tempLitGeo$Number.of.Articles <- NULL
+
+tempLitGeo$Number.of.Articles                                            <- NULL
 tempLitGeo[is.na(tempLitGeo$`Number of Articles`), "Number of Articles"] <- 0
+tempLitGeo$NrPaps                                                        <- tempLitGeo$`Number of Articles`
+tempLitGeo$Region                                                        <- as.character(tempLitGeo$Region)
+tempLitGeo$Region[tempLitGeo$Region %in% "NE-Atlantic"]                  <- "Northeast Atlantic"
 
-tempLitGeo$Region <- factor(tempLitGeo$Region,
-                            levels = levels(tempLitGeo$Region)[order(tempLitGeo$`Number of Articles`,
-                                                                     tempLitGeo$Region,
-                                                                     decreasing = c(TRUE, FALSE))])
+# plot
+p <- ggplot(tempLitGeo, aes(NrPaps, reorder(Region, NrPaps))) +
+  geom_bar(stat="identity", fill = viridis(3)[2]) +
+  scale_x_continuous(expand = c(0,0), n.breaks = 6, limits = c(0,max(tempLitGeo$NrPaps+2))) +
+  labs(x="Number of papers", y="Region") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 10),
+        strip.text = element_text(size = 10),
+        axis.title = element_text(size = 10),
+        legend.title = element_text(size=8),
+        legend.text = element_text(size=8),
+        panel.grid.minor.x = element_blank())
+print(p)
 
+ggsave("litterGeo.png", p, path=outPath, width = 5, height = 3)
 
-ggsave(filename = paste0(outPath, "litterGeo.png"),
-       device = "png",
-       dpi = 300,
-       width = 80,
-       height = 90,
-       units = "mm",
-       plot = ggplot()+
-         geom_col(data = tempLitGeo,
-                  mapping = aes(x = Region,
-                                y = `Number of Articles`,
-                                fill = Region)) +
-         theme_few()+
-         theme(text = element_text(size = 10),
-               # axis.title = element_blank(),
-               axis.text = element_text(colour = "black"),
-               axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
-               legend.position = "none")
-         )
 
 #-----------------------------------------------#
 ## Spatial Scales ----
@@ -1733,9 +1691,9 @@ table(litter$Ecosystem.component_level2)
 tempLitDR <- litter[, c("SW.ID","Ecosystem.component_level1", "Response.variable_category", "Direction.of.relationship")]
 tempLitDR <- tempLitDR[!duplicated(tempLitDR), ]
 
-tempLitDR$Response.variable_category <- ifelse(tempLitDR$Response.variable_category %in% "Survival","Mortality",
-                                               ifelse(tempLitDR$Response.variable_category %in% c("Community composition"), "Biodiversity",
-                                                      tempLitDR$Response.variable_category))  
+# tempLitDR$Response.variable_category <- ifelse(tempLitDR$Response.variable_category %in% "Survival","Mortality",
+#                                                ifelse(tempLitDR$Response.variable_category %in% c("Community composition"), "Biodiversity",
+#                                                       tempLitDR$Response.variable_category))  
 
 ## Order factors for plotting nicely
 tempLitDR$Ecosystem.component_level1 <- reorder(x = as.factor(tempLitDR$Ecosystem.component_level1),
@@ -1752,36 +1710,38 @@ tempLitDR <- droplevels(tempLitDR)
 #===-
 ### Create sankey diagram ----
 #====-
-## Make Sankey compatible data
-litterLinkageInput <- make_long(tempLitDR, Ecosystem.component_level1, Response.variable_category, Direction.of.relationship)
 
+# Prepare data
+tempLitNoDupl       <- tempLitDR[!duplicated(tempLitDR), ]
+tempLitNoDupl$value <- 1
 
-## Build sankey
-litterLinkage <- ggplot(litterLinkageInput,
-                        mapping = aes(x = x,
-                                      next_x = next_x,
-                                      node = node,
-                                      next_node = next_node,
-                                      fill = factor(x),
-                                      label = node)) +
-  scale_x_discrete(labels=c("Ecosystem\nComponent","Response\nMeasured","Direction of\nRelationship")) +
-  # scale_fill_manual(values=colorpal) +
-  geom_sankey(flow.fill="grey",
-              flow.alpha=0.8) +
-  geom_sankey_label(size=2) +
-  theme_few()+
-  theme(text = element_text(size = 10),
+# Transform data so that it can be handled by ggplot2
+tempLitTr           <- gather_set_data(tempLitNoDupl, 
+                                       x = c("Ecosystem.component_level1","Response.variable_category", "Direction.of.relationship"), 
+                                       id_name = "SW.ID")
+
+# Plot Sankey diagram
+p <- ggplot(tempLitTr, aes(x, id = SW.ID, split = y, value = value)) +
+  geom_parallel_sets(aes(fill = Ecosystem.component_level1), alpha = 0.3, axis.width = 0.1, show.legend = FALSE) +
+  geom_parallel_sets_axes(axis.width = 0.1, fill = "gray90") +
+  geom_parallel_sets_labels(colour = 'black', angle = 0, size = 2.8) +
+  scale_x_continuous(breaks = c(2:4),
+                     labels = c("Ecosystem component","Response measured","Direction of relationship"),
+                     expand = c(0.06,0.05)) +
+  scale_fill_viridis_d(direction = -1) +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
         axis.title = element_blank(),
         axis.text.y = element_blank(),
-        axis.text = element_text(colour = "black"),
-        legend.position = "none")
+        axis.ticks.y = element_blank())
+print(p)
 
-ggsave(plot = litterLinkage,
+ggsave(plot = p,
        filename = paste0(outPath, "litterLinkage.png"),
        device = "png",
        dpi = 300,
        width = 170,
-       height = 90,
+       height = 100,
        units = "mm")
 
 
