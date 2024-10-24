@@ -363,6 +363,13 @@ datRespvar$Response.variable_category[datRespvar$SW.ID %in% "SW4_0355"] <- "Beha
 
 datRespvar$Direction.of.relationship[datRespvar$SW.ID %in% "SW4_1991"] <- "Positive"
 
+# Based on litter case study
+datRespvar[datRespvar$SW.ID == "SW4_0725" & datRespvar$Ecosystem.component_level1 == "Fish_teleost", "Direction.of.relationship"] <- "Negative"
+datRespvar[datRespvar$SW.ID == "SW4_0725" & datRespvar$Ecosystem.component_level1 == "Cephalopods", "Direction.of.relationship"] <- "Negative"
+datRespvar[datRespvar$SW.ID == "SW4_0144", "Direction.of.relationship"] <- "Positive"
+datRespvar[datRespvar$SW.ID == "SW4_0619" & datRespvar$Response.variable_category == "Damage & entanglement", "Direction.of.relationship"] <- "Positive"
+datRespvar[datRespvar$SW.ID == "SW4_0851" & datRespvar$Response.variable_category == "Damage & entanglement", "Direction.of.relationship"] <- "Positive"
+
 
 #-----------------------------------------------#
 # Magnitude of relationship ----

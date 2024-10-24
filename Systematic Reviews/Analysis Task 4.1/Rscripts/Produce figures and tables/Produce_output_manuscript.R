@@ -1184,20 +1184,9 @@ dev.off()
 # Subset to litter only
 litter <- droplevels(data[Pressure.type == "Input of litter", ])
 
-## Extra Data Cleaning - May need to be considered at the database level.
-litter[litter$SW.ID == "SW4_0725" & litter$Ecosystem.component_level1 == "Fish_teleost", "Direction.of.relationship"] <- "Negative"
-litter[litter$SW.ID == "SW4_0725" & litter$Ecosystem.component_level1 == "Cephalopods", "Direction.of.relationship"] <- "Negative"
-litter[litter$SW.ID == "SW4_0144", "Direction.of.relationship"] <- "Positive"
-litter[litter$SW.ID == "SW4_0619" & litter$Response.variable_category == "Damage & entanglement", "Direction.of.relationship"] <- "Positive"
-litter[litter$SW.ID == "SW4_0851" & litter$Response.variable_category == "Damage & entanglement", "Direction.of.relationship"] <- "Positive"
-litter[litter$Response.variable_category == "Biodiversity" & litter$Direction.of.relationship == "Positive",]
-litter[litter$Direction.of.relationship == "Mortality",]
-litter[litter$Response.variable_category == "Biodiversity" & litter$Direction.of.relationship == "Positive",]
-
 # Litter specific data cleaning
 litter[is.na(litter$Gear_level1) & !duplicated(litter$SW.ID), ]
-litter[is.na(litter$Gear_level1), "Gear_level1"] <- "Other"
-
+litter[is.na(litter$Gear_level1), "Gear_level1"] <- "Not specified"
 litter[litter$Pressure.variable_category == "Fishing effort",]
 
 #-----------------------------------------------#
