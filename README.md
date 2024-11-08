@@ -41,3 +41,6 @@
   * Western Waters case study [link to repository](https://github.com/ices-tools-dev/SEAwise_WP6_WW)
   * Dependency analysis [link to repository](https://github.com/ices-tools-dev/SEAwise_WP6_dependency_analysis)
   * Task 6.6: Positioning fisheries in the socio-ecological system [Link to repository](https://github.com/ices-tools-dev/SEAwise_T6.6)
+ 
+* Courses
+  * Integrating environmental impacts on stock productivity in Management Strategy Evaluation models [Link to repository](https://github.com/ices-tools-dev/SEAwise_ecoMSE)
