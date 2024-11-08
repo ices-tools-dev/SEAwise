@@ -772,6 +772,8 @@ sort(unique(datPressvar[which(grepl("closure", datPressvar$Pressure_variable) & 
 sort(unique(datPressvar[which(grepl("Closure", datPressvar$Pressure_variable) & is.na(datPressvar$Pressure.variable_category)),]$Pressure_variable)) #all
 datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(grepl("closure", datPressvar$Pressure_variable) & is.na(datPressvar$Pressure.variable_category),
                                                                      "Closure",Pressure.variable_category))
+datPressvar$Pressure.variable_category    <- with(datPressvar,ifelse(grepl("Closure", datPressvar$Pressure_variable) & is.na(datPressvar$Pressure.variable_category),
+                                                                     "Closure",Pressure.variable_category))
 
 sort(unique(datPressvar[which(grepl("close", datPressvar$Pressure_variable) & is.na(datPressvar$Pressure.variable_category)),]$Pressure_variable)) #all
 sort(unique(datPressvar[which(grepl("Close", datPressvar$Pressure_variable) & is.na(datPressvar$Pressure.variable_category)),]$Pressure_variable)) #all (only one)

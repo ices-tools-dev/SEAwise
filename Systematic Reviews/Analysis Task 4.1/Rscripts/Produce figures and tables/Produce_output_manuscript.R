@@ -88,6 +88,13 @@ exclScre$propPaps                    <- round(exclScre$NrPaps / exclScre$totalNr
 
 write.csv(exclScre, paste0(outPath,"nr and prop papers excluded screening.csv"), row.names = FALSE)
 
+# Get total unique number of papers excluded during screening
+length(unique(datExclScr$SW.ID)) #1320
+
+# Get total unique number of papers included after screening
+datIncl                              <- subset(FatePapers, Screening.Fate %in% "Included")
+length(unique(datIncl$SW.ID)) #731
+length(unique(data_allScreened$SW.ID)) #731
 
 
 #-----------------------------------------------#
@@ -102,6 +109,14 @@ exclDat$totalNrPaps                  <- sum(exclDat$NrPaps)
 exclDat$propPaps                     <- round(exclDat$NrPaps / exclDat$totalNrPaps, 2)
 
 write.csv(exclDat, paste0(outPath,"nr and prop papers excluded data extraction.csv"), row.names = FALSE)
+
+# Get total unique number of papers excluded during data extraction
+length(unique(datExclDat$SW.ID)) #204
+
+# Total number of papers for final review
+datIncl                              <- subset(FatePapers, Extraction.Fate %in% "Included")
+length(unique(datIncl$SW.ID)) #527
+length(unique(data$SW.ID)) #527
 
 
 
@@ -736,6 +751,50 @@ print(p)
 ggsave("PressureRegion.tiff", p, path=outPath, width = 8, height = 6)
 
 
+## Option2
+p <- ggplot(Pressure, aes(NrPaps, Pressure.type, fill=Pressure.type)) +
+  geom_bar(stat="identity") +
+  scale_x_continuous(n.breaks = 10) +
+  scale_y_discrete(limits=rev) +
+  scale_fill_brewer(palette = "Paired") +
+  labs(x="Number of  papers", y="Pressure type") +
+  theme_bw() +
+  theme(legend.title = element_blank(),
+        legend.position = "none",
+        axis.text = element_text(size = 12),
+        strip.text = element_text(size = 12),
+        axis.title = element_text(size = 14)) +
+  facet_wrap(~Region)
+print(p)
+ggsave("PressureRegion2.png", p, path=outPath, width=12, height = 8)
+
+
+#-----------------------------------------------#
+## Heatmap of pressure and ecosystem component by region -----
+#-----------------------------------------------#
+
+EcoPress                             <- data[, .(NrPaps = length(unique(SW.ID))),
+                                             by = c("Region","Ecosystem.component_level1", "Pressure.type")]
+EcoPressExp                          <- expand.grid(Region=EcoPress$Region,
+                                                    Ecosystem.component_level1=EcoPress$Ecosystem.component_level1, 
+                                                    Pressure.type=EcoPress$Pressure.type)
+EcoPressExp                          <- EcoPressExp[!duplicated(EcoPressExp),]
+EcoPressExp                          <- merge(EcoPress, EcoPressExp, by=c("Region","Ecosystem.component_level1","Pressure.type"), all=TRUE)
+
+p <- ggplot(EcoPressExp, aes(Pressure.type, Ecosystem.component_level1)) +
+  geom_tile(aes(fill=NrPaps)) +
+  scale_fill_viridis_c(na.value = "white", name = "No.\npapers") +
+  labs(x="Pressure type", y="Ecosystem component") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle=45, vjust=1, hjust=1),
+        axis.text = element_text(size=12),
+        axis.title = element_text(size=14),
+        strip.text = element_text(size=12)) +
+  facet_wrap(~Region)
+
+ggsave("EcoPressRegion.png", p, path=outPath, width=12, height = 9)
+
+
 
 #####################################################################################################################-
 #####################################################################################################################-
@@ -1038,10 +1097,43 @@ ggsave("Sankey5.png", sankey, path=outPath,
 
 
 #===-
-# Create alternative sankey diagram using ggforce
+### Alternative sankey diagram using ggforce ----
 #====-
 
+# Data prepping
+tempDat         <- data[, c("SW.ID","Fishery.type","Gear_level1","Pressure.type","Ecosystem.component_level1","Response.variable_category")]
+tempDat         <- tempDat[!duplicated(tempDat),]
+tempDat$value   <- 1
+tempDat$Gear_level1[is.na(tempDat$Gear_level1)]   <- "Not specified"
 
+# Transform data so that it can be handled by ggplot2
+datTr           <- gather_set_data(tempDat, 
+                                   x = c("Fishery.type","Gear_level1","Pressure.type","Ecosystem.component_level1","Response.variable_category"), 
+                                   id_name = "SW.ID")
+
+# Plot Sankey diagram
+p <- ggplot(datTr, aes(x, id = SW.ID, split = y, value = value)) +
+  geom_parallel_sets(aes(fill = Ecosystem.component_level1), alpha = 0.3, axis.width = 0.1, show.legend = FALSE) +
+  geom_parallel_sets_axes(axis.width = 0.1, fill = "gray90") +
+  geom_parallel_sets_labels(colour = 'black', angle = 0, size=2.5) +
+  scale_x_continuous(breaks = c(2:6),
+                     labels = c("Fishery type","Pressure","Gear","Ecosystem component","Response"),
+                     expand = c(0, 0.5)) +
+  scale_fill_viridis_d(direction = 1) +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        axis.title = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank())
+print(p)
+
+ggsave(plot = p,
+       filename = paste0(outPath, "Sankey6.png"),
+       device = "png",
+       dpi = 300,
+       width = 170,
+       height = 90,
+       units = "mm")
 
 
 #####################################################################################################################-
