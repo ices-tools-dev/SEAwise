@@ -233,6 +233,52 @@ ggsave("YearBarCum.png", p, path=outPath, width = 3.5, height = 3.2)
 YearRet2$propCum                 <- YearRet2$cumNrPaps / sum(YearRet2$NrPaps, na.rm = TRUE)
 
 
+## Try colouring by region
+
+# Identify papers that study multiple regions
+regID                            <- aggregate(Region ~ SW.ID, data, function(x) length(unique(x)))
+names(regID)[2]                  <- "RegionMulti"
+dataReg                          <- merge(data, regID, by="SW.ID")
+dataReg$RegionPlot               <- with(dataReg, ifelse(RegionMulti == 1, Region, "Multiple"))
+
+# Calculate number of papers by year and region
+YearRet                          <- dataReg[,.(NrPaps = length(unique(SW.ID))),
+                                         by = c("Year","RegionPlot")]
+YearRet                          <- YearRet[order(YearRet$Year),]
+YearRet$cumNrPaps                <- cumsum(YearRet$NrPaps)
+YearRet2                         <- expand.grid(Year=seq(min(data$Year),max(data$Year)),RegionPlot=unique(YearRet$RegionPlot))
+YearRet2                         <- merge(YearRet2, YearRet, by=c("Year","RegionPlot"), all.x=TRUE, all.y = TRUE)
+# YearRet2$col                     <- with(YearRet2, ifelse(Year == 2022, "incomplete","complete"))
+# coeff                            <- 10
+
+p <- ggplot(YearRet2, aes(x=Year, fill = RegionPlot)) +
+  geom_bar(aes(y=NrPaps), stat="identity") +
+  # geom_point(aes(y=cumNrPaps / coeff), size=0.5) +
+  # geom_line(aes(y=cumNrPaps / coeff), linewidth=0.1) +
+  scale_x_continuous(n.breaks = 8) +
+  scale_y_continuous(expand = c(0,0), limits = c(0, 45), n.breaks = 10) +#,
+                     # sec.axis = sec_axis(~.*coeff, name="Cumulative number of papers")) +
+  # scale_fill_manual(values = rev(viridis(3)[-3])) +
+  scale_fill_brewer(type="qual", palette = "Paired")+
+  labs(x="Year", y="Number of papers") +
+  theme_bw() +
+  theme(legend.position = c(0.25,0.7),
+        legend.text = element_text(size=7),
+        legend.key.height = unit(0.75,"line"),
+        legend.title = element_blank(),
+        legend.background = element_rect(fill="transparent"),
+        axis.text = element_text(size = 10),
+        strip.text = element_text(size = 10),
+        axis.title = element_text(size = 10),
+        axis.title.x = element_text(margin = margin(t = 3, unit = "mm")),
+        axis.title.y.right = element_text(margin = margin(l = 3, unit = "mm")),
+        panel.grid.minor = element_blank())
+print(p)
+
+ggsave("YearBarRegion.png", p, path=outPath, width = 3.5, height = 3.2)
+
+
+
 #-----------------------------------------------#
 ## Sankey diagram of fate of all records ----
 #-----------------------------------------------#
@@ -612,7 +658,7 @@ Regions                               <- data[, .(NrPaps = length(unique(SW.ID))
 Regions                               <- Regions[, .(NrPaps = sum(NrPaps)), by="Region"]
 Regions                               <- Regions[order(NrPaps, decreasing = F),,]
 
-sum(Regions$NrPaps) #542, suggesting that, out of 527 papers, several of them studied multiple regions
+sum(Regions$NrPaps) #541, suggesting that, out of 527 papers, several of them studied multiple regions
 
 
 tiff(paste0(outPath, "Regions.tiff"), width=1000, height=750, res=100)
@@ -705,6 +751,7 @@ RegionOrder                           <- RegionOrder[order(NrPaps, decreasing = 
 
 Regions$Region                        <- factor(Regions$Region, levels = RegionOrder$Region)
 
+## As scatter plot
 p <- ggplot(Regions, aes(Year,NrPaps)) +
   geom_point() +
   geom_line() +
@@ -717,7 +764,77 @@ p <- ggplot(Regions, aes(Year,NrPaps)) +
         axis.title = element_text(size = 14)) +
   facet_wrap(~Region)
 print(p)
-ggsave("RegionYear.tiff", p, path=outPath, width=10, height = 6)
+ggsave("RegionYear.png", p, path=outPath, width=10, height = 6)
+
+
+## As barplot
+
+## Add column
+Regions$col                     <- with(Regions, ifelse(Year == 2022, "incomplete","complete"))
+
+p <- ggplot(Regions, aes(Year, NrPaps, fill=col)) +
+  geom_bar(stat="identity") +
+  scale_x_continuous(n.breaks = 8) +
+  scale_y_continuous(expand = c(0,0), limits = c(0, 21), n.breaks = 6) +
+  scale_fill_manual(values = rev(viridis(3)[-3])) +
+  labs(x="Publication year", y="Number of papers") +
+  theme_bw() +
+  theme(legend.position = "none",
+        axis.text = element_text(size = 10),
+        strip.text = element_text(size = 10),
+        axis.title = element_text(size = 10),
+        axis.title.x = element_text(margin = margin(t = 3, unit = "mm")),
+        axis.title.y = element_text(margin = margin(r = 3, unit = "mm")),
+        panel.grid.minor = element_blank()) +
+  facet_wrap(~Region)
+print(p)
+
+ggsave("YearRegion.png", p, path=outPath, width=8, height = 6)
+
+
+## Calculate rate of increase in number of papers by region
+reg <- subset(Regions, Region %in% "Mediterranean Sea" & Year >= 1995 & Year < 2022)
+lm(NrPaps ~ Year, reg) #0.72
+ggplot(reg, aes(Year, NrPaps)) +
+  geom_point() + geom_smooth(method = "lm")
+
+reg <- subset(Regions, Region %in% "North Sea" & Year >= 1995 & Year < 2022)
+lm(NrPaps ~ Year, reg) #0.15
+ggplot(reg, aes(Year, NrPaps)) +
+  geom_point() + geom_smooth(method = "lm")
+
+reg <- subset(Regions, Region %in% "Western Waters" & Year >= 1995 & Year < 2022)
+lm(NrPaps ~ Year, reg) #0.13
+ggplot(reg, aes(Year, NrPaps)) +
+  geom_point() + geom_smooth(method = "lm")
+
+reg <- subset(Regions, Region %in% "Baltic Sea" & Year >= 1995 & Year < 2022)
+lm(NrPaps ~ Year, reg) #0.09
+ggplot(reg, aes(Year, NrPaps)) +
+  geom_point() + geom_smooth(method = "lm")
+
+
+## Calculate mean number of papers per region by time period
+regions <- unique(Regions$Region)
+for(iRegion in 1:length(regions)){
+  if(iRegion == 1){
+    reg                             <- subset(Regions, Region %in% regions[iRegion] & Year %in% (c(1996:2000)))
+    reg$NrPaps[is.na(reg$NrPaps)]   <- 0
+    nrPapsPer                       <- data.frame(Region = regions[iRegion], Period = "1996-2000", NrPaps = mean(reg$NrPaps))
+
+    reg                             <- subset(Regions, Region %in% regions[iRegion] & Year %in% (c(2017:2021)))
+    reg$NrPaps[is.na(reg$NrPaps)]   <- 0
+    nrPapsPer                       <- rbind(nrPapsPer, data.frame(Region = regions[iRegion], Period = "2017-2021", NrPaps = mean(reg$NrPaps)))
+  }else{
+    reg                             <- subset(Regions, Region %in% regions[iRegion] & Year %in% (c(1996:2000)))
+    reg$NrPaps[is.na(reg$NrPaps)]   <- 0
+    nrPapsPer                       <- rbind(nrPapsPer, data.frame(Region = regions[iRegion], Period = "1996-2000", NrPaps = mean(reg$NrPaps)))
+    
+    reg                             <- subset(Regions, Region %in% regions[iRegion] & Year %in% (c(2017:2021)))
+    reg$NrPaps[is.na(reg$NrPaps)]   <- 0
+    nrPapsPer                       <- rbind(nrPapsPer, data.frame(Region = regions[iRegion], Period = "2017-2021", NrPaps = mean(reg$NrPaps)))
+  }
+}
 
 
 
@@ -795,6 +912,34 @@ p <- ggplot(EcoPressExp, aes(Pressure.type, Ecosystem.component_level1)) +
 ggsave("EcoPressRegion.png", p, path=outPath, width=12, height = 9)
 
 
+
+#-----------------------------------------------#
+## Barplot of gear type by region -----
+#-----------------------------------------------#
+
+Gears                              <- data[, .(NrPaps = length(unique(SW.ID))),
+                                                   by = c("Gear_level1", "Region")]
+GearsTot                           <- Gears[, .(TotNrPaps = sum(NrPaps)),
+                                                by = "Gear_level1"]
+Gears                              <- merge(Gears, GearsTot, by="Gear_level1")
+Gears$Region[Gears$Region %in% "NE-Atlantic"] <- "Northeast Atlantic"
+Gears$Gear_level1[is.na(Gears$Gear_level1)] <- "Not specified"
+
+p <- ggplot(Gears, aes(NrPaps, reorder(Gear_level1, TotNrPaps), fill=Gear_level1)) +
+  geom_bar(stat="identity") +
+  scale_x_continuous(expand = c(0,0), n.breaks = 6, limits = c(0,160)) +
+  scale_fill_manual(values=viridis(10), name= "Region") +
+  labs(x="Number of papers", y="Ecosystem component") +
+  theme_bw() +
+  theme(axis.text.y = element_text(size = 10),
+        strip.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.position = "none",
+        panel.grid.minor.x = element_blank()) +
+  facet_wrap(~Region, nrow = 2)
+print(p)
+
+ggsave("GearRegion.png", p, path=outPath, width = 10, height = 5)
 
 #####################################################################################################################-
 #####################################################################################################################-
@@ -1117,7 +1262,7 @@ p <- ggplot(datTr, aes(x, id = SW.ID, split = y, value = value)) +
   geom_parallel_sets_axes(axis.width = 0.1, fill = "gray90") +
   geom_parallel_sets_labels(colour = 'black', angle = 0, size=2.5) +
   scale_x_continuous(breaks = c(2:6),
-                     labels = c("Fishery type","Pressure","Gear","Ecosystem component","Response"),
+                     labels = c("Fishery type","Gear","Pressure","Ecosystem component","Response"),
                      expand = c(0, 0.5)) +
   scale_fill_viridis_d(direction = 1) +
   theme_bw() +
@@ -2784,6 +2929,36 @@ p <- p1 / p2 + plot_annotation(tag_levels = 'A')
 print(p)
 
 ggsave("EcoCompRegion_GearsEcoComp.png", p, path=outPathPET, width = 8, height = 7)
+
+
+
+#-----------------------------------------------#
+### Heatmap of gear and ecosystem component by region -----
+#-----------------------------------------------#
+
+EcoGear                             <- subset_PET[, .(NrPaps = length(unique(SW.ID))),
+                                             by = c("Region","Ecosystem.component_level1", "Gear_level1")]
+EcoGearExp                          <- expand.grid(Region=EcoGear$Region,
+                                                    Ecosystem.component_level1=EcoPress$Ecosystem.component_level1, 
+                                                    Gear_level1=EcoGear$Gear_level1)
+EcoGearExp                          <- EcoGearExp[!duplicated(EcoGearExp),]
+EcoGearExp                          <- merge(EcoGear, EcoGearExp, by=c("Region","Ecosystem.component_level1","Gear_level1"), all=TRUE)
+EcoGearExp$Gear_level1              <- as.character(EcoGearExp$Gear_level1)
+EcoGearExp$Gear_level1[is.na(EcoGearExp$Gear_level1)]   <- "Not specified"
+
+p <- ggplot(EcoGearExp, aes(Gear_level1, Ecosystem.component_level1)) +
+  geom_tile(aes(fill=NrPaps)) +
+  scale_fill_viridis_c(na.value = "white", name = "No.\npapers", n.breaks=6) +
+  labs(x="Gear", y="Ecosystem component") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle=90, vjust=0.5, hjust=1),
+        axis.text = element_text(size=12),
+        axis.title = element_text(size=14),
+        strip.text = element_text(size=12)) +
+  facet_wrap(~Region)
+print(p)
+
+ggsave("EcoGearRegion.png", p, path=outPathPET, width=12, height = 9)
 
 
 

@@ -84,6 +84,52 @@ if(dataset == "cropped"){
   data                                  <- data[,c(1, 5, 19:29, 32:49, 51:52)]
 }
 
+## Check some bibliographic information - only for the full dataset
+if(dataset == "full"){
+  
+  # Create dataset where each row is one paper
+  data.ID   <- data[!duplicated(data$SW.ID),]
+  
+  # Language
+  table(data.ID$Language, useNA = "always") #some are only Spanish so check those out
+  
+  # Spanish papers
+  unique(data.ID$SW.ID[data.ID$Language %in% "Spanish"]) #Spanish abstract but all else English
+  
+  # Change language Spanish paper to English; Spanish
+  data$Language[data$SW.ID %in% "SW4_1271"]   <- "English; Spanish"
+  
+  # Check whether there are papers without DOI
+  sort(unique(data.ID$SW.ID[is.na(data.ID$DOI)]))
+  
+  # Add DOI when missing and DOI available
+  data$DOI[data$SW.ID %in% "SW4_1297"]   <-"10.47536/jcrm.v10i2.647"
+  data$DOI[data$SW.ID %in% "SW4_1826"]   <-"10.1007/BF00662185"
+  
+  # Document type
+  table(data.ID$Document.Type, useNA = "always")
+  table(data.ID$Document.Type, data.ID$Database)
+  
+  # Check those that are Conference Papers
+  data_conf   <- subset(data.ID, Document.Type %in% "Conference Paper")
+  sort(data_conf$SW.ID)
+  table(data_conf$Source.title, useNA = "always") #from variety of journals - seem 'normal' scientific journal articles
+  
+  # Check those that are reviews
+  data_rev    <- subset(data.ID, Document.Type %in% "Review")
+  sort(data_rev$SW.ID) #are either meta-analyses or original research articles
+  
+  # Open access by database
+  table(data.ID$Open.Access, data.ID$Database, useNA = "always")
+  data.OA     <- subset(data.ID, !is.na(Open.Access))
+  data.notOA  <- subset(data.ID, is.na(Open.Access))
+  
+  # Database
+  table(data.ID$Database) #extra space bar for Web of Science -> correct
+  data$Database[data$Database %in% "Web of Science "]   <- "Web of Science"
+  
+}
+
 ## Check the regions (all fine)
 table(is.na(data$Region))
 table(data$Region)
