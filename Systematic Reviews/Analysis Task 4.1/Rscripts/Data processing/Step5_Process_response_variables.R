@@ -363,6 +363,11 @@ datRespvar$Response.variable_category[datRespvar$SW.ID %in% "SW4_0355"] <- "Beha
 
 datRespvar$Direction.of.relationship[datRespvar$SW.ID %in% "SW4_1991"] <- "Positive"
 
+datRespvar[datRespvar$SW.ID == "SW4_1332" & datRespvar$Response.variable_paper %in% c("species richness", "Margalef's d", "average taxonomic distinctness"), 
+           "Response.variable_paper"] <- c("species richness of discarded fraction", "Margalef's d of discarded fraction", "average taxonomic distinctness of discarded fraction")
+datRespvar[datRespvar$SW.ID == "SW4_1332" & datRespvar$Response.variable_paper == "variation in taxonomic distinctness", "Response.variable_paper"] <- 
+  "variation in taxonomic distinctness of discarded fraction"
+
 # Based on litter case study
 datRespvar[datRespvar$SW.ID == "SW4_0725" & datRespvar$Ecosystem.component_level1 == "Fish_teleost", "Direction.of.relationship"] <- "Negative"
 datRespvar[datRespvar$SW.ID == "SW4_0725" & datRespvar$Ecosystem.component_level1 == "Cephalopods", "Direction.of.relationship"] <- "Negative"

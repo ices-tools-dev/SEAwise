@@ -548,7 +548,7 @@ datDescr$Analytical.method.used.for.inference <- str_replace_all(datDescr$Analyt
                                                              "length-frequency distributions _ functional diversity indices _ number of species _ shannon_Mann–Whitney U test")
 
 # Check how many papers have NA
-length(unique(datDescr$SW.ID[is.na(datDescr$Analytical.method.used.for.inference)])) #8 papers
+length(unique(datDescr$SW.ID[is.na(datDescr$Analytical.method.used.for.inference)])) #8 papers if cropped dataset, 212 if full dataset
 
 
 
@@ -563,7 +563,7 @@ head(studyType)
 length(unique(studyType$SW.ID[studyType$Study.type > 1])) #19 papers with two study types
 
 # Check whether there are papers with NA for study type
-unique(datDescr$SW.ID[is.na(datDescr$Study.type)]) #2 papers: "SW4_0154" "SW4_0915"
+unique(datDescr$SW.ID[is.na(datDescr$Study.type)]) #2 papers (if dataset cropped): "SW4_0154" "SW4_0915"
 
 # Assign study type to papers with NA
 datDescr$Study.type[datDescr$SW.ID %in% "SW4_0154"]   <- "Field experiment/observations"

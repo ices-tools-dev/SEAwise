@@ -370,11 +370,11 @@ if(dataset == "full"){
     dat1                               <- rbind(dat1, dat2)
     rm(dat2)
   }# end iL loop. 
-  length(unique(dat1$Species.taxonomic.group.s.)) # 921 unique records
+  length(unique(dat1$Species.taxonomic.group.s.)) # 923 unique records
   
-  dat1$Species.taxonomic.group.s.      <- str_trim(dat1$Species.taxonomic.group.s., side="both"); length(unique(dat1$Species.taxonomic.group.s.)) # 680 unique records
-  dat1$Species.taxonomic.group.s.      <- str_to_lower(dat1$Species.taxonomic.group.s.); length(unique(dat1$Species.taxonomic.group.s.)) # 660 unique records
-  dat1$Species.taxonomic.group.s.      <- ifelse(dat1$Species.taxonomic.group.s. %in% c("", "unknown"), NA, dat1$Species.taxonomic.group.s.); length(unique(dat1$Species.taxonomic.group.s.)) # 658 unique records
+  dat1$Species.taxonomic.group.s.      <- str_trim(dat1$Species.taxonomic.group.s., side="both"); length(unique(dat1$Species.taxonomic.group.s.)) # 681 unique records
+  dat1$Species.taxonomic.group.s.      <- str_to_lower(dat1$Species.taxonomic.group.s.); length(unique(dat1$Species.taxonomic.group.s.)) # 661 unique records
+  dat1$Species.taxonomic.group.s.      <- ifelse(dat1$Species.taxonomic.group.s. %in% c("", "unknown"), NA, dat1$Species.taxonomic.group.s.); length(unique(dat1$Species.taxonomic.group.s.)) # 659 unique records
   
   # saveRDS(dat1, file=paste0(outPath, "dat1a.rds"))
   

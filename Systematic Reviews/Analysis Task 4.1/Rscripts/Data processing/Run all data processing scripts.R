@@ -69,4 +69,4 @@ source(paste0(scriptPath,"Step6_Process_methods.R"), localEnv)
 # Run last processing script
 #-----------------------------------------------
 
-source(paste0(scriptPath,"Step7_Check_scale_resolution.R"), localEnv)
+source(paste0(scriptPath,"Step7_Check_scale_resolution_quality.R"), localEnv)

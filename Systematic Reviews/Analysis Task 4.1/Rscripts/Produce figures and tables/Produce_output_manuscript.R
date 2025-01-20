@@ -908,6 +908,7 @@ p <- ggplot(EcoPressExp, aes(Pressure.type, Ecosystem.component_level1)) +
         axis.title = element_text(size=14),
         strip.text = element_text(size=12)) +
   facet_wrap(~Region)
+print(p)
 
 ggsave("EcoPressRegion.png", p, path=outPath, width=12, height = 9)
 
@@ -940,6 +941,7 @@ p <- ggplot(Gears, aes(NrPaps, reorder(Gear_level1, TotNrPaps), fill=Gear_level1
 print(p)
 
 ggsave("GearRegion.png", p, path=outPath, width = 10, height = 5)
+
 
 #####################################################################################################################-
 #####################################################################################################################-
@@ -2089,12 +2091,12 @@ petList                             <- merge(petList, petRegions, by = "Region/R
 
 # First subset to bycatch papers
 subset_byc                          <- data_allScreened[(data_allScreened$Pressure.type%in%c("Catch_and_bycatch")& data_allScreened$Pressure_level%in%c("Bycatch", "Non-target")),]
-length(unique((subset_byc$SW.ID))) #172
+length(unique((subset_byc$SW.ID))) #171
 
 # Kick out all ecosystem components that are not PET species in the first place
 sort(unique(subset_byc$Ecosystem.component_level1))
 subset_byc                          <- subset(subset_byc, !Ecosystem.component_level1 %in% c("Benthos","Cephalopods","Plankton","Plants")) #but keep food web as these may still include PET species
-length(unique((subset_byc$SW.ID))) #140
+length(unique((subset_byc$SW.ID))) #139
 
 # Create unique combinations of SW ID and and taxonomic group
 subset_byc$ID.tax                   <- paste(subset_byc$SW.ID, subset_byc$Species.taxonomic.group.s.)
@@ -2111,7 +2113,7 @@ length(unique((subset_byc_not_split$ID.tax))) #35
 subset_byc                          <- rbind(subset_byc_split, subset_byc_not_split)
 subset_byc                          <- subset_byc[order(subset_byc$SW.ID),]
 subset_byc$Species.taxonomic.group.s.[subset_byc$Species.taxonomic.group.s. %in% ""] <- NA
-length(unique(subset_byc$SW.ID)) #140
+length(unique(subset_byc$SW.ID)) #139
 length(unique(subset_byc$ID.tax)) #188
 
 # Create combination of species and region column
@@ -2137,7 +2139,7 @@ specReg %in% petList$SpeciesRegion # all are on it, so add all seals
 subset_PET                          <- rbind(subset_PET, seals)
 
 # Marine mammals not further specified?
-subset_byc[subset_byc$Ecosystem.component_level1 %in% "Marine_mammals" & is.na(subset_byc$Ecosystem.component_level2),] #yes, one paper, as it is like dealing with PET species (also marked as T4.2).
+subset_byc[subset_byc$Ecosystem.component_level1 %in% "Marine_mammals" & is.na(subset_byc$Ecosystem.component_level2),] #no papers
 
 # Check rows without species/taxon
 mammals                             <- subset(subset_byc, Ecosystem.component_level1 %in% "Marine_mammals")
@@ -2250,8 +2252,8 @@ specRegKeep                          <- specReg[-idx]
 cart_keep                            <- subset(cart, SpeciesRegion %in% specRegKeep)
 
 # Check rows without species/taxon
-nrow(cart[is.na(cart$Species.taxonomic.group.s.),]) #18
-length(unique(cart$SW.ID[is.na(cart$Species.taxonomic.group.s.)])) #from 9 papers
+nrow(cart[is.na(cart$Species.taxonomic.group.s.),]) #23
+length(unique(cart$SW.ID[is.na(cart$Species.taxonomic.group.s.)])) #from 11 papers
 ## let's keep them in, as they likely contain PET species
 cart_keep                            <- rbind(cart_keep, cart[is.na(cart$Species.taxonomic.group.s.),])
 
@@ -2279,7 +2281,7 @@ specRegListed                       <- c(specRegListed,
                                          "Sebastes Barents Sea")
 
 # Check rows without species/taxon
-nrow(fish[is.na(fish$Species.taxonomic.group.s.),]) #quite some - 40
+nrow(fish[is.na(fish$Species.taxonomic.group.s.),]) #quite some - 42
 length(unique(fish$SW.ID[is.na(fish$Species.taxonomic.group.s.)])) #from 21 papers
 unique(fish$SW.ID[is.na(fish$Species.taxonomic.group.s.)])
 #"SW4_0109" - includes Hippocampus hippocampus as non-target which is not on PET list but considered as NT by IUCN, so keep
@@ -2515,6 +2517,7 @@ Gears                                <- subset_PET[,.(NrPaps = length(unique(SW.
                                                    by = c("Gear_level1","Ecosystem.component_level1")]
 Gears
 
+
 #-----------------------------------------------#
 ### Methods ----
 #-----------------------------------------------#
@@ -2526,11 +2529,11 @@ table(subset_PET$Study.type)
 Methods                              <- subset_PET[, .(NrPaps = length(unique(SW.ID))),
                                                  by = c("Sampling.Method.used.for.data.collection")]
 Methods
-sum(Methods$NrPaps) #137, so more than the 123 unique papers, meaning that several studies used multiple sampling methods
+sum(Methods$NrPaps) #135, so more than the 122 unique papers, meaning that several studies used multiple sampling methods
 
 # Check exactly how many papers have more than one study type
 MethNrPap                         <- aggregate(Sampling.Method.used.for.data.collection ~ SW.ID, subset_PET, function(x) length(unique(x)))
-nrow(MethNrPap[MethNrPap$Sampling.Method.used.for.data.collection > 1,]) #13 papers with more than one method
+nrow(MethNrPap[MethNrPap$Sampling.Method.used.for.data.collection > 1,]) #12 papers with more than one method
 
 
 #-----------------------------------------------#
@@ -2563,7 +2566,7 @@ Region
 Study                              <- subset_PET[, .(NrPaps = length(unique(SW.ID))),
                                                   by = c("Study.type")]
 Study
-sum(Study$NrPaps) #128, so a bit more than the 123 unique papers, meaning that a few studies have multiple study types
+sum(Study$NrPaps) #127, so a bit more than the 122 unique papers, meaning that a few studies have multiple study types
 
 # Check exactly how many papers have more than one study type
 StudyNrPap                         <- aggregate(Study.type ~ SW.ID, subset_PET, function(x) length(unique(x)))
@@ -2577,7 +2580,7 @@ StudyNrPap[order(StudyNrPap$Study.type),] #five papers with two study types
 Pressure                           <- subset_PET[, .(NrPaps = length(unique(SW.ID))),
                                                  by = c("Pressure.variable_category")]
 Pressure
-sum(Pressure$NrPaps) #132, so a few more than the 123 unique papers, meaning that a few studies have multiple study types
+sum(Pressure$NrPaps) #131, so a few more than the 122 unique papers, meaning that a few studies have multiple study types
 
 # Check exactly how many papers 
 PressNrPap                         <- aggregate(Pressure.variable_category ~ SW.ID, subset_PET, function(x) length(unique(x)))
@@ -2592,12 +2595,12 @@ nrow(PressNrPap[PressNrPap$Pressure.variable_category > 1,]) #8 papers with more
 Response                           <- subset_PET[, .(NrPaps = length(unique(SW.ID))),
                                                  by = c("Response.variable_category")]
 Response
-sum(Response$NrPaps) #144, so more than the 123 unique papers, meaning that a few studies have multiple response variables
+sum(Response$NrPaps) #142, so more than the 122 unique papers, meaning that a few studies have multiple response variables
 
 # Check exactly how many papers
 RespNrPap                         <- aggregate(Response.variable_category ~ SW.ID, subset_PET, function(x) length(unique(x)))
 RespNrPap[order(RespNrPap$Response.variable_category),] 
-nrow(RespNrPap[RespNrPap$Response.variable_category > 1,]) #17 papers with more than 1 response variable
+nrow(RespNrPap[RespNrPap$Response.variable_category > 1,]) #16 papers with more than 1 response variable
 
 
 #-----------------------------------------------#
@@ -2607,12 +2610,12 @@ nrow(RespNrPap[RespNrPap$Response.variable_category > 1,]) #17 papers with more 
 Direction                            <- subset_PET[, .(NrPaps = length(unique(SW.ID))),
                                                  by = c("Direction.of.relationship")]
 Direction
-sum(Direction$NrPaps) #150, so more than the 123 unique papers, meaning that a few studies have multiple study types
+sum(Direction$NrPaps) #151, so more than the 122 unique papers, meaning that a few studies have multiple study types
 
 # Check exactly how many papers
 DirNrPap                             <- aggregate(Direction.of.relationship ~ SW.ID, subset_PET, function(x) length(unique(x)))
 DirNrPap[order(DirNrPap$Direction.of.relationship),] 
-nrow(DirNrPap[DirNrPap$Direction.of.relationship > 1,]) #23 papers with more than 1 response variable
+nrow(DirNrPap[DirNrPap$Direction.of.relationship > 1,]) #24 papers with more than 1 response variable
 
 # Check direction by pressure variable
 DirPress                             <- subset_PET[, .(NrPaps = length(unique(SW.ID))),
@@ -2939,7 +2942,7 @@ ggsave("EcoCompRegion_GearsEcoComp.png", p, path=outPathPET, width = 8, height =
 EcoGear                             <- subset_PET[, .(NrPaps = length(unique(SW.ID))),
                                              by = c("Region","Ecosystem.component_level1", "Gear_level1")]
 EcoGearExp                          <- expand.grid(Region=EcoGear$Region,
-                                                    Ecosystem.component_level1=EcoPress$Ecosystem.component_level1, 
+                                                    Ecosystem.component_level1=EcoGear$Ecosystem.component_level1, 
                                                     Gear_level1=EcoGear$Gear_level1)
 EcoGearExp                          <- EcoGearExp[!duplicated(EcoGearExp),]
 EcoGearExp                          <- merge(EcoGear, EcoGearExp, by=c("Region","Ecosystem.component_level1","Gear_level1"), all=TRUE)
@@ -3312,6 +3315,31 @@ unique(datNegByc$SW.ID)
 # Let's change the current reported pressure variable 'change in selectivity' to 'increase in mesh size'. This will then
 # result in a positive relationship (rather then the current negative relationship). Also add a row for gear comparison.
 # Manually changed in data processing scripts 4 and 5.
+
+
+## UPDATE - after the above changes made and additional processing, double-check again direction of relationship
+# whether there are any other papers that now pop up
+
+# Positive
+datPos                  <- subset(subset_PET, Direction.of.relationship %in% "Positive")
+table(datPos$Pressure.variable_category, datPos$Response.variable_category)
+#Check further Bycatch - Biodiversity, as that seems strange to be a positive relationship
+
+## sw4_1332
+# At the end of the fishing season, some biodiversity metrics of the discard fraction decrease, whereas
+# taxonomic distinctiveness increases, and vice versa for the marketed fraction. This is likely because
+# the fish community is more exploited towards the end of the season. To mark here the relationship between
+# Bycatch and Biodiversity as positive is therefore technically correct but also misleading, as it does not
+# concern the actual fish community - only the discard fraction. Keep it though as it is to not deviate
+# from the protocol, but that it concerns the biodiversity of the discarded fraction in the response 
+# variable of the paper. Changed in Step 5 of the data processing scripts.
+
+# Negative
+datNeg                  <- subset(subset_PET, Pressure.variable_category %in% c("Closure","Bycatch reduction & selectivity") &
+                                    Direction.of.relationship %in% "Negative")
+table(datNeg$Pressure.variable_category, datNeg$Response.variable_category)
+# Looks fine, except negative relationship between Closure and Size/age structure - check further.
+# This is SW4_1332 that has been dealt with above already, so all is fine.
 
 
 
