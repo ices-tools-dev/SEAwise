@@ -117,6 +117,32 @@ if(dataset == "full"){
   ## SW4_0368: missing volume number -> add
   data$Volume[data$SW.ID %in% "SW4_0368"]   <- 142
   
+  ## Check volume in more detail
+  datVol    <- data.frame(SW.ID = data.ID$SW.ID, Source.title = data.ID$Source.title, Volume = data.ID$Volume, Volume2 = as.numeric(data.ID$Volume))
+  #Some high values (2017, 2022) and non-numeric because of two values with a dash - check those out
+  
+  ## SW4_0565: peerJ article, 2017 is year and not volume. Volume is 5 rather than 4, which is stated as issue number.
+  data$Volume[data$SW.ID %in% "SW4_0565"]   <- 5
+  data$Issue[data$SW.ID %in% "SW4_0565"]    <- NA
+  
+  ## SW4_0227: also peerJ article. 2020 is year and not volume. Volume is 8 and not 7, which is stated as issue number
+  data$Volume[data$SW.ID %in% "SW4_0227"]   <- 8
+  data$Issue[data$SW.ID %in% "SW4_0227"]    <- NA
+  
+  ## SW4_1803: has actually two volume numbers
+  
+  ## SW4_0979: has actually two volume numbers
+  
+  ## SW4_0966: has actually two volume numbers
+  
+  ## SW4_1585: has actually two volume numbers
+  
+  ## SW4_1586: has actually two volume numbers
+  
+  ## SW4_1803: has actually two volume numbers
+  
+  ## SW4_0746: has actually two volume numbers
+  
   # Issue
   table(!is.na(data.ID$Issue)) #182 NAs, but quite common for journals not to have issue number, only volume
   
