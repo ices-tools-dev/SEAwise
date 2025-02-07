@@ -432,9 +432,10 @@ identical(papSedBoth$sedBenthos, papSedBoth$sedPhysicalHab) #yes, so no further 
 table(is.na(subset(data, Ecosystem.component_level1 %in% c("Benthos","Marine_mammals"))$Ecosystem.component_level3)) #395 NAs
 table(is.na(data$Ecosystem.component_level3)) #across all
 
-# If level 3 not provided for Benthos or Marine mammals, mark as 'Not specified
+# If level 3 not provided for Benthos or Marine mammals -> Cetaceans, mark as 'Not specified'
 table(data$Ecosystem.component_level1[data$Ecosystem.component_level1 %in% c("Benthos", "Marine_mammals") & is.na(data$Ecosystem.component_level3)]) #mostly not provided for benthos
 data$Ecosystem.component_level3[data$Ecosystem.component_level1 %in% c("Benthos", "Marine_mammals") & is.na(data$Ecosystem.component_level3)]   <- "Not specified"
+data$Ecosystem.component_level3[data$Ecosystem.component_level2 %in% "Seals"]   <- NA
 
 # Check what species/taxonomic groups are provided when level 3 wasn't specified
 sort(unique(data$Species.taxonomic.group.s.[data$Ecosystem.component_level3 %in% "Not specified"])) #leave for now - this column will be cleaned later in step 3
@@ -528,14 +529,84 @@ data$Fishery.type                    <- ifelse(data$Fishery.type %in% "Artisanal
                                                ifelse(data$SW.ID == "SW4_1000", "Commercial", data$Fishery.type))
 
 table(data$Gear_level1, useNA = "always") #221 NAs, some misspellings
-data$Gear_level1                     <- ifelse(data$Gear_level1 == "Demersal_trawls", "Demersal trawls",
-                                               ifelse(data$Gear_level1 %in% c("Pelagic _trawls", "Pelagic_trawls"), "Pelagic trawls",
-                                                      ifelse(data$Gear_level1 == "Mixed gears", NA,  data$Gear_level1)))
-# Check how many papers with NA for gear level 1
+data$Gear_level1                     <- ifelse(data$Gear_level1 == "Demersal trawls", "Demersal_trawls",
+                                               ifelse(data$Gear_level1 %in% c("Pelagic _trawls", "Pelagic trawls"), "Pelagic_trawls",
+                                                      ifelse(data$Gear_level1 == "Mixed gears", "Not specified",  data$Gear_level1)))
+
+# Check how many papers with NA for gear level 1 - change to 'Not specified'
 length(unique(data$SW.ID[is.na(data$Gear_level1)])) #77 papers, likely because gear was unknown or record represents multiple gear types
+data$Gear_level1[is.na(data$Gear_level1)]   <- "Not specified"
+
+# Check the 'Other' category in Gear_level1 and change manually where needed
+dataOth                              <- subset(data, Gear_level1 %in% "Other")
+papers                               <- sort(unique(dataOth$SW.ID))
+papers
+
+# SW4_0080: Involves many gears, with interactions varying between years. So change form 'Other' to 'Not specified'
+data$Gear_level1[data$SW.ID %in% "SW4_0080"]   <- "Not specified"
+
+# SW4_0134: lines and trammel net were tested, so change this
+data$Gear_level1[data$SW.ID %in% "SW4_0134"]   <- "Hooks_and_lines"
+addRow                                         <- data[data$SW.ID %in% "SW4_0134",]
+addRow$Gear_level1                             <- "Nets"
+addRow$Gear_level2                             <- "Trammel net"
+data                                           <- rbind(data, addRow)
+data                                           <- data[order(data$SW.ID),]
+
+# SW4_0261: not reported from which type of fishing float come from, so change 'Other' to Not specified
+data$Gear_level1[data$SW.ID %in% "SW4_0261"]   <- "Not specified"
+
+# SW4_0388: collecting lugworms, so indeed 'Other'
+
+# Sw4_0408: pontoon trop, so indeed 'Other'
+
+# SW4_0494: several types of recreational fishing were studied, of which not all types are listed as options
+# in the data extraction, e.g. 'octopus device', 'vertical jigging'. So keep as 'Other'
+
+# SW4_0518: 'ingegno' fishing, so indeed 'Other'
+
+# SW4_0538: artisanal fisheries marked here as 'Recreational' but should be 'Commercial'. Gear is mechanized dredge
+data$Fishery.type[data$SW.ID %in% "SW4_0538"]   <- "Commercial"
+data$Gear_level1[data$SW.ID %in% "SW4_0538"]    <- "Dredges"
+data$Gear_level2[data$SW.ID %in% "SW4_0538"]    <- "Mechanic dredge"
+
+# SW4_0562: creeling is a type of fishing using pots, so 'Other' should be 'Pots', and duplicate rows with also trawling
+data$Gear_level1[data$SW.ID %in% "SW4_0562" & data$Pressure_variable %in% "change from trawling to creeling"]    <- "Pots"
+data$Gear_level1[data$SW.ID %in% "SW4_0562" & data$Pressure_variable %in% "change from grid trawling to creeling"]    <- "Pots"
+data$Gear_level1[data$SW.ID %in% "SW4_0562" & data$Pressure_variable %in% "change from mixed trawling to grid trawling or creeling"]    <- "Pots"
+addRow                                         <- data[data$SW.ID %in% "SW4_0562" & data$Pressure_variable %in% "change from mixed trawling to grid trawling or creeling",]
+addRow$Gear_level1                             <- "Demersal_trawls"
+addRow$Gear_level2                             <- "Otter trawl"
+data                                           <- rbind(data, addRow)
+data                                           <- data[order(data$SW.ID),]
+
+# SW4_0772: the type of trap nets are described in the paper as 'fyke nets', so change this
+data$Gear_level1[data$SW.ID %in% "SW4_0772" & data$Gear_level1 %in% "Other"]    <- "Nets"
+data$Gear_level2[data$SW.ID %in% "SW4_0772" & is.na(data$Gear_level2)]          <- "Fyke net"
+
+# SW4_0798: a multitude of fisheries are studied in this Ecopath model, so change 'Other' to Not specified
+data$Gear_level1[data$SW.ID %in% "SW4_0798" & data$Gear_level1 %in% "Other"]    <- "Not specified"
+
+# SW4_0918: artisanal fisheries marked as 'Recreational', so change to Commercial. Unknown what gear is deployed for
+# commercial sparids, so change to Not specified
+data$Fishery.type[data$SW.ID %in% "SW4_0918" & data$Gear_level1 %in% "Other"]   <- "Commercial"
+data$Gear_level1[data$SW.ID %in% "SW4_0918" & data$Gear_level1 %in% "Other"]    <- "Not specified"
+
+# SW4_1133: it concerns sandeel fisheries, for which the exact gear is not mentioned, but it is a demersal trawl. So change this
+data$Gear_level1[data$SW.ID %in% "SW4_1133" & data$Target.species_metier %in% "Sandeel fisheries"]   <- "Demersal_trawls"
+
+# SW4_1372: concerns drift nets. Not a category, but mark is at a 'gill net', as it can be considered a type of gill net.
+data$Gear_level1[data$SW.ID %in% "SW4_1372" & data$Gear_level1 %in% "Other"]    <- "Nets"
+data$Gear_level2[data$SW.ID %in% "SW4_1372"]    <- "Gillnet"
+
+# SW4_1478: 'all trawls' represents demersal trawling, so change Other to Demersal trawls
+data$Gear_level1[data$SW.ID %in% "SW4_1478" & data$Target.species_metier %in% "All trawls"]   <- "Demersal_trawls"
 
 ## Check Gear_level2
 table(data$Gear_level2, useNA = "always") #all fine
+
+# When gear level 2 was not provided even though option existed, mark this as 'Not specified'
+data$Gear_level2[is.na(data$Gear_level2) & data$Gear_level1 %in% c("Demersal_trawls","Pelagic_trawls","Dredges","Seines","Nets","Hooks_and_lines")]   <- "Not specified"
 
 
 ################################################-
@@ -578,11 +649,15 @@ if(ncol(data) > 50){
 #-----------------------------------------------#
 # Save the processed data file ----
 #-----------------------------------------------#
+
+# First add unique row ID and then save
 if(dataset == "cropped"){
+  data$ROWID                           <- c(1:nrow(data))
   saveRDS(data, file=paste0(outPath, "data.rds"))
 }
 if(dataset == "full"){
   data_allScreened                     <- rbind(data, tab[!SW.ID %in% retained,], fill=TRUE) 
+  data_allScreened$ROWID               <- c(1:nrow(data_allScreened))
   saveRDS(data_allScreened, file=paste0(outPath, "data_allScreened.rds"))
 }
 #IMPORTANT NOTE: ROWID does not match between data & tab and data_allScreened!

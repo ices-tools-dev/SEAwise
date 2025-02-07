@@ -132,7 +132,8 @@ datDescr$Sampling.Method.used.for.data.collection[datDescr$Description.Other.Sam
 datDescr$Sampling.Method.used.for.data.collection[datDescr$Description.Other.Sampling.Method %in% c("Fish pots with and without Seal exclusion device",
                                                                                                     "adenylate energy charge of clam muscle samples collected after dredging in the field and after simulated stress in laboratory experiement",
                                                                                                     "physiologcal stress experiments using haemolymph samples",
-                                                                                                    "Independent electro trawls sediment cores")] <- "Irregular Fisheries Independent Survey"
+                                                                                                    "Independent electro trawls sediment cores",
+                                                                                                    "fishing gear retrieval cruise using grapnel gear")] <- "Irregular Fisheries Independent Survey"
 # Papers that were initially categorized as 'Grab/core/dredge'
 datDescr$Sampling.Method.used.for.data.collection[datDescr$Description.Other.Sampling.Method %in% c("Independent electro trawls sediment cores",
                                                                                                     "sediment cores",
@@ -207,7 +208,8 @@ datDescr$Description.Other.Sampling.Method[datDescr$Description.Other.Sampling.M
                                                                                              "Multibeam",
                                                                                              "Opportunistic observations during the fishing hauls",
                                                                                              "Side scan sonar",
-                                                                                             "using VMS data for SAR and calculating 3 benthic impact indicators")] <- NA
+                                                                                             "using VMS data for SAR and calculating 3 benthic impact indicators",
+                                                                                             "fishing gear retrieval cruise using grapnel gear")] <- NA
 
 # For those papers that were initially classified as 'Grab/core/dredge'
 datDescr$Description.Other.Sampling.Method[datDescr$Description.Other.Sampling.Method %in% c("benthic grabs",
@@ -283,7 +285,7 @@ datDescr$Sampling.Method.used.for.data.collection[datDescr$SW.ID %in% "SW4_1566"
 
 ### Behavioural Observations ----
 newRow                                            <- datDescr[datDescr$SW.ID %in% "SW4_0131",]
-newRow$Sampling.Method.used.for.data.collection   <- "Behavioural observations"
+newRow$Sampling.Method.used.for.data.collection   <- "Behavioural Observations"
 datDescr                                          <- rbind(datDescr, newRow)
 
 ### Active Acoustic Sampling Survey ----

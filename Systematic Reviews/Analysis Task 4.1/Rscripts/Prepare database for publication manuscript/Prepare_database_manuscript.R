@@ -61,8 +61,8 @@ table(!is.na(data.ID$Authors)) #no NAs
 table(!is.na(data.ID$Title)) #no NAs
 table(!is.na(data.ID$Year)) #no NAs
 table(!is.na(data.ID$Source.title)) #no NAs
-table(!is.na(data.ID$Volume)) #one NAs
-table(!is.na(data.ID$Issue)) #182 NAs, but quite common for journals not to have issue number, only volume
+table(!is.na(data.ID$Volume)) #one NA
+table(!is.na(data.ID$Issue)) #184 NAs, but quite common for journals not to have issue number, only volume
 table(!is.na(data.ID$Page.start)) #85 NAs, but common for some journals to only have online version, e.g. PLoS ONE, Scientific Reports
 table(!is.na(data.ID$Page.end)) #85 NAs, same as above
 table(!is.na(data.ID$DOI)) #13 NAs
@@ -242,6 +242,7 @@ orderCol   <- c("SW.ID",
                 "Magnitude.of.relationship" )
 
 # Change order of columns
+data       <- as.data.frame(data)
 data       <- data[,orderCol]
 
 # Ensure rows are ordered by SW.ID
@@ -253,7 +254,7 @@ data       <- data[order(data$SW.ID),]
 #-----------------------------------------------#
 
 # Unformatted version
-write.csv(data, file = paste0(datPath, "Database for manuscript/Data extracted review.csv"))
+write.csv(data, file = paste0(datPath, "Database for manuscript/Data extracted review.csv"), row.names = FALSE)
 write.xlsx(data, file = paste0(datPath, "Database for manuscript/Data extracted review_unformatted.xlsx"))
 
 # Create formatted version as Excel file

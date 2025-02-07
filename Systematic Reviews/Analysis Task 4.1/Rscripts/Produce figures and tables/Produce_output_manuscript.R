@@ -929,7 +929,7 @@ Gears$Gear_level1[is.na(Gears$Gear_level1)] <- "Not specified"
 p <- ggplot(Gears, aes(NrPaps, reorder(Gear_level1, TotNrPaps), fill=Gear_level1)) +
   geom_bar(stat="identity") +
   scale_x_continuous(expand = c(0,0), n.breaks = 6, limits = c(0,160)) +
-  scale_fill_manual(values=viridis(10), name= "Region") +
+  scale_fill_manual(values=viridis(11), name= "Region") +
   labs(x="Number of papers", y="Ecosystem component") +
   theme_bw() +
   theme(axis.text.y = element_text(size = 10),
@@ -1179,13 +1179,12 @@ ggsave("Sankey.tiff", sankey, path=outPath,
 #====-
 ## Create long version
 sankeyDat                            <- data[,c("SW.ID","Fishery.type","Pressure.type","Gear_level1","Ecosystem.component_level1","Response.variable_category")]
-sankeyDat$Gear_level1                <- with(sankeyDat, ifelse(is.na(Gear_level1),"Unknown ",Gear_level1))
 sankeyDat                            <- sankeyDat[!duplicated(sankeyDat),]
 
 sankeyDat$Fishery.type               <- factor(sankeyDat$Fishery.type, levels = c("Unknown","Scientific","Recreational","Commercial"))
 sankeyDat$Pressure.type              <- factor(sankeyDat$Pressure.type, levels = c("Catch_and_bycatch","Input of litter","Physical disturbance of the seabed","Electromagnetic input",
                                                                                    "Noise","Discarding","Visual disturbance"))
-sankeyDat$Gear_level1                <- factor(sankeyDat$Gear_level1, levels = c("Demersal trawls","Seines","Pots","Hooks_and_lines","Nets","Dredges","Pelagic trawls","Other","Spearfishing","Unknown "))
+sankeyDat$Gear_level1                <- factor(sankeyDat$Gear_level1, levels = c("Demersal trawls","Seines","Pots","Hooks_and_lines","Nets","Dredges","Pelagic trawls","Other","Spearfishing","Not specified"))
 sankeyDat$Ecosystem.component_level1 <- factor(sankeyDat$Ecosystem.component_level1, levels = c("Foodweb","Cephalopods","Benthos","Seabirds","Physical_habitats","Fish_cartilaginous",
                                                                                                 "Fish_teleost","Marine_mammals","Reptiles","Plants","Plankton"))
 sankeyDat$Response.variable_category <- factor(sankeyDat$Response.variable_category, levels = c("Abundance/biomass/density","Behaviour","Community composition","Mortality",
@@ -1198,7 +1197,7 @@ sankeyDat$Response.variable_category <- factor(sankeyDat$Response.variable_categ
 sankeyInput                          <- make_long(sankeyDat, Fishery.type,Gear_level1,Pressure.type,Ecosystem.component_level1,Response.variable_category)
 
 sankeyInput$node                     <- factor(sankeyInput$node, levels = c("Unknown","Scientific","Recreational","Commercial",
-                                                                            rev(c("Seines","Pots","Demersal trawls","Pelagic trawls","Hooks_and_lines","Nets","Dredges","Spearfishing","Other","Unknown ")),
+                                                                            rev(c("Seines","Pots","Demersal trawls","Pelagic trawls","Hooks_and_lines","Nets","Dredges","Spearfishing","Other","Not specified")),
                                                                             rev(c("Catch_and_bycatch","Physical disturbance of the seabed","Input of litter","Electromagnetic input","Noise","Discarding","Visual disturbance")),
                                                                             "Plants","Plankton","Foodweb","Benthos","Physical_habitats","Cephalopods","Fish_cartilaginous",
                                                                             "Fish_teleost","Seabirds","Marine_mammals","Reptiles",
@@ -1206,6 +1205,8 @@ sankeyInput$node                     <- factor(sankeyInput$node, levels = c("Unk
                                                                                   "Sediment & physical properties","Trophic structure",
                                                                                   "Community composition","Biodiversity","Size/age structure","Reproduction","Growth",
                                                                                   "Production/productivity","Physiology"))))
+sankeyInput$node[sankeyInput$x %in% "Gear_level1" & is.na(sankeyInput$node)]   <- "Not specified"
+
 
 
 #===-
@@ -1421,7 +1422,7 @@ dev.off()
 # PART II - Case Study Litter: Plots and numbers ----
 #-----------------------------------------------#
 # Subset to litter only
-litter <- droplevels(data[Pressure.type == "Input of litter", ])
+litter <- droplevels(data_allScreened[Pressure.type == "Input of litter", ])
 
 # Litter specific data cleaning
 litter[is.na(litter$Gear_level1) & !duplicated(litter$SW.ID), ]
@@ -1441,21 +1442,53 @@ nrow(litter)
 litter[litter$Year == min(litter$Year), ]
 litter[litter$Year == min(litter$Year), "Year"]
 
+
 #-----------------------------------------------#
-## Gears ----
+### Region ----
+#-----------------------------------------------#
+litter[, .(NrPaps = length(unique(SW.ID))), by = c("Region")]
+
+
+#-----------------------------------------------#
+### Ecosystem component ----
+#-----------------------------------------------#
+litter[, .(NrPaps = length(unique(SW.ID))), by = c("Ecosystem.component_level1")]
+
+
+#-----------------------------------------------#
+### Gears ----
 #-----------------------------------------------#
 unique(litter$Gear_level1)
 table(litter$Gear_level1)
 unique(litter$Gear_level2)
 table(litter$Gear_level2)
 
+litter[, .(NrPaps = length(unique(SW.ID))), by = c("Gear_level1")]
+
+
 #-----------------------------------------------#
-## Methods ----
+### Pressure ----
+#-----------------------------------------------#
+litter[, .(NrPaps = length(unique(SW.ID))), by = c("Pressure.variable_category")]
+
+
+#-----------------------------------------------#
+### Response variable ----
+#-----------------------------------------------#
+litter[, .(NrPaps = length(unique(SW.ID))), by = c("Response.variable_category")]
+
+
+#-----------------------------------------------#
+### Methods ----
 #-----------------------------------------------#
 unique(litter$Sampling.Method.used.for.data.collection)
 table(litter$Sampling.Method.used.for.data.collection)
 table(litter$Analytical.method.used.for.inference)
 table(litter$Study.type)
+
+litter[, .(NrPaps = length(unique(SW.ID))), by = c("Sampling.Method.used.for.data.collection")]
+litter[, .(NrPaps = length(unique(SW.ID))), by = c("Sampling.Method.used.for.data.collection","Ecosystem.component_level1")]
+
 
 #===-
 ### Data cleaning ----
@@ -1609,6 +1642,95 @@ p <- ggplot(tempLitGeo, aes(NrPaps, reorder(Region, NrPaps))) +
 print(p)
 
 ggsave("litterGeo.png", p, path=outPath, width = 5, height = 3)
+
+
+# Plot Region together with ecosystem component
+RegionEco                            <- litter[, .(NrPaps = length(unique(SW.ID))),
+                                                   by = c("Ecosystem.component_level1", "Region")]
+RegionEcoTot                         <- RegionEco[, .(TotNrPaps = sum(NrPaps)),
+                                                by = "Region"]
+RegionEco                            <- merge(RegionEco, RegionEcoTot, by="Region")
+RegionEcoTot$Region[RegionEcoTot$Region %in% "NE-Atlantic"] <- "Northeast Atlantic"
+
+p <- ggplot(RegionEco, aes(NrPaps, reorder(Region, TotNrPaps), fill=Ecosystem.component_level1)) +
+  geom_bar(stat="identity") +
+  scale_x_continuous(expand = c(0,0), n.breaks = 6, limits = c(0,max(RegionEco$TotNrPaps+2))) +
+  scale_fill_manual(values=viridis(6), name= "Ecosystem component") +
+  labs(x="Number of papers", y="Region") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 12),
+        strip.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10),
+        legend.position = c(0.85,0.3),
+        legend.key.size = unit(0.8,"line"),
+        panel.grid.minor.x = element_blank())
+print(p)
+
+ggsave("litterGeoRegion.png", p, path=outPath, width = 8, height = 3)
+
+# Did individual papers study multiple ecosystem components or region?
+sum(tempLitGeo$`Number of Articles`) #20, so no multiple regions
+sum(RegionEco$NrPaps) #24, so yes, multiple ecosystem components
+
+
+#-----------------------------------------------#
+### COMBINED PLOT: Region by ecosystem component ----
+#-----------------------------------------------#
+
+# First plot
+RegionEco                            <- litter[, .(NrPaps = length(unique(SW.ID))),
+                                               by = c("Ecosystem.component_level1", "Region")]
+RegionEcoTot                         <- RegionEco[, .(TotNrPaps = sum(NrPaps)),
+                                                  by = "Region"]
+RegionEco                            <- merge(RegionEco, RegionEcoTot, by="Region")
+RegionEcoTot$Region[RegionEcoTot$Region %in% "NE-Atlantic"] <- "Northeast Atlantic"
+
+p1 <- ggplot(RegionEco, aes(NrPaps, reorder(Region, TotNrPaps), fill=Ecosystem.component_level1)) +
+  geom_bar(stat="identity") +
+  scale_x_continuous(expand = c(0,0), n.breaks = 6, limits = c(0,max(RegionEco$TotNrPaps+2))) +
+  scale_fill_manual(values=viridis(6), name= "Ecosystem component") +
+  labs(x="Number of papers", y="Region") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 12),
+        strip.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10),
+        legend.position = c(0.85,0.35),
+        legend.key.size = unit(0.8,"line"),
+        panel.grid.minor.x = element_blank())
+print(p1)
+
+# Second plot
+Gears                                <- litter[,.(NrPaps = length(unique(SW.ID))),
+                                                   by = c("Ecosystem.component_level1", "Gear_level1")]
+GearTot                              <- Gears[, .(TotNrPaps = sum(NrPaps)),
+                                              by = "Gear_level1"]
+Gears                                <- merge(Gears, GearTot, by="Gear_level1")
+
+p2 <- ggplot(Gears, aes(NrPaps, reorder(Gear_level1, TotNrPaps), fill=Ecosystem.component_level1)) +
+  geom_bar(stat="identity") +
+  scale_x_continuous(expand = c(0,0), n.breaks = 6, limits = c(0,max(Gears$TotNrPaps+2))) +
+  scale_fill_manual(values=viridis(6), name= "Ecosystem component") +
+  labs(x="Number of papers", y="Gear") +
+  theme_bw() +
+  theme(axis.text = element_text(size = 12),
+        strip.text = element_text(size = 12),
+        axis.title = element_text(size = 12),
+        legend.title = element_text(size=10),
+        legend.text = element_text(size=10),
+        panel.grid.minor.x = element_blank(),
+        legend.position = "none",)
+print(p2)
+
+# Combine plots and save
+p <- p1 / p2 + plot_annotation(tag_levels = 'A')
+
+print(p)
+
+ggsave("litterEcoRegion_GearsEco.png", p, path=outPath, width = 8, height = 6)
 
 
 #-----------------------------------------------#
@@ -1895,23 +2017,14 @@ p <- pSpatial / pTemporal + plot_annotation(tag_levels = 'A')
 ggsave("litter_spatialTemporalScales.png", p, path=outPath, width = 7, height = 7)
 
 
+### Some numbers ----
+length(unique(litter$SW.ID[litter$Resolution...Temporal %in% "snapshot/no repeated sampling"]))
 
-#-----------------------------------------------#
-## Pressures & Responses ----
-#-----------------------------------------------#
-# Pressures exerted
-unique(litter$Response.variable_paper)
-unique(litter$Response.variable_category)
-table(litter$Response.variable_category)
-table(litter$Pressure.variable_category)
+
 
 #-----------------------------------------------#
 ## Responses & Ecosystem Components ----
 #-----------------------------------------------#
-unique(litter$Ecosystem.component_level1)
-table(litter$Ecosystem.component_level1)
-unique(litter$Ecosystem.component_level2)
-table(litter$Ecosystem.component_level2)
 
 #=== -
 ### Data cleaning
@@ -2497,6 +2610,11 @@ Gears                                <- subset_PET[,.(NrPaps = length(unique(SW.
                                                    by = c("Gear_level1")]
 Gears
 
+# Check fishery type
+Gears                                <- subset_PET[,.(NrPaps = length(unique(SW.ID))),
+                                                   by = "Fishery.type"]
+Gears
+
 # Check gears by fishery type
 Gears                                <- subset_PET[,.(NrPaps = length(unique(SW.ID))),
                                                    by = c("Fishery.type", "Gear_level1")]
@@ -2516,6 +2634,7 @@ Gears
 Gears                                <- subset_PET[,.(NrPaps = length(unique(SW.ID))),
                                                    by = c("Gear_level1","Ecosystem.component_level1")]
 Gears
+
 
 
 #-----------------------------------------------#
