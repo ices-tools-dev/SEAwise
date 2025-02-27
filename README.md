@@ -44,3 +44,6 @@
  
 * Courses
   * Integrating environmental impacts on stock productivity in Management Strategy Evaluation models [Link to repository](https://github.com/ices-tools-dev/SEAwise_ecoMSE)
+
+* SEAwise Ecosystem Based Fisheries Management Advice tool:
+  * SEAwise Tool Codebase [link to repository](https://github.com/ices-tools-dev/SEAwise_tool)
