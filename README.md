@@ -9,6 +9,9 @@
 
 #### For more information on the project visit https://seawiseproject.org/ ####
 
+ [SEAwise Ecosystem Based Fisheries Management Advice tool](https://ices-tools-dev.shinyapps.io/SEAwiseTool/) 
+  * SEAwise Tool Codebase [link to repository](https://github.com/ices-tools-dev/SEAwise_tool)
+
 ### Project structure and available repositories: ###
 
 * WP1 - Knowledge exchange and integration:
@@ -26,7 +29,7 @@
   * Task 3.4: Ecological effects on fish survival [link to repository](https://github.com/ices-tools-dev/SEAwise_T3.4)
   
 * WP4 - Ecological effects of fisheries:
-  * …
+  * Task 4.1: Identify the key species and habitats impacted by fishing [link to repository](https://github.com/ices-tools-dev/SEAwise_T4.1)
     
 * WP5 - Spatial management impacts on ecological systems and fisheries:
   * Task 5.2: Predicting species distribution [link to repository](https://github.com/ices-tools-dev/SEAwise_T5.2)
@@ -44,3 +47,5 @@
  
 * Courses
   * Integrating environmental impacts on stock productivity in Management Strategy Evaluation models [Link to repository](https://github.com/ices-tools-dev/SEAwise_ecoMSE)
+
+
