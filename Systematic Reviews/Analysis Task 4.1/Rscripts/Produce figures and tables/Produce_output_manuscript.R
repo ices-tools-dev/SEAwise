@@ -131,6 +131,108 @@ write.csv(nrPaps, paste0(outPath,"nr papers per year.csv"), row.names = FALSE)
 
 
 #-----------------------------------------------#
+## Table of number of papers by ecosystem component ----
+#-----------------------------------------------#
+
+nrPaps                               <- aggregate(SW.ID ~ Ecosystem.component_level1, data, function(x) length(unique(x)))
+nrPaps                               <- nrPaps[order(nrPaps$SW.ID, decreasing = TRUE),]
+nrPaps$Prop                          <- round(nrPaps$SW.ID / length(unique(data$SW.ID)),3)
+nrPaps$Perc                          <- nrPaps$Prop * 100
+nrPaps
+
+write.csv(nrPaps, paste0(outPath,"nr papers ecosystem component.csv"), row.names = FALSE)
+
+
+
+#-----------------------------------------------#
+## Table of number of papers by pressure ----
+#-----------------------------------------------#
+
+nrPaps                               <- aggregate(SW.ID ~ Pressure.type, data, function(x) length(unique(x)))
+nrPaps                               <- nrPaps[order(nrPaps$SW.ID, decreasing = TRUE),]
+nrPaps$Prop                          <- round(nrPaps$SW.ID / length(unique(data$SW.ID)),3)
+nrPaps$Perc                          <- nrPaps$Prop * 100
+nrPaps
+
+write.csv(nrPaps, paste0(outPath,"nr papers pressure.csv"), row.names = FALSE)
+
+
+
+#-----------------------------------------------#
+## Table of number of papers by fishery type ----
+#-----------------------------------------------#
+
+nrPaps                               <- aggregate(SW.ID ~ Fishery.type, data, function(x) length(unique(x)))
+nrPaps                               <- nrPaps[order(nrPaps$SW.ID, decreasing = TRUE),]
+nrPaps$Prop                          <- round(nrPaps$SW.ID / length(unique(data$SW.ID)),3)
+nrPaps$Perc                          <- nrPaps$Prop * 100
+nrPaps
+
+write.csv(nrPaps, paste0(outPath,"nr papers fishery.csv"), row.names = FALSE)
+
+
+
+#-----------------------------------------------#
+## Table of number of papers by gear ----
+#-----------------------------------------------#
+
+nrPaps                               <- aggregate(SW.ID ~ Gear_level1, data, function(x) length(unique(x)))
+nrPaps                               <- nrPaps[order(nrPaps$SW.ID, decreasing = TRUE),]
+nrPaps$Prop                          <- round(nrPaps$SW.ID / length(unique(data$SW.ID)),3)
+nrPaps$Perc                          <- nrPaps$Prop * 100
+nrPaps
+
+write.csv(nrPaps, paste0(outPath,"nr papers gear.csv"), row.names = FALSE)
+
+# Estimate specifically number and percentage of papers studying pelagic trawls and purse seines
+nrPap                                <- length(unique(data$SW.ID[data$Gear_level1 %in% "Pelagic_trawls" | data$Gear_level2 %in% "Purse seine"]))
+nrPap
+nrPap / length(unique(data$SW.ID)) * 100
+
+
+
+#-----------------------------------------------#
+## Table of number of papers by species/taxonomic group ----
+#-----------------------------------------------#
+
+nrPaps                               <- aggregate(SW.ID ~ Species.taxonomic.group.s., data, function(x) length(unique(x)))
+nrPaps                               <- nrPaps[order(nrPaps$SW.ID, decreasing = TRUE),]
+nrPaps$Prop                          <- round(nrPaps$SW.ID / length(unique(data$SW.ID)),3)
+nrPaps$Perc                          <- nrPaps$Prop * 100
+
+write.csv(nrPaps, paste0(outPath,"nr papers gear.csv"), row.names = FALSE)
+
+
+
+#-----------------------------------------------#
+## Table of number of papers by response variable ----
+#-----------------------------------------------#
+
+nrPaps                               <- aggregate(SW.ID ~ Response.variable_category, data, function(x) length(unique(x)))
+nrPaps                               <- nrPaps[order(nrPaps$SW.ID, decreasing = TRUE),]
+nrPaps$Prop                          <- round(nrPaps$SW.ID / length(unique(data$SW.ID)),3)
+nrPaps$Perc                          <- nrPaps$Prop * 100
+nrPaps
+
+write.csv(nrPaps, paste0(outPath,"nr papers response.csv"), row.names = FALSE)
+
+
+
+#-----------------------------------------------#
+## Table of number of papers by sampling method ----
+#-----------------------------------------------#
+
+nrPaps                               <- aggregate(SW.ID ~ Sampling.Method.used.for.data.collection, data, function(x) length(unique(x)))
+nrPaps                               <- nrPaps[order(nrPaps$SW.ID, decreasing = TRUE),]
+nrPaps$Prop                          <- round(nrPaps$SW.ID / length(unique(data$SW.ID)),3)
+nrPaps$Perc                          <- nrPaps$Prop * 100
+nrPaps
+
+write.csv(nrPaps, paste0(outPath,"nr papers sampling method.csv"), row.names = FALSE)
+
+
+
+#-----------------------------------------------#
 ## Barplot by year of number of studies ----
 #-----------------------------------------------#
 

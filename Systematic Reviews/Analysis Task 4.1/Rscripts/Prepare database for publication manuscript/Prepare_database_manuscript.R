@@ -174,6 +174,8 @@ sort(unique(data$Quality...Spatial..relative.1.3.)) #includes non-numeric values
 #-----------------------------------------------#
 
 # Adjust some column names
+names(data)[names(data) %in% "SW.ID"]                      <- "SearchID"
+
 names(data)[names(data) %in% "Scale...Spatial..m."]        <- "Scale.Spatial"
 names(data)[names(data) %in% "Scale...Temporal"]           <- "Scale.Temporal"
 
@@ -186,7 +188,7 @@ names(data)[names(data) %in% "Quality...Methods" ]                 <- "Quality.M
 
 names(data)[names(data) %in% "Species.taxonomic.group.s." ]        <- "Species.taxonomic.group" 
 
-names(data)[names(data) %in% "Pressure_variable" ]                 <- "Pressure.variable" 
+names(data)[names(data) %in% "Pressure_variable" ]                 <- "Pressure.variable_paper" 
 
 
 #-----------------------------------------------#
@@ -194,7 +196,7 @@ names(data)[names(data) %in% "Pressure_variable" ]                 <- "Pressure.
 #-----------------------------------------------#
 
 # Decide on order of columns
-orderCol   <- c("SW.ID",
+orderCol   <- c("SearchID",
                 "Authors",
                 "Title",
                 "Year",                                    
@@ -229,7 +231,7 @@ orderCol   <- c("SW.ID",
                 "Species.taxonomic.group",
                 "Pressure.type",
                 "Pressure_level",
-                "Pressure.variable",
+                "Pressure.variable_paper",
                 "Pressure.variable_category",
                 "Pressure_other",
                 "Fishery.type",
@@ -245,8 +247,8 @@ orderCol   <- c("SW.ID",
 data       <- as.data.frame(data)
 data       <- data[,orderCol]
 
-# Ensure rows are ordered by SW.ID
-data       <- data[order(data$SW.ID),]
+# Ensure rows are ordered by paper ID
+data       <- data[order(data$SearchID),]
 
 
 #-----------------------------------------------#
@@ -269,7 +271,7 @@ addStyle(wb = wb, sheet = 1,
 
 ## Insert headings in the top row
 writeData(wb, 1, "Bibliographic data", startCol = 1, startRow = 1)
-writeData(wb, 1, "Geography and methodology", startCol = 16, startRow = 1)
+writeData(wb, 1, "General metadata", startCol = 16, startRow = 1)
 writeData(wb, 1, "Ecosystem component", startCol = 29, startRow = 1)
 writeData(wb, 1, "Pressure", startCol = 34, startRow = 1)
 writeData(wb, 1, "Gear", startCol = 39, startRow = 1)
