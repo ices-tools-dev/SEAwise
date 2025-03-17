@@ -1,2 +1,0 @@
-- the prediction data can be found on the SEAwise sharepoint and needs to be included in the data folder 
-- it is recommended to load the data (predictions and dashboard combinations) into your working environment before running the app
