@@ -29,6 +29,7 @@
 * WP4 - Ecological effects of fisheries:
   * Task 4.1: Identify the key species and habitats impacted by fishing [link to repository](https://github.com/ices-tools-dev/SEAwise_T4.1)
   * Task 4.3:  Evaluate the effects of fishing on benthic habitats [link to repository](https://github.com/ices-tools-dev/SEAwise_T4.3)
+  * Task 4.5:  Effects of fisheries related litter and ghost nets [link to repository](https://github.com/ices-tools-dev/SEAwise_T4.5)
     
 * WP5 - Spatial management impacts on ecological systems and fisheries:
   * Task 5.2: Predicting species distribution [link to repository](https://github.com/ices-tools-dev/SEAwise_T5.2)
